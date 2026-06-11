@@ -13,8 +13,8 @@
 ### 1. Download the Platform
 
 Download the complete NeoNews Platform package containing:
-- `neonews-theme/` - Main WordPress theme
-- `neonews-core/` - Core functionality plugin
+- `wp-content/themes/neonews-theme/` - Main WordPress theme
+- `wp-content/plugins/neonews-core/` - Core functionality plugin
 - `neonews-membership/` - Membership system plugin
 - `neonews-pwa/` - Progressive Web App plugin
 - `demo-importer/` - Demo content importer
@@ -24,12 +24,12 @@ Download the complete NeoNews Platform package containing:
 1. Log in to your WordPress admin dashboard
 2. Navigate to **Appearance → Themes → Add New**
 3. Click **Upload Theme**
-4. Choose the `neonews-theme` folder (zip it first if needed)
+4. Choose the `wp-content/themes/neonews-theme` folder (zip it first if needed)
 5. Click **Install Now**
 6. After installation, click **Activate**
 
 **Alternative (FTP):**
-1. Upload the `neonews-theme` folder to `/wp-content/themes/`
+1. Upload the `neonews-theme` folder (from `wp-content/themes/`) to `/wp-content/themes/`
 2. Go to **Appearance → Themes**
 3. Find "NeoNews Theme" and click **Activate**
 
@@ -39,7 +39,7 @@ Install the plugins in this order:
 
 #### NeoNews Core (Required)
 1. Go to **Plugins → Add New → Upload Plugin**
-2. Upload `neonews-core` folder (as zip)
+2. Upload `neonews-core` folder from `wp-content/plugins/` (as zip)
 3. Click **Install Now** then **Activate**
 
 #### NeoNews Membership (Optional but Recommended)

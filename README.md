@@ -62,34 +62,27 @@ See [docs/SMART-TOOLS.md](docs/SMART-TOOLS.md).
 
 ## Directory Structure
 
+Theme and plugins live under `wp-content/` so you can pull straight into WordPress.
+
 ```
-NeoNews/
-├── neonews-theme/          # WordPress Theme
-│   ├── css/                # Stylesheets
-│   ├── js/                 # JavaScript files
-│   ├── inc/                # PHP includes
-│   ├── template-parts/     # Template partials
-│   └── templates/          # Page templates
-│
-├── neonews-core/           # Core Plugin
-│   ├── inc/                # Class files
-│   ├── admin/              # Admin functionality
-│   └── public/             # Frontend assets
-│
-├── neonews-membership/     # Membership Plugin
-│   ├── inc/                # Class files
-│   ├── admin/              # Admin settings
-│   └── public/             # Frontend styles
-│
-├── neonews-pwa/            # PWA Plugin
-│
-├── neonews-security/       # Security Center Plugin
-│   ├── inc/                # Scanner, encryption, hardening
-│   └── admin/              # Security dashboard UI
-│
-├── demo-importer/          # Demo Content Plugin
-│
-└── docs/                   # Documentation
+News/
+├── wp-content/
+│   ├── themes/
+│   │   └── neonews-theme/      # WordPress theme
+│   └── plugins/
+│       ├── neonews-core/       # Required
+│       ├── neonews-membership/
+│       ├── neonews-pwa/
+│       ├── neonews-security/
+│       ├── neonews-seo/
+│       ├── neonews-seo-lite/
+│       ├── neonews-smart/
+│       └── demo-importer/
+├── scripts/
+│   ├── link-to-wordpress.sh    # Mac/Linux: symlink into wp-content
+│   ├── sync-to-wordpress.sh    # Mac/Linux: rsync copy into wp-content
+│   └── link-to-wordpress.ps1   # Windows: junction into wp-content
+├── docs/                       # Documentation
     ├── README.md           # Documentation hub (start here)
     ├── COMPLETE-GUIDE.md   # Everything in one file
     ├── GETTING-STARTED.md
@@ -110,8 +103,8 @@ NeoNews/
 ## Quick Start
 
 1. Install WordPress 5.9+
-2. Upload and activate `neonews-theme`
-3. Upload and activate `neonews-core`
+2. Copy or link `wp-content/themes/neonews-theme` and plugins into your site `wp-content/`
+3. Activate **NeoNews Theme** and **NeoNews Core** (required)
 4. Upload and activate `neonews-security` (recommended)
 5. (Optional) Activate membership, PWA, demo importer
 6. Import demo content via **NeoNews → Demo Content**
@@ -119,6 +112,34 @@ NeoNews/
 8. Configure at **NewsPulse → Platform** and **Appearance → Customize**
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions.
+
+## Git pull workflow (Windows → GitHub → Mac)
+
+**One-time setup on Mac** (replace site name):
+
+```bash
+git clone https://github.com/0KartikRaut0/News.git ~/Projects/News
+chmod +x ~/Projects/News/scripts/*.sh
+~/Projects/News/scripts/link-to-wordpress.sh "$HOME/Local Sites/my-site/app/public/wp-content"
+```
+
+**After every change on Windows:**
+
+```powershell
+cd C:\Users\me7v9cs59\Desktop\News
+git add .
+git commit -m "Your change"
+git push
+```
+
+**On Mac:**
+
+```bash
+cd ~/Projects/News
+git pull
+```
+
+If you used `link-to-wordpress.sh`, WordPress updates immediately. If you prefer copies, run `scripts/sync-to-wordpress.sh` after each pull.
 
 ## Documentation
 
@@ -170,7 +191,7 @@ Access via **Appearance → Customize**:
 
 ### CSS Variables
 
-Customize colors in `style.css`:
+Customize colors in `wp-content/themes/neonews-theme/style.css`:
 
 ```css
 :root {
