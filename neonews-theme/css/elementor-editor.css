@@ -1,0 +1,59 @@
+/**
+ * NeoNews Theme - Elementor Editor Styles
+ *
+ * @package NeoNews
+ */
+
+/* Elementor Editor Panel */
+.elementor-panel .elementor-element-wrapper .icon .neonews-icon {
+    color: #e63946;
+}
+
+/* NeoNews category styling in Elementor */
+.elementor-element .neonews {
+    border-left: 3px solid #e63946;
+    padding-left: 10px;
+}
+
+/* Responsive preview adjustments */
+.elementor-device-tablet .nn-container {
+    max-width: 768px;
+}
+
+.elementor-device-mobile .nn-container {
+    max-width: 100%;
+    padding: 0 15px;
+}
+
+/* Widget placeholder styles */
+.elementor-widget-placeholder {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+}
+
+/* Section handles */
+.elementor-editor-active .nn-homepage-section {
+    min-height: 100px;
+    border: 1px dashed #1d3557;
+    border-radius: 4px;
+}
+
+/* Widget area indicators */
+.elementor-editor-active [class*="footer-"] {
+    position: relative;
+}
+
+.elementor-editor-active [class*="footer-"]::before {
+    content: attr(data-widget-area);
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #1d3557;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 0 0 4px 0;
+}

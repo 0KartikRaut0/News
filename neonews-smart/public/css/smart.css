@@ -1,0 +1,89 @@
+/* NeoNews Smart Tools — server-local UI */
+
+.nn-smart-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-right: 0.35rem;
+}
+
+.nn-smart-glance {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.15rem;
+    border-radius: 12px;
+    border: 1px solid var(--nn-border-color, #e2e8f0);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.06), rgba(99, 102, 241, 0.05));
+}
+
+.nn-smart-glance-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.nn-smart-meta {
+    font-size: 0.8rem;
+    color: var(--nn-text-muted, #94a3b8);
+}
+
+.nn-smart-glance-text {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.55;
+    color: var(--nn-text-primary, #1e293b);
+}
+
+.nn-smart-keypoints,
+.nn-smart-toc {
+    margin: 0 0 1.25rem;
+    padding: 1rem 1.15rem;
+    border-radius: 12px;
+    background: var(--nn-bg-secondary, #f8fafc);
+    border: 1px solid var(--nn-border-color, #e2e8f0);
+}
+
+.nn-smart-subtitle {
+    margin: 0 0 0.65rem;
+    font-size: 0.95rem;
+}
+
+.nn-smart-keypoints-list,
+.nn-smart-toc-list {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.nn-smart-keypoints-list li,
+.nn-smart-toc-list li {
+    margin-bottom: 0.35rem;
+}
+
+.nn-smart-toc-l3 {
+    margin-left: 0.75rem;
+    list-style-type: circle;
+}
+
+.nn-smart-for-you,
+.nn-smart-trending {
+    margin: 2rem 0;
+}
+
+.nn-smart-keypoints a,
+.nn-smart-toc a {
+    color: var(--nn-primary, #ea580c);
+    text-decoration: none;
+}
+
+.nn-smart-keypoints a:hover,
+.nn-smart-toc a:hover {
+    text-decoration: underline;
+}

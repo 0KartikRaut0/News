@@ -1,0 +1,33 @@
+.nn-seo-breadcrumbs-wrap {
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.nn-seo-breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--nn-muted, #64748b);
+}
+
+.nn-seo-crumb-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.nn-seo-crumb-link:hover {
+    color: var(--nn-primary, #dc2626);
+    text-decoration: underline;
+}
+
+.nn-seo-crumb-current {
+    color: var(--nn-text, #0f172a);
+    font-weight: 600;
+}
+
+.nn-seo-crumb-sep {
+    opacity: 0.55;
+}

@@ -1,0 +1,46 @@
+.neonews-seo-admin .form-table td label {
+    display: inline-block;
+    margin-bottom: 0.35rem;
+}
+
+.nn-seo-media-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nn-seo-media-preview img {
+    max-width: 120px;
+    height: auto;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+}
+
+.nn-seo-meta-box label {
+    display: block;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+}
+
+.nn-seo-meta-box input[type="text"],
+.nn-seo-meta-box textarea,
+.nn-seo-meta-box select {
+    width: 100%;
+}
+
+.nn-seo-meta-box .description {
+    margin-top: 0.25rem;
+}
+
+.nn-seo-score {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.nn-seo-score-good { background: #dcfce7; color: #166534; }
+.nn-seo-score-warn { background: #fef9c3; color: #854d0e; }
+.nn-seo-score-noindex { background: #fee2e2; color: #991b1b; }

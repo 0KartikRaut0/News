@@ -1,0 +1,159 @@
+/**
+ * NeoNews Core - Admin Styles
+ *
+ * @package NeoNews_Core
+ */
+
+/* Meta Box Styles */
+.nn-meta-box {
+    padding: 10px 0;
+}
+
+.nn-meta-box p {
+    margin: 8px 0;
+}
+
+.nn-meta-box hr {
+    margin: 15px 0;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+.nn-meta-box .description {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Stats Meta Box */
+.nn-stats-box table {
+    background: transparent;
+    border: none;
+}
+
+.nn-stats-box table th,
+.nn-stats-box table td {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.nn-stats-box table th {
+    font-weight: normal;
+    color: #666;
+    width: 50%;
+}
+
+.nn-stats-box table tr:last-child th,
+.nn-stats-box table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Badges */
+.nn-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.nn-badge-info {
+    background-color: #e7f3ff;
+    color: #0073aa;
+}
+
+.nn-badge-success {
+    background-color: #e7f7e7;
+    color: #46b450;
+}
+
+.nn-badge-warning {
+    background-color: #fff8e5;
+    color: #996800;
+}
+
+/* Column Flags */
+.nn-flag {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 14px;
+}
+
+.nn-flag-featured {
+    color: #f0ad4e;
+}
+
+.nn-flag-breaking {
+    color: #d9534f;
+}
+
+.nn-flag-submission {
+    color: #5bc0de;
+}
+
+/* View Count Column */
+.nn-view-count {
+    font-weight: 500;
+    color: #666;
+}
+
+/* Admin Info Box */
+.nn-admin-info {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 20px;
+    max-width: 800px;
+}
+
+.nn-admin-info h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.nn-admin-info h3 {
+    margin-top: 20px;
+}
+
+.nn-admin-info ul {
+    list-style: disc;
+    margin-left: 20px;
+}
+
+.nn-admin-info code {
+    background: #f0f0f1;
+    padding: 3px 6px;
+    border-radius: 3px;
+}
+
+/* Settings Page */
+.form-table th {
+    width: 250px;
+}
+
+.nn-activity-test-box {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-left: 4px solid #2563eb;
+    max-width: 800px;
+}
+
+.nn-activity-test-form {
+    margin-top: 0.5rem;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .form-table th {
+        width: 100%;
+    }
+    
+    .nn-admin-info {
+        margin: 10px 0;
+    }
+}

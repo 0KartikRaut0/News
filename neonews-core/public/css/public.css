@@ -1,0 +1,198 @@
+/**
+ * NeoNews Core - Public Styles
+ *
+ * @package NeoNews_Core
+ */
+
+/* Submission Form */
+.nn-submission-form-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background: var(--nn-bg-primary, #fff);
+    border: 1px solid var(--nn-border-color, #dee2e6);
+    border-radius: 8px;
+}
+
+.nn-submission-form .nn-form-group {
+    margin-bottom: 20px;
+}
+
+.nn-submission-form .nn-form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--nn-text-primary, #212529);
+}
+
+.nn-submission-form .nn-form-label .required {
+    color: #dc3545;
+}
+
+.nn-submission-form .nn-form-input,
+.nn-submission-form .nn-form-select,
+.nn-submission-form .nn-form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--nn-text-primary, #212529);
+    background-color: var(--nn-bg-primary, #fff);
+    border: 1px solid var(--nn-border-color, #dee2e6);
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.nn-submission-form .nn-form-input:focus,
+.nn-submission-form .nn-form-select:focus,
+.nn-submission-form .nn-form-textarea:focus {
+    border-color: var(--nn-primary, #e63946);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+}
+
+.nn-submission-form .nn-form-file {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 2px dashed var(--nn-border-color, #dee2e6);
+    border-radius: 4px;
+    background: var(--nn-bg-secondary, #f8f9fa);
+    cursor: pointer;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.nn-submission-form .nn-form-file:hover {
+    border-color: var(--nn-primary, #e63946);
+}
+
+.nn-submission-form .nn-form-help {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--nn-text-muted, #6c757d);
+}
+
+.nn-submission-form .nn-form-notice {
+    padding: 15px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.nn-submission-form .nn-form-notice p {
+    margin: 0;
+    color: #856404;
+}
+
+.nn-submission-form .nn-form-submit {
+    margin-top: 25px;
+}
+
+/* TinyMCE Editor Container */
+.nn-submission-form .wp-editor-wrap {
+    border: 1px solid var(--nn-border-color, #dee2e6);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Notices */
+.nn-notice {
+    padding: 15px 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.nn-notice-warning {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+}
+
+.nn-notice-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.nn-notice-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.nn-notice a {
+    color: inherit;
+    font-weight: 600;
+}
+
+/* Submission Message */
+.nn-submission-message {
+    padding: 15px 20px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.nn-submission-message.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.nn-submission-message.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+/* Button States */
+.nn-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.nn-btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.nn-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: nn-button-spin 0.6s linear infinite;
+}
+
+@keyframes nn-button-spin {
+    to { transform: rotate(360deg); }
+}
+
+.nn-submission-form .wp-editor-wrap {
+    border: 1px solid var(--nn-border-color, #dee2e6);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.nn-account-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nn-submission-form-wrapper {
+        padding: 20px;
+        margin: 0 10px;
+    }
+
+}

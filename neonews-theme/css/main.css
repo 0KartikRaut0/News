@@ -1,0 +1,711 @@
+/**
+ * NeoNews Theme - Additional Styles
+ *
+ * @package NeoNews
+ */
+
+/* ==========================================================================
+   Additional Form Styles
+   ========================================================================== */
+.nn-search-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nn-spacing-md);
+}
+
+@media (min-width: 576px) {
+    .nn-search-form {
+        flex-direction: row;
+    }
+    
+    .nn-search-form .nn-form-group {
+        flex: 1;
+        margin-bottom: 0;
+    }
+}
+
+/* ==========================================================================
+   Social Share Styles
+   ========================================================================== */
+.nn-social-share {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-spacing-md);
+    margin-top: var(--nn-spacing-xl);
+    padding-top: var(--nn-spacing-lg);
+    border-top: 1px solid var(--nn-border-color);
+}
+
+.nn-share-label {
+    font-weight: 500;
+    color: var(--nn-text-secondary);
+}
+
+.nn-share-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--nn-bg-secondary);
+    color: var(--nn-text-primary);
+    transition: all var(--nn-transition-fast);
+}
+
+.nn-share-btn:hover {
+    transform: translateY(-2px);
+}
+
+.nn-share-facebook:hover {
+    background-color: #1877f2;
+    color: #ffffff;
+}
+
+.nn-share-twitter:hover {
+    background-color: #1da1f2;
+    color: #ffffff;
+}
+
+.nn-share-linkedin:hover {
+    background-color: #0a66c2;
+    color: #ffffff;
+}
+
+.nn-share-email:hover {
+    background-color: var(--nn-primary);
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   Breadcrumbs
+   ========================================================================== */
+.nn-breadcrumbs {
+    padding: var(--nn-spacing-md) 0;
+    font-size: 0.9rem;
+    color: var(--nn-text-muted);
+}
+
+.nn-breadcrumbs a {
+    color: var(--nn-text-secondary);
+}
+
+.nn-breadcrumbs a:hover {
+    color: var(--nn-primary);
+}
+
+.nn-breadcrumb-separator {
+    margin: 0 var(--nn-spacing-sm);
+    color: var(--nn-text-muted);
+}
+
+/* ==========================================================================
+   Page Links (Multi-page posts)
+   ========================================================================== */
+.nn-page-links {
+    display: flex;
+    align-items: center;
+    gap: var(--nn-spacing-sm);
+    margin-top: var(--nn-spacing-xl);
+    padding: var(--nn-spacing-md);
+    background-color: var(--nn-bg-secondary);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-page-links .post-page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 var(--nn-spacing-sm);
+    background-color: var(--nn-bg-primary);
+    border-radius: var(--nn-radius-sm);
+    text-decoration: none;
+    color: var(--nn-text-primary);
+}
+
+.nn-page-links .post-page-numbers.current,
+.nn-page-links .post-page-numbers:hover {
+    background-color: var(--nn-primary);
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   Comment Reply Link
+   ========================================================================== */
+.nn-comment-reply-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nn-spacing-xs);
+    padding: var(--nn-spacing-xs) var(--nn-spacing-md);
+    background-color: var(--nn-bg-tertiary);
+    border-radius: var(--nn-radius-sm);
+    font-size: 0.85rem;
+    color: var(--nn-text-secondary);
+    text-decoration: none;
+    transition: all var(--nn-transition-fast);
+}
+
+.nn-comment-reply-link:hover {
+    background-color: var(--nn-primary);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.nn-comment-edit a {
+    font-size: 0.85rem;
+    color: var(--nn-text-muted);
+}
+
+/* ==========================================================================
+   No Posts Message
+   ========================================================================== */
+.nn-no-posts {
+    text-align: center;
+    padding: var(--nn-spacing-2xl);
+    background-color: var(--nn-bg-secondary);
+    border-radius: var(--nn-radius-md);
+}
+
+.nn-no-posts h2 {
+    margin-bottom: var(--nn-spacing-md);
+}
+
+.nn-no-posts p {
+    color: var(--nn-text-secondary);
+    margin-bottom: var(--nn-spacing-lg);
+}
+
+/* ==========================================================================
+   Homepage Sections
+   ========================================================================== */
+.nn-homepage-section {
+    margin-bottom: var(--nn-spacing-2xl);
+}
+
+/* ==========================================================================
+   Sticky Header Animation
+   ========================================================================== */
+.nn-header {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.nn-header.nn-hidden {
+    transform: translateY(-100%);
+}
+
+/* ==========================================================================
+   Category Page Styles
+   ========================================================================== */
+.category .nn-archive-header {
+    border-bottom: 3px solid var(--nn-primary);
+}
+
+/* ==========================================================================
+   Theme Toggle Icons
+   ========================================================================== */
+[data-theme="dark"] .nn-theme-toggle .nn-icon-sun {
+    display: none;
+}
+
+[data-theme="dark"] .nn-theme-toggle .nn-icon-moon {
+    display: block;
+}
+
+[data-theme="light"] .nn-theme-toggle .nn-icon-sun {
+    display: block;
+}
+
+[data-theme="light"] .nn-theme-toggle .nn-icon-moon {
+    display: none;
+}
+
+/* ==========================================================================
+   Skip Link Focus Visible
+   ========================================================================== */
+.skip-link:focus {
+    position: fixed;
+    top: var(--nn-spacing-md);
+    left: var(--nn-spacing-md);
+    z-index: 99999;
+    padding: var(--nn-spacing-md) var(--nn-spacing-lg);
+    background-color: var(--nn-primary);
+    color: #ffffff;
+    border-radius: var(--nn-radius-sm);
+    text-decoration: none;
+    clip: auto;
+    width: auto;
+    height: auto;
+}
+
+/* ==========================================================================
+   Screen Reader Text
+   ========================================================================== */
+.screen-reader-text {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+    word-wrap: normal !important;
+}
+
+.screen-reader-text:focus {
+    background-color: var(--nn-bg-primary);
+    border-radius: var(--nn-radius-sm);
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.6);
+    clip: auto !important;
+    clip-path: none;
+    color: var(--nn-text-primary);
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    height: auto;
+    left: var(--nn-spacing-xs);
+    line-height: normal;
+    padding: var(--nn-spacing-md) var(--nn-spacing-lg);
+    text-decoration: none;
+    top: var(--nn-spacing-xs);
+    width: auto;
+    z-index: 100000;
+}
+
+/* ==========================================================================
+   Post Navigation
+   ========================================================================== */
+.nn-post-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--nn-spacing-2xl);
+    padding-top: var(--nn-spacing-xl);
+    border-top: 1px solid var(--nn-border-color);
+}
+
+.nn-post-navigation a {
+    display: flex;
+    flex-direction: column;
+    max-width: 45%;
+    color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+.nn-post-navigation a:hover {
+    color: var(--nn-primary);
+}
+
+.nn-post-navigation .nav-subtitle {
+    font-size: 0.85rem;
+    color: var(--nn-text-muted);
+    text-transform: uppercase;
+    margin-bottom: var(--nn-spacing-xs);
+}
+
+.nn-post-navigation .nav-title {
+    font-weight: 600;
+}
+
+.nn-post-navigation .nav-previous {
+    text-align: left;
+}
+
+.nn-post-navigation .nav-next {
+    text-align: right;
+    margin-left: auto;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+.nn-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.nn-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--nn-border-color);
+    border-top-color: var(--nn-primary);
+    border-radius: 50%;
+    animation: nn-spin 0.8s linear infinite;
+}
+
+@keyframes nn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Focus Styles for Accessibility
+   ========================================================================== */
+a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus {
+    outline: 2px solid var(--nn-primary);
+    outline-offset: 2px;
+}
+
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--nn-primary);
+    outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Reduced Motion
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .nn-breaking-list {
+        animation: none;
+    }
+}
+
+/* ==========================================================================
+   High Contrast Mode
+   ========================================================================== */
+@media (prefers-contrast: high) {
+    :root {
+        --nn-border-color: currentColor;
+    }
+    
+    .nn-post-card,
+    .nn-widget {
+        border-width: 2px;
+    }
+}
+
+/* ==========================================================================
+   NeoPulse Premium Homepage
+   ========================================================================== */
+.nn-hero-mesh {
+    padding: 2rem 0 2.5rem;
+    background: var(--nn-gradient-soft);
+    position: relative;
+    overflow: hidden;
+}
+
+.nn-hero-mesh::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 60%;
+    height: 120%;
+    background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.nn-hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+@media (min-width: 992px) {
+    .nn-hero-grid {
+        grid-template-columns: 1.4fr 1fr;
+        align-items: stretch;
+    }
+}
+
+.nn-hero-card {
+    border-radius: var(--nn-radius-xl);
+    overflow: hidden;
+    box-shadow: var(--nn-glow);
+    min-height: 380px;
+    position: relative;
+}
+
+.nn-hero-card-link {
+    display: block;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+}
+
+.nn-hero-card-img {
+    width: 100%;
+    height: 100%;
+    min-height: 380px;
+    object-fit: cover;
+}
+
+.nn-hero-placeholder {
+    background: var(--nn-gradient);
+    min-height: 380px;
+}
+
+.nn-hero-card-content {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 2rem;
+    background: linear-gradient(transparent, rgba(15, 23, 42, 0.92));
+    color: #fff;
+}
+
+.nn-hero-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--nn-gradient);
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+    color: #fff;
+}
+
+.nn-hero-card-title {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    margin: 0.5rem 0;
+    color: #fff;
+    line-height: 1.2;
+}
+
+.nn-hero-card-excerpt {
+    opacity: 0.9;
+    margin-bottom: 0.75rem;
+    max-width: 90%;
+}
+
+.nn-hero-meta {
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.nn-hero-side {
+    background: var(--nn-glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-xl);
+    padding: 1.25rem 1.5rem;
+}
+
+.nn-hero-side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.nn-hero-side-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.nn-pulse-dot {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: nn-pulse 1.5s ease infinite;
+}
+
+@keyframes nn-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.nn-hero-side-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nn-hero-side-list li {
+    display: flex;
+    gap: 1rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--nn-border-color);
+}
+
+.nn-hero-side-list li:last-child {
+    border-bottom: none;
+}
+
+.nn-rank {
+    font-family: var(--nn-font-heading);
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--nn-primary);
+    opacity: 0.6;
+}
+
+.nn-hero-side-title {
+    display: block;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    line-height: 1.35;
+}
+
+.nn-hero-side-title:hover {
+    color: var(--nn-primary);
+}
+
+.nn-hero-side-views {
+    font-size: 0.8rem;
+    color: var(--nn-text-muted);
+}
+
+.nn-category-strip {
+    padding: 1rem 0 2rem;
+}
+
+.nn-category-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.nn-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-color);
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--nn-text-primary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.nn-pill span {
+    background: var(--nn-bg-secondary);
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    color: var(--nn-text-muted);
+}
+
+.nn-pill:hover {
+    background: var(--nn-primary);
+    color: #fff;
+    border-color: var(--nn-primary);
+    box-shadow: var(--nn-glow);
+}
+
+.nn-pill:hover span {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.nn-pill[data-cat="technology"]:hover { background: #06b6d4; border-color: #06b6d4; }
+.nn-pill[data-cat="politics"]:hover { background: #7c3aed; }
+.nn-pill[data-cat="sports"]:hover { background: #22c55e; }
+.nn-pill[data-cat="entertainment"]:hover { background: #f472b6; border-color: #f472b6; }
+.nn-pill[data-cat="business"]:hover { background: #f59e0b; border-color: #f59e0b; }
+
+.nn-section-header-modern .nn-section-title::before {
+    width: 80px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--nn-gradient);
+}
+
+.nn-carousel-modern {
+    border-radius: var(--nn-radius-xl);
+    box-shadow: var(--nn-glow);
+}
+
+.nn-newsletter-cta {
+    margin: 3rem 0;
+    padding: 0 0 3rem;
+}
+
+.nn-newsletter-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 2.5rem;
+    border-radius: var(--nn-radius-xl);
+    background: var(--nn-gradient);
+    color: #fff;
+}
+
+.nn-newsletter-inner h2 {
+    color: #fff;
+    margin: 0.5rem 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.nn-newsletter-inner p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.nn-btn-glow {
+    background: #fff !important;
+    color: var(--nn-primary-dark) !important;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.nn-btn-glow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.nn-cat-politics { background: #7c3aed !important; }
+.nn-cat-technology { background: #06b6d4 !important; }
+.nn-cat-business { background: #f59e0b !important; }
+.nn-cat-sports { background: #22c55e !important; }
+.nn-cat-entertainment { background: #f472b6 !important; }
+
+.nn-nav-menu a {
+    position: relative;
+}
+
+.nn-nav-menu > li > a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: var(--nn-gradient);
+    transition: width 0.2s ease;
+}
+
+.nn-nav-menu > li:hover > a::after,
+.nn-nav-menu > .current-menu-item > a::after {
+    width: 100%;
+}
+
+.nn-footer {
+    background: var(--nn-secondary);
+}
+
+.nn-lead {
+    font-size: 1.15rem;
+    line-height: 1.7;
+}
