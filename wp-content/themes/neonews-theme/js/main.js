@@ -11,6 +11,7 @@
      * DOM Ready
      */
     document.addEventListener('DOMContentLoaded', function() {
+        initPageTransition();
         initMobileMenu();
         initSearchOverlay();
         initThemeToggle();
@@ -38,6 +39,82 @@
             runHeavy();
         }
     });
+
+    /**
+     * Page glide transition for primary navigation
+     */
+    function initPageTransition() {
+        var overlay = document.getElementById('nn-page-transition');
+        if (!overlay) {
+            return;
+        }
+
+        if (document.body.classList.contains('nn-reduce-motion')) {
+            overlay.parentNode.removeChild(overlay);
+            return;
+        }
+
+        document.body.classList.add('nn-page-enter');
+        window.requestAnimationFrame(function() {
+            document.body.classList.add('nn-page-enter-active');
+        });
+
+        overlay.addEventListener('transitionend', function(e) {
+            if (e.propertyName !== 'transform') {
+                return;
+            }
+            if (document.body.classList.contains('nn-page-enter-active')) {
+                document.body.classList.remove('nn-page-enter', 'nn-page-enter-active');
+            }
+        });
+
+        var navSelector = '.nn-nav-pulse .nn-nav-menu a, .nn-mobile-nav-pulse a, .nn-mobile-nav a, .nn-topic-pill';
+
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('a');
+            if (!link || !link.matches(navSelector)) {
+                return;
+            }
+
+            var href = link.getAttribute('href');
+            if (!href || href.charAt(0) === '#') {
+                return;
+            }
+            if (link.target === '_blank' || link.hasAttribute('download')) {
+                return;
+            }
+            if (link.classList.contains('nn-auth-open') || link.closest('.nn-auth-modal')) {
+                return;
+            }
+
+            var destination;
+            try {
+                destination = new URL(link.href, window.location.href);
+            } catch (err) {
+                return;
+            }
+
+            if (destination.origin !== window.location.origin) {
+                return;
+            }
+
+            if (destination.pathname === window.location.pathname && destination.search === window.location.search) {
+                return;
+            }
+
+            e.preventDefault();
+
+            if (document.body.classList.contains('nn-page-leaving')) {
+                return;
+            }
+
+            document.body.classList.add('nn-page-leaving');
+
+            window.setTimeout(function() {
+                window.location.href = link.href;
+            }, 420);
+        });
+    }
 
     /**
      * Mobile Menu Toggle

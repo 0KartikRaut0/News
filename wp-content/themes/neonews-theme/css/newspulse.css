@@ -380,6 +380,38 @@
     transform: scale(1.06);
 }
 
+/* Card links: no underline on hover; only title turns orange (group hover) */
+.nn-post-card a:hover,
+.nn-post-card a:focus,
+.nn-card-rich a:hover,
+.nn-card-rich a:focus,
+.nn-home-list-item a:hover,
+.nn-home-list-item a:focus,
+.nn-home-featured a:hover,
+.nn-home-featured a:focus {
+    text-decoration: none;
+}
+
+.nn-post-card:hover .nn-post-title a,
+.nn-card-rich:hover .nn-post-title a,
+.nn-home-list-item:hover .nn-home-list-title a,
+.nn-home-featured:hover .nn-home-featured-title a {
+    color: var(--nn-primary);
+    text-decoration: none;
+}
+
+.nn-post-card .nn-post-title a:hover,
+.nn-post-card .nn-post-title a:focus,
+.nn-card-rich .nn-post-title a:hover,
+.nn-card-rich .nn-post-title a:focus,
+.nn-home-list-item .nn-home-list-title a:hover,
+.nn-home-list-item .nn-home-list-title a:focus,
+.nn-home-featured .nn-home-featured-title a:hover,
+.nn-home-featured .nn-home-featured-title a:focus {
+    color: var(--nn-primary);
+    text-decoration: none;
+}
+
 .nn-post-category {
     background: var(--nn-primary-light) !important;
     color: var(--nn-primary-dark) !important;
@@ -701,6 +733,70 @@
 
 .nn-back-to-top:hover {
     transform: translateY(-4px);
+}
+
+/* Page transition — glide overlay on nav */
+.nn-page-transition {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    pointer-events: none;
+    background: linear-gradient(120deg, #ff7a18 0%, #ea580c 42%, #1d3557 100%);
+    transform: translateX(100%);
+    transition: transform 0.42s cubic-bezier(0.65, 0, 0.35, 1);
+    will-change: transform;
+}
+
+.nn-page-transition::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.12) 55%,
+        transparent 100%
+    );
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.nn-page-enter .nn-page-transition {
+    transform: translateX(0);
+    transition: none;
+}
+
+body.nn-page-enter-active .nn-page-transition {
+    transform: translateX(100%);
+}
+
+body.nn-page-enter-active .nn-page-transition::after {
+    animation: nnPageGlideShine 0.55s ease-out forwards;
+}
+
+body.nn-page-leaving .nn-page-transition {
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+body.nn-page-leaving .nn-page-transition::after {
+    animation: nnPageGlideShine 0.42s ease-out forwards;
+}
+
+@keyframes nnPageGlideShine {
+    0% {
+        opacity: 0;
+        transform: translateX(-30%);
+    }
+    35% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(30%);
+    }
 }
 
 /* Scroll reveal */
@@ -1317,6 +1413,18 @@ html {
 
 .nn-home-list-title a {
     color: var(--nn-text-primary);
+    text-decoration: none;
+}
+
+.nn-home-list-title a:hover,
+.nn-home-list-title a:focus {
+    color: var(--nn-primary);
+    text-decoration: none;
+}
+
+.nn-home-featured-title a:hover,
+.nn-home-featured-title a:focus {
+    color: var(--nn-primary);
     text-decoration: none;
 }
 
@@ -2569,14 +2677,18 @@ body.nn-mobile-menu-open {
 
 .nn-reduce-motion .nn-reveal,
 .nn-reduce-motion .nn-carousel-track,
-.nn-reduce-motion .nn-heart-particle {
+.nn-reduce-motion .nn-heart-particle,
+.nn-reduce-motion .nn-page-transition,
+.nn-reduce-motion .nn-page-transition::after {
     animation: none !important;
     transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .nn-reveal,
-    .nn-carousel-track {
+    .nn-carousel-track,
+    .nn-page-transition,
+    .nn-page-transition::after {
         animation: none !important;
         transition: none !important;
     }

@@ -713,8 +713,10 @@ ul, ol {
     text-decoration: none;
 }
 
-.nn-post-title a:hover {
+.nn-post-title a:hover,
+.nn-post-title a:focus {
     color: var(--nn-primary);
+    text-decoration: none;
 }
 
 .nn-post-excerpt {

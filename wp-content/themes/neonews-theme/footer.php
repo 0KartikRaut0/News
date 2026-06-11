@@ -111,6 +111,8 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
     </div>
 </footer>
 
+<div id="nn-page-transition" class="nn-page-transition" aria-hidden="true"></div>
+
 <?php wp_footer(); ?>
 
 </body>
