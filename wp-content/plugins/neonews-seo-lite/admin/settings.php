@@ -54,48 +54,14 @@ final class NeoNews_SEO_Lite_Admin {
      * @return void
      */
     public function menu() {
-        $parent = 'neonews-settings';
-
-        if ( ! $this->news_pulse_menu_exists() ) {
-            add_menu_page(
-                __( 'SEO Lite', 'neonews-seo-lite' ),
-                __( 'SEO Lite', 'neonews-seo-lite' ),
-                'manage_options',
-                'neonews-seo-lite',
-                array( $this, 'render' ),
-                'dashicons-search',
-                81
-            );
-            return;
-        }
-
         add_submenu_page(
-            $parent,
+            'neonews-settings',
             __( 'SEO Lite', 'neonews-seo-lite' ),
             __( 'SEO Lite', 'neonews-seo-lite' ),
             'manage_options',
             'neonews-seo-lite',
             array( $this, 'render' )
         );
-    }
-
-    /**
-     * @return bool
-     */
-    private function news_pulse_menu_exists() {
-        global $menu;
-
-        if ( ! is_array( $menu ) ) {
-            return false;
-        }
-
-        foreach ( $menu as $item ) {
-            if ( isset( $item[2] ) && 'neonews-settings' === $item[2] ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

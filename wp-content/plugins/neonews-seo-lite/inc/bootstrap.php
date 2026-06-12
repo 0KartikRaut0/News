@@ -37,7 +37,9 @@ final class NeoNews_SEO_Lite {
         add_action( 'admin_notices', array( $this, 'admin_conflict_notice' ) );
 
         if ( is_admin() ) {
-            add_action( 'admin_init', array( $this, 'boot_admin' ), 9 );
+            require_once NEONEWS_SEO_LITE_DIR . 'admin/settings.php';
+            NeoNews_SEO_Lite_Admin::instance();
+            add_action( 'admin_init', array( $this, 'boot_post_meta' ), 9 );
             return;
         }
 
@@ -45,12 +47,11 @@ final class NeoNews_SEO_Lite {
     }
 
     /**
+     * Post editor meta box (admin_init is late enough for pagenow).
+     *
      * @return void
      */
-    public function boot_admin() {
-        require_once NEONEWS_SEO_LITE_DIR . 'admin/settings.php';
-        NeoNews_SEO_Lite_Admin::instance();
-
+    public function boot_post_meta() {
         $page = isset( $GLOBALS['pagenow'] ) ? $GLOBALS['pagenow'] : '';
         if ( in_array( $page, array( 'post.php', 'post-new.php' ), true ) ) {
             require_once NEONEWS_SEO_LITE_DIR . 'admin/post-meta.php';

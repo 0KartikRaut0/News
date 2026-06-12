@@ -3,7 +3,7 @@
  * Plugin Name: NeoNews SEO Lite
  * Plugin URI: https://example.com/neonews
  * Description: Lightweight SEO for NeoNews — meta tags, social previews, schema, and per-post controls. Built for low memory use.
- * Version: 1.1.2
+ * Version: 1.1.3
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: NeoNews Team
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NEONEWS_SEO_LITE_VERSION', '1.1.2' );
+define( 'NEONEWS_SEO_LITE_VERSION', '1.1.3' );
 define( 'NEONEWS_SEO_LITE_FILE', __FILE__ );
 define( 'NEONEWS_SEO_LITE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEONEWS_SEO_LITE_URL', plugin_dir_url( __FILE__ ) );
