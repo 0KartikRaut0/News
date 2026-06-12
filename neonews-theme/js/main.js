@@ -49,11 +49,6 @@
             return;
         }
 
-        if (document.body.classList.contains('nn-reduce-motion')) {
-            overlay.parentNode.removeChild(overlay);
-            return;
-        }
-
         document.body.classList.add('nn-page-enter');
         window.requestAnimationFrame(function() {
             document.body.classList.add('nn-page-enter-active');
@@ -68,11 +63,9 @@
             }
         });
 
-        var navSelector = '.nn-nav-pulse .nn-nav-menu a, .nn-mobile-nav-pulse a, .nn-mobile-nav a, .nn-topic-pill';
-
         document.addEventListener('click', function(e) {
             var link = e.target.closest('a');
-            if (!link || !link.matches(navSelector)) {
+            if (!link || !isNavTransitionLink(link)) {
                 return;
             }
 
@@ -114,6 +107,14 @@
                 window.location.href = link.href;
             }, 420);
         });
+    }
+
+    function isNavTransitionLink(link) {
+        if (link.classList.contains('nn-topic-pill')) {
+            return true;
+        }
+
+        return !!link.closest('.nn-nav-pulse, .nn-mobile-nav-pulse, .nn-mobile-nav, #site-navigation');
     }
 
     /**

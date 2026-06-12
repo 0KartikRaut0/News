@@ -381,6 +381,16 @@
 }
 
 /* Card links: no underline on hover; only title turns orange (group hover) */
+.nn-post-card a,
+.nn-card-rich a,
+.nn-home-list-item a,
+.nn-home-featured a,
+.nn-activity-card,
+.nn-sidebar-card,
+.nn-carousel-slide a {
+    text-decoration: none;
+}
+
 .nn-post-card a:hover,
 .nn-post-card a:focus,
 .nn-card-rich a:hover,
@@ -388,14 +398,23 @@
 .nn-home-list-item a:hover,
 .nn-home-list-item a:focus,
 .nn-home-featured a:hover,
-.nn-home-featured a:focus {
+.nn-home-featured a:focus,
+.nn-activity-card:hover,
+.nn-activity-card:focus,
+.nn-sidebar-card:hover,
+.nn-sidebar-card:focus,
+.nn-carousel-slide a:hover,
+.nn-carousel-slide a:focus {
     text-decoration: none;
 }
 
 .nn-post-card:hover .nn-post-title a,
 .nn-card-rich:hover .nn-post-title a,
 .nn-home-list-item:hover .nn-home-list-title a,
-.nn-home-featured:hover .nn-home-featured-title a {
+.nn-home-featured:hover .nn-home-featured-title a,
+.nn-activity-card:hover .nn-activity-card-title,
+.nn-sidebar-card:hover .nn-sidebar-card-title,
+.nn-carousel-slide:hover .nn-carousel-title a {
     color: var(--nn-primary);
     text-decoration: none;
 }
@@ -407,7 +426,11 @@
 .nn-home-list-item .nn-home-list-title a:hover,
 .nn-home-list-item .nn-home-list-title a:focus,
 .nn-home-featured .nn-home-featured-title a:hover,
-.nn-home-featured .nn-home-featured-title a:focus {
+.nn-home-featured .nn-home-featured-title a:focus,
+.nn-activity-card:hover .nn-activity-card-title,
+.nn-sidebar-card:hover .nn-sidebar-card-title,
+.nn-carousel-title a:hover,
+.nn-carousel-title a:focus {
     color: var(--nn-primary);
     text-decoration: none;
 }
@@ -2677,18 +2700,14 @@ body.nn-mobile-menu-open {
 
 .nn-reduce-motion .nn-reveal,
 .nn-reduce-motion .nn-carousel-track,
-.nn-reduce-motion .nn-heart-particle,
-.nn-reduce-motion .nn-page-transition,
-.nn-reduce-motion .nn-page-transition::after {
+.nn-reduce-motion .nn-heart-particle {
     animation: none !important;
     transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .nn-reveal,
-    .nn-carousel-track,
-    .nn-page-transition,
-    .nn-page-transition::after {
+    .nn-carousel-track {
         animation: none !important;
         transition: none !important;
     }
