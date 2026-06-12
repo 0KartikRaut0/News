@@ -1,0 +1,1 @@
+Restructure under wp-content for WordPress; add Mac setup guide and link script

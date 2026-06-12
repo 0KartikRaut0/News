@@ -62,61 +62,59 @@ See [docs/SMART-TOOLS.md](docs/SMART-TOOLS.md).
 
 ## Directory Structure
 
+Theme and plugins live under `wp-content/` for direct WordPress compatibility.
+
 ```
-News/
-├── neonews-theme/          # WordPress Theme
-│   ├── css/                # Stylesheets
-│   ├── js/                 # JavaScript files
-│   ├── inc/                # PHP includes
-│   ├── template-parts/     # Template partials
-│   └── templates/          # Page templates
-│
-├── neonews-core/           # Core Plugin
-│   ├── inc/                # Class files
-│   ├── admin/              # Admin functionality
-│   └── public/             # Frontend assets
-│
-├── neonews-membership/     # Membership Plugin
-│   ├── inc/                # Class files
-│   ├── admin/              # Admin settings
-│   └── public/             # Frontend styles
-│
-├── neonews-pwa/            # PWA Plugin
-│
-├── neonews-security/       # Security Center Plugin
-│   ├── inc/                # Scanner, encryption, hardening
-│   └── admin/              # Security dashboard UI
-│
-├── demo-importer/          # Demo Content Plugin
-│
-└── docs/                   # Documentation
-    ├── README.md           # Documentation hub (start here)
-    ├── COMPLETE-GUIDE.md   # Everything in one file
-    ├── GETTING-STARTED.md
-    ├── PAGES-AND-TEMPLATES.md
-    ├── CONTENT-MANAGEMENT.md
-    ├── USERS-AUTH-MEMBERSHIP.md
-    ├── MONITORING-AND-API.md
-    ├── PERFORMANCE.md
-    ├── FRONTEND-FEATURES.md
-    ├── TROUBLESHOOTING.md
-    ├── INSTALLATION.md
-    ├── SETUP.md
-    ├── ELEMENTOR.md
-    ├── PUSH-NOTIFICATIONS.md
-    └── SECURITY.md
+news/                           # Git repo root (/Users/kartik/github/news on Mac)
+├── wp-content/
+│   ├── themes/
+│   │   └── neonews-theme/      # → Local: wp-content/themes/
+│   └── plugins/
+│       ├── neonews-core/       # Required
+│       ├── neonews-membership/
+│       ├── neonews-pwa/
+│       ├── neonews-security/
+│       ├── neonews-seo/
+│       ├── neonews-seo-lite/
+│       ├── neonews-smart/
+│       └── demo-importer/
+├── scripts/
+│   └── link-to-wordpress.sh    # Mac: symlink into Local wp-content
+├── docs/
+│   └── MAC-WORDPRESS-SETUP.md  # Full Mac setup guide
+└── README.md
 ```
+
+## Mac WordPress setup (Local)
+
+**Repo on Mac:** `/Users/kartik/github/news`
+
+**One-time:**
+
+```bash
+cd /Users/kartik/github/news
+git pull
+chmod +x scripts/link-to-wordpress.sh
+./scripts/link-to-wordpress.sh "$HOME/Local Sites/swarajya-shikshan/app/public/wp-content"
+```
+
+Replace `swarajya-shikshan` with your Local site folder name.
+
+**Daily:** `git pull` in the repo → refresh browser. No manual copy if symlinks are set.
+
+Full guide: [docs/MAC-WORDPRESS-SETUP.md](docs/MAC-WORDPRESS-SETUP.md)
 
 ## Quick Start
 
 1. Install WordPress 5.9+
-2. Upload and activate `neonews-theme`
-3. Upload and activate `neonews-core`
-4. Upload and activate `neonews-security` (recommended)
-5. (Optional) Activate membership, PWA, demo importer
-6. Import demo content via **NeoNews → Demo Content**
-7. Run **NewsPulse → Security Center → Run Security Scan**
-8. Configure at **NewsPulse → Platform** and **Appearance → Customize**
+2. Copy or link `wp-content/themes/neonews-theme` into your site `wp-content/themes/`
+3. Copy or link plugins from `wp-content/plugins/` into your site `wp-content/plugins/`
+4. Activate **NeoNews Theme** and **NeoNews Core** (required)
+5. Upload and activate `neonews-security` (recommended)
+6. (Optional) Activate membership, PWA, demo importer
+7. Import demo content via **NeoNews → Demo Content**
+8. Run **NewsPulse → Security Center → Run Security Scan**
+9. Configure at **NewsPulse → Platform** and **Appearance → Customize**
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions.
 
