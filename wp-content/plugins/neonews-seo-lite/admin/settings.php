@@ -54,14 +54,48 @@ final class NeoNews_SEO_Lite_Admin {
      * @return void
      */
     public function menu() {
+        $parent = 'neonews-settings';
+
+        if ( ! $this->news_pulse_menu_exists() ) {
+            add_menu_page(
+                __( 'SEO Lite', 'neonews-seo-lite' ),
+                __( 'SEO Lite', 'neonews-seo-lite' ),
+                'manage_options',
+                'neonews-seo-lite',
+                array( $this, 'render' ),
+                'dashicons-search',
+                81
+            );
+            return;
+        }
+
         add_submenu_page(
-            'neonews-settings',
+            $parent,
             __( 'SEO Lite', 'neonews-seo-lite' ),
             __( 'SEO Lite', 'neonews-seo-lite' ),
             'manage_options',
             'neonews-seo-lite',
             array( $this, 'render' )
         );
+    }
+
+    /**
+     * @return bool
+     */
+    private function news_pulse_menu_exists() {
+        global $menu;
+
+        if ( ! is_array( $menu ) ) {
+            return false;
+        }
+
+        foreach ( $menu as $item ) {
+            if ( isset( $item[2] ) && 'neonews-settings' === $item[2] ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -111,6 +145,10 @@ final class NeoNews_SEO_Lite_Admin {
         $out['twitter_site']           = sanitize_text_field( $input['twitter_site'] ?? '' );
         $out['org_name']               = sanitize_text_field( $input['org_name'] ?? '' );
         $out['breadcrumb_home_label']  = sanitize_text_field( $input['breadcrumb_home_label'] ?? '' );
+
+        if ( ! empty( $out['enabled'] ) ) {
+            neonews_seo_lite_pause_full_seo();
+        }
 
         return $out;
     }

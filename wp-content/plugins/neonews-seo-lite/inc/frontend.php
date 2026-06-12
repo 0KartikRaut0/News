@@ -23,12 +23,24 @@ function neonews_seo_lite_register_frontend_hooks() {
  */
 function neonews_seo_lite_context() {
     static $context = null;
+    static $building = false;
 
     if ( null !== $context ) {
         return $context;
     }
 
-    $title       = wp_get_document_title();
+    if ( $building ) {
+        return array(
+            'title'       => get_bloginfo( 'name' ),
+            'description' => get_bloginfo( 'description' ),
+            'canonical'   => home_url( '/' ),
+            'noindex'     => false,
+        );
+    }
+
+    $building = true;
+
+    $title       = neonews_seo_lite_default_title();
     $description = get_bloginfo( 'description' );
     $canonical   = home_url( add_query_arg( array() ) );
     $noindex     = false;
@@ -85,7 +97,52 @@ function neonews_seo_lite_context() {
         'noindex'     => $noindex,
     );
 
+    $building = false;
+
     return $context;
+}
+
+/**
+ * Build a document title without calling pre_get_document_title (avoids recursion).
+ *
+ * @return string
+ */
+function neonews_seo_lite_default_title() {
+    $sep  = neonews_seo_lite_sep();
+    $name = get_bloginfo( 'name' );
+
+    if ( is_singular() ) {
+        return get_the_title( get_queried_object_id() ) . ' ' . $sep . ' ' . $name;
+    }
+
+    if ( is_front_page() || is_home() ) {
+        return $name;
+    }
+
+    if ( is_category() || is_tag() || is_tax() ) {
+        $term = get_queried_object();
+        if ( $term instanceof WP_Term ) {
+            return $term->name . ' ' . $sep . ' ' . $name;
+        }
+    }
+
+    if ( is_author() ) {
+        return get_the_author_meta( 'display_name', get_queried_object_id() ) . ' ' . $sep . ' ' . $name;
+    }
+
+    if ( is_search() ) {
+        return sprintf(
+            /* translators: %s: search query */
+            __( 'Search results for "%s"', 'neonews-seo-lite' ),
+            get_search_query()
+        ) . ' ' . $sep . ' ' . $name;
+    }
+
+    if ( is_archive() ) {
+        return wp_strip_all_tags( get_the_archive_title() ) . ' ' . $sep . ' ' . $name;
+    }
+
+    return $name;
 }
 
 /**

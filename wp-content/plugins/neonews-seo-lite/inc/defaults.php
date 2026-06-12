@@ -59,3 +59,20 @@ function neonews_seo_lite_normalize( $value ) {
 function neonews_seo_lite_save( $settings ) {
     return update_option( NEONEWS_SEO_LITE_OPTION, $settings, false );
 }
+
+/**
+ * Turn off the full NeoNews SEO plugin so Lite can run.
+ *
+ * @return bool Whether full SEO was disabled.
+ */
+function neonews_seo_lite_pause_full_seo() {
+    $settings = get_option( 'neonews_seo_settings', array() );
+    if ( ! is_array( $settings ) || empty( $settings['enabled'] ) ) {
+        return false;
+    }
+
+    $settings['enabled'] = false;
+    update_option( 'neonews_seo_settings', $settings, false );
+
+    return true;
+}

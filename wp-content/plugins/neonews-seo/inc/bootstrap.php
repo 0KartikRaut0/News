@@ -89,6 +89,10 @@ final class NeoNews_SEO {
      * Frontend SEO output modules.
      */
     private function init_frontend() {
+        if ( class_exists( 'NeoNews_SEO_Lite', false ) && NeoNews_SEO_Lite::is_enabled() ) {
+            return;
+        }
+
         require_once NEONEWS_SEO_DIR . 'inc/class-seo-head.php';
         require_once NEONEWS_SEO_DIR . 'inc/class-seo-schema.php';
         require_once NEONEWS_SEO_DIR . 'inc/class-seo-sitemap.php';

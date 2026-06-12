@@ -33,6 +33,9 @@ final class NeoNews_SEO_Lite {
     }
 
     private function __construct() {
+        add_action( 'plugins_loaded', array( $this, 'sync_with_full_seo' ), 7 );
+        add_action( 'admin_notices', array( $this, 'admin_conflict_notice' ) );
+
         if ( is_admin() ) {
             add_action( 'admin_init', array( $this, 'boot_admin' ), 9 );
             return;
@@ -73,11 +76,57 @@ final class NeoNews_SEO_Lite {
         neonews_seo_lite_register_breadcrumb_hooks();
         neonews_seo_lite_register_sitemap_hooks();
 
-        if ( self::get( 'replace_theme_seo' ) ) {
-            remove_action( 'wp_head', 'neonews_meta_description', 1 );
-            remove_action( 'wp_head', 'neonews_open_graph_meta', 5 );
-            remove_action( 'wp_head', 'neonews_schema_markup' );
+        $this->disable_competing_seo_output();
+    }
+
+    /**
+     * @return void
+     */
+    public function disable_competing_seo_output() {
+        if ( ! self::get( 'replace_theme_seo' ) ) {
+            return;
         }
+
+        remove_action( 'wp_head', 'neonews_meta_description', 1 );
+        remove_action( 'wp_head', 'neonews_open_graph_meta', 5 );
+        remove_action( 'wp_head', 'neonews_schema_markup' );
+    }
+
+    /**
+     * Keep full SEO turned off in the database when Lite is active.
+     *
+     * @return void
+     */
+    public function sync_with_full_seo() {
+        if ( ! self::is_enabled() ) {
+            return;
+        }
+
+        neonews_seo_lite_pause_full_seo();
+    }
+
+    /**
+     * @return void
+     */
+    public function admin_conflict_notice() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        if ( ! self::is_enabled() || ! class_exists( 'NeoNews_SEO', false ) ) {
+            return;
+        }
+
+        if ( NeoNews_SEO::is_enabled() ) {
+            echo '<div class="notice notice-warning"><p>';
+            esc_html_e( 'NeoNews SEO Lite is active but NeoNews SEO (full) is also enabled in its settings. Save SEO Lite settings once to sync, or disable the full plugin.', 'neonews-seo-lite' );
+            echo '</p></div>';
+            return;
+        }
+
+        echo '<div class="notice notice-info"><p>';
+        esc_html_e( 'NeoNews SEO Lite is active. You can deactivate the full NeoNews SEO plugin to reduce overhead.', 'neonews-seo-lite' );
+        echo '</p></div>';
     }
 
     /**
