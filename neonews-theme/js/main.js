@@ -44,8 +44,8 @@
      * Page glide transition for primary navigation
      */
     function initPageTransition() {
-        var overlay = document.getElementById('nn-page-transition');
-        if (!overlay) {
+        var mainContent = document.getElementById('main-content');
+        if (!mainContent) {
             return;
         }
 
@@ -54,7 +54,7 @@
             document.body.classList.add('nn-page-enter-active');
         });
 
-        overlay.addEventListener('transitionend', function(e) {
+        mainContent.addEventListener('transitionend', function(e) {
             if (e.propertyName !== 'opacity') {
                 return;
             }
@@ -105,7 +105,7 @@
 
             window.setTimeout(function() {
                 window.location.href = link.href;
-            }, 360);
+            }, 280);
         });
     }
 

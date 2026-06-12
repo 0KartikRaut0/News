@@ -488,6 +488,12 @@
     text-decoration: none;
 }
 
+.nn-premium-card-link:hover,
+.nn-premium-card-link:focus {
+    color: inherit;
+    text-decoration: none;
+}
+
 .nn-premium-card--magazine .nn-premium-card-link {
     flex-direction: row;
 }
@@ -609,6 +615,25 @@
     font-size: 1.02rem;
     line-height: 1.35;
     color: var(--nn-text-primary, #0f172a);
+    transition: color 0.22s ease;
+}
+
+.nn-premium-card:hover .nn-premium-card-title,
+.nn-premium-card-link:hover .nn-premium-card-title,
+.nn-premium-card-link:focus .nn-premium-card-title {
+    color: var(--nn-primary, #ff7a18) !important;
+}
+
+.nn-premium-card:hover .nn-premium-card-excerpt {
+    color: var(--nn-text-secondary, #64748b);
+}
+
+.nn-premium-card:hover .nn-premium-card-meta,
+.nn-premium-card:hover .nn-premium-card-author,
+.nn-premium-card:hover .nn-premium-card-date,
+.nn-premium-card:hover .nn-premium-card-read,
+.nn-premium-card:hover .nn-exclusive-engage-item {
+    color: var(--nn-text-muted, #94a3b8);
 }
 
 .nn-premium-card--compact .nn-premium-card-title {

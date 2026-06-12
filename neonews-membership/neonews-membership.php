@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NEONEWS_MEMBERSHIP_VERSION', '2.0.0' );
+define( 'NEONEWS_MEMBERSHIP_VERSION', '2.0.1' );
 define( 'NEONEWS_MEMBERSHIP_FILE', __FILE__ );
 define( 'NEONEWS_MEMBERSHIP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEONEWS_MEMBERSHIP_URL', plugin_dir_url( __FILE__ ) );

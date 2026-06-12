@@ -799,62 +799,26 @@
     transform: translateY(-4px);
 }
 
-/* Page transition — soft fade (no orange slide) */
+/* Page transition — subtle content crossfade only */
 .nn-page-transition {
-    position: fixed;
-    inset: 0;
-    z-index: 100000;
-    pointer-events: none;
-    background: rgba(248, 250, 252, 0.97);
-    opacity: 0;
-    backdrop-filter: blur(0);
-    -webkit-backdrop-filter: blur(0);
-    transition: opacity 0.36s ease, backdrop-filter 0.36s ease, -webkit-backdrop-filter 0.36s ease;
-    will-change: opacity;
-}
-
-[data-theme="dark"] .nn-page-transition {
-    background: rgba(15, 23, 42, 0.95);
-}
-
-body.nn-page-enter .nn-page-transition {
-    opacity: 1;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    transition: none;
-}
-
-body.nn-page-enter-active .nn-page-transition {
-    opacity: 0;
-    backdrop-filter: blur(0);
-    -webkit-backdrop-filter: blur(0);
-}
-
-body.nn-page-leaving .nn-page-transition {
-    opacity: 1;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    pointer-events: auto;
+    display: none !important;
 }
 
 body.nn-page-leaving #main-content,
 body.nn-page-enter #main-content {
-    transition: opacity 0.32s ease, transform 0.32s ease;
+    transition: opacity 0.26s ease;
 }
 
 body.nn-page-leaving #main-content {
-    opacity: 0.35;
-    transform: translateY(6px);
+    opacity: 0;
 }
 
 body.nn-page-enter #main-content {
-    opacity: 0.35;
-    transform: translateY(6px);
+    opacity: 0;
 }
 
 body.nn-page-enter-active #main-content {
     opacity: 1;
-    transform: translateY(0);
 }
 
 /* Scroll reveal */
