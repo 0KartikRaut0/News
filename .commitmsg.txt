@@ -1,1 +1,0 @@
-Rollback to flat repo layout (neonews-theme and plugins at root)
