@@ -55,7 +55,7 @@
         });
 
         overlay.addEventListener('transitionend', function(e) {
-            if (e.propertyName !== 'transform') {
+            if (e.propertyName !== 'opacity') {
                 return;
             }
             if (document.body.classList.contains('nn-page-enter-active')) {
@@ -105,7 +105,7 @@
 
             window.setTimeout(function() {
                 window.location.href = link.href;
-            }, 420);
+            }, 360);
         });
     }
 
