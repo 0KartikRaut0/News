@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NEONEWS_THEME_VERSION', '1.6.4' );
+define( 'NEONEWS_THEME_VERSION', '1.6.5' );
 define( 'NEONEWS_THEME_DIR', get_template_directory() );
 define( 'NEONEWS_THEME_URI', get_template_directory_uri() );
 
