@@ -14,6 +14,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @return array
  */
+/**
+ * Save an option while bypassing any registered sanitize_option_* callbacks.
+ *
+ * WordPress hooks register_setting() sanitizers to sanitize_option_{name},
+ * which runs on every update_option() call — not just Settings API submits.
+ * When saving cross-plugin settings from our theme we must bypass those
+ * sanitizers (which expect their own form's tab key and would silently revert
+ * our values to the previous state).
+ *
+ * @param string $option Option name.
+ * @param mixed  $value  New value.
+ */
+function neonews_update_option_bypass_sanitize( $option, $value ) {
+    global $wp_filter;
+    $filter_tag = 'sanitize_option_' . $option;
+    $saved      = $wp_filter[ $filter_tag ] ?? null;
+    unset( $wp_filter[ $filter_tag ] );
+    update_option( $option, $value );
+    if ( $saved !== null ) {
+        $wp_filter[ $filter_tag ] = $saved;
+    }
+}
+
 function neonews_get_default_settings() {
     return array(
         'ads_master'          => true,
@@ -624,7 +647,7 @@ function neonews_sanitize_settings( $input ) {
             $mem['contact_email']             = sanitize_email( $mi['contact_email'] ?? $mem['contact_email'] );
             $mem['enroll_note']               = sanitize_textarea_field( wp_unslash( $mi['enroll_note'] ?? $mem['enroll_note'] ) );
             $mem['key_default_duration_days'] = max( 1, absint( $mi['key_default_duration_days'] ?? $mem['key_default_duration_days'] ) );
-            update_option( 'neonews_membership_settings', $mem );
+            neonews_update_option_bypass_sanitize( 'neonews_membership_settings', $mem );
         }
         // Also save smart settings — always run so unchecking all toggles still saves.
         if ( function_exists( 'neonews_smart_default_settings' ) ) {
@@ -639,7 +662,7 @@ function neonews_sanitize_settings( $input ) {
             $smt['enable_weekly_digest']   = ! empty( $si['enable_weekly_digest'] );
             $smt['digest_day']             = max( 0, min( 6, absint( $si['digest_day'] ?? $smt['digest_day'] ) ) );
             $smt['digest_hour']            = max( 0, min( 23, absint( $si['digest_hour'] ?? $smt['digest_hour'] ) ) );
-            update_option( 'neonews_smart_settings', $smt );
+            neonews_update_option_bypass_sanitize( 'neonews_smart_settings', $smt );
         }
     }
 
