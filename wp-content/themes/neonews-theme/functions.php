@@ -248,6 +248,12 @@ function neonews_scripts() {
                 'collapsible'   => ! empty( neonews_get_setting( 'mobile_ad_collapsible', true ) ),
                 'collapsedText' => esc_html( neonews_get_setting( 'mobile_ad_collapsed_text', 'Ad' ) ?: 'Ad' ),
             ),
+            'appearance' => array(
+                'darkModeDefault'  => neonews_get_setting( 'dark_mode_default', 'light' ),
+                'showDarkToggle'   => ! empty( neonews_get_setting( 'show_dark_mode_toggle', true ) ),
+                'carouselInterval' => max( 2000, absint( neonews_get_setting( 'carousel_interval', 5000 ) ) ),
+                'breakingSpeed'    => max( 10, absint( neonews_get_setting( 'breaking_scroll_speed', 40 ) ) ),
+            ),
             'i18n'     => array(
                 'loading' => esc_html__( 'Loading...', 'neonews' ),
                 'error'   => esc_html__( 'An error occurred.', 'neonews' ),
@@ -305,7 +311,7 @@ add_filter( 'body_class', 'neonews_body_classes' );
  * Get theme mode (dark/light)
  */
 function neonews_get_theme_mode() {
-    $default_mode = get_theme_mod( 'neonews_default_theme_mode', 'light' );
+    $default_mode = neonews_get_setting( 'dark_mode_default', 'light' );
 
     if ( is_user_logged_in() ) {
         $user_mode = get_user_meta( get_current_user_id(), 'neonews_theme_mode', true );

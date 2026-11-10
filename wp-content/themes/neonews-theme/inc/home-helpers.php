@@ -120,6 +120,7 @@ function neonews_render_home_category_block( $slug_or_block ) {
     $query = new WP_Query( array(
         'cat'            => $cat->term_id,
         'posts_per_page' => $count,
+        'post_status'    => 'publish',  // always use only published posts — no private/draft for admins
         'no_found_rows'  => true,
     ) );
 
@@ -286,6 +287,19 @@ function neonews_render_sidebar_fresh_reads( $limit = null ) {
     }
     $title = neonews_get_setting( 'sidebar_fresh_reads_title', __( 'Fresh Reads', 'neonews' ) );
     $query = neonews_get_trending_posts( $limit );
+
+    // If no trending posts found (e.g. no view data yet or all posts older than 7 days),
+    // fall back to the most recent published posts so the widget never shows empty.
+    if ( ! $query->have_posts() ) {
+        $query = new WP_Query( array(
+            'post_type'      => 'post',
+            'post_status'    => 'publish',
+            'posts_per_page' => $limit,
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+            'no_found_rows'  => true,
+        ) );
+    }
     ?>
     <div class="nn-widget nn-widget-graphical nn-widget-fresh">
         <h3 class="nn-widget-title"><span class="nn-widget-icon">📰</span> <?php echo esc_html( $title ); ?></h3>

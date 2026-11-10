@@ -1772,8 +1772,8 @@ html {
     z-index: 5;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    align-items: stretch;
+    justify-content: flex-start;
     background: #000;
 }
 
@@ -1932,20 +1932,15 @@ html {
     margin-top: 1.5rem;
 }
 
-/* Sticky rail — keeps ads visible while main column scrolls */
+/* Sticky rail — top portion stays in view while main column scrolls */
 .nn-rail-sticky {
     position: sticky;
     top: 80px; /* clear the fixed header */
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    max-height: calc(100vh - 96px);
-    overflow-y: auto;
-    scrollbar-width: none; /* hide scrollbar visually */
-    -ms-overflow-style: none;
     padding-bottom: 1rem;
 }
-.nn-rail-sticky::-webkit-scrollbar { display: none; }
 /* Extra sidebar ad slots */
 .nn-rail-sticky .nn-ad-placeholder { margin: 0; }
 

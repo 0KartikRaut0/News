@@ -234,8 +234,14 @@
      */
     function initThemeToggle() {
         var themeToggle = document.querySelector('.nn-theme-toggle');
-        
+
         if (!themeToggle) {
+            return;
+        }
+
+        // If admin disabled the visitor dark-mode toggle, hide it
+        if (typeof neonewsData !== 'undefined' && neonewsData.appearance && neonewsData.appearance.showDarkToggle === false) {
+            themeToggle.style.display = 'none';
             return;
         }
 
@@ -351,7 +357,8 @@
         var currentIndex = 0;
         var slideCount = slides.length;
         var autoplayInterval = null;
-        var autoplayDelay = 5000;
+        var autoplayDelay = (typeof neonewsData !== 'undefined' && neonewsData.appearance && neonewsData.appearance.carouselInterval)
+            ? neonewsData.appearance.carouselInterval : 5000;
 
         function goToSlide(index) {
             if (index < 0) {

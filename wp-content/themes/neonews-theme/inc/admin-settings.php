@@ -169,6 +169,11 @@ function neonews_get_default_settings() {
         'captcha_on_login'        => true,
         'captcha_on_register'     => true,
         'captcha_v3_threshold'    => 0.5,
+        // Appearance / timing.
+        'dark_mode_default'       => 'light',
+        'show_dark_mode_toggle'   => true,
+        'carousel_interval'       => 5000,
+        'breaking_scroll_speed'   => 40,
         // Performance (lightweight mode on by default).
         'perf_lightweight_mode'   => true,
         'perf_system_fonts'       => false,
@@ -391,7 +396,11 @@ function neonews_sanitize_settings( $input ) {
         }
         $output['tipline_points'] = sanitize_textarea_field( wp_unslash( $input['tipline_points'] ?? $previous['tipline_points'] ) );
         $output['show_home_latest']    = ! empty( $input['show_home_latest'] );
-        $output['show_home_newsletter'] = ! empty( $input['show_home_newsletter'] );
+        // Intentionally use array_key_exists so that an explicitly unchecked box saves false,
+        // but a completely missing key (e.g. the field wasn't in this form submission) keeps previous.
+        $output['show_home_newsletter'] = array_key_exists( 'show_home_newsletter', $input )
+            ? ! empty( $input['show_home_newsletter'] )
+            : ( $previous['show_home_newsletter'] ?? true );
         $output['home_hero_title']        = sanitize_text_field( wp_unslash( $input['home_hero_title'] ?? $previous['home_hero_title'] ) );
         $output['home_hero_title_accent'] = sanitize_text_field( wp_unslash( $input['home_hero_title_accent'] ?? $previous['home_hero_title_accent'] ) );
         $output['home_hero_subtitle']     = sanitize_text_field( wp_unslash( $input['home_hero_subtitle'] ?? $previous['home_hero_subtitle'] ) );
@@ -497,6 +506,131 @@ function neonews_sanitize_settings( $input ) {
         $output['category_colors']    = isset( $input['category_colors'] ) ? sanitize_textarea_field( wp_unslash( $input['category_colors'] ) ) : $previous['category_colors'];
     }
 
+    // Appearance / timing — saved from both 'access' and 'features' tabs.
+    if ( in_array( $active, array( 'access', 'features' ), true ) ) {
+        $output['dark_mode_default']     = in_array( $input['dark_mode_default'] ?? 'light', array( 'light', 'dark', 'system' ), true ) ? $input['dark_mode_default'] : 'light';
+        $output['show_dark_mode_toggle'] = ! empty( $input['show_dark_mode_toggle'] );
+        $output['carousel_interval']     = max( 2000, min( 30000, absint( $input['carousel_interval'] ?? 5000 ) ) );
+        $output['breaking_scroll_speed'] = max( 10, min( 200, absint( $input['breaking_scroll_speed'] ?? 40 ) ) );
+    }
+
+    // Feature Access tab — all boolean toggles from every area in one place.
+    $access_keys = array(
+        // Homepage
+        'show_home_hero', 'show_home_carousel', 'show_home_categories',
+        'show_home_videos', 'show_home_tipline', 'show_home_latest', 'show_home_newsletter',
+        // Header / breaking news
+        'show_breaking_news', 'show_header_search', 'show_header_auth', 'show_header_social',
+        // Sidebar
+        'sidebar_weather', 'sidebar_fresh_reads', 'sidebar_topics',
+        // Post features
+        'show_engagement_bar', 'show_post_likes', 'show_post_shares', 'show_post_views',
+        // Ads
+        'ads_master', 'mobile_ad_collapsible',
+        // Footer
+        'show_footer_social', 'show_footer_newsletter',
+        // WhatsApp
+        'whatsapp_float_enabled', 'whatsapp_float_mobile',
+        'show_contact_whatsapp', 'show_advertise_whatsapp', 'show_careers_whatsapp',
+        // Auth / registration
+        'auth_allow_registration',
+        // Weather visitor location
+        'weather_enabled', 'weather_visitor_location',
+        // Cookie banner
+        'cookie_banner_enabled',
+    );
+    if ( 'access' === $active ) {
+        // Text / number fields also present on this tab
+        $access_text_keys = array(
+            'logo_mark', 'home_hero_title', 'home_hero_title_accent', 'home_hero_subtitle',
+            'home_video_title', 'home_video_subtitle', 'home_video_category',
+            'breaking_label_live', 'breaking_label_tag', 'search_placeholder_desktop', 'search_placeholder_mobile',
+            'footer_tagline', 'footer_copyright', 'footer_newsletter_title', 'footer_newsletter_text', 'newsletter_form_action',
+            'sidebar_fresh_reads_title', 'weather_city',
+            'whatsapp_number', 'whatsapp_hours', 'whatsapp_float_label',
+            'social_x', 'social_facebook', 'social_linkedin', 'social_instagram',
+            'google_analytics_id', 'captcha_site_key',
+        );
+        foreach ( $access_text_keys as $key ) {
+            if ( isset( $input[ $key ] ) ) {
+                $output[ $key ] = sanitize_text_field( wp_unslash( $input[ $key ] ) );
+            }
+        }
+        $access_url_keys = array( 'newsletter_form_action', 'social_x', 'social_facebook', 'social_linkedin', 'social_instagram' );
+        foreach ( $access_url_keys as $key ) {
+            if ( isset( $input[ $key ] ) ) {
+                $output[ $key ] = esc_url_raw( wp_unslash( $input[ $key ] ) );
+            }
+        }
+        $access_int_map = array(
+            'home_carousel_count'    => array( 1, 12 ),
+            'home_category_posts'    => array( 1, 10 ),
+            'home_mid_ad_after_cat'  => array( 0, 10 ),
+            'home_video_count'       => array( 1, 12 ),
+            'home_latest_count'      => array( 1, 24 ),
+            'breaking_count'         => array( 1, 20 ),
+            'sidebar_fresh_reads_count' => array( 1, 10 ),
+            'sidebar_topics_count'   => array( 1, 20 ),
+            'excerpt_length'         => array( 5, 80 ),
+            'reading_wpm'            => array( 100, 400 ),
+        );
+        foreach ( $access_int_map as $key => $range ) {
+            if ( isset( $input[ $key ] ) ) {
+                $output[ $key ] = max( $range[0], min( $range[1], absint( $input[ $key ] ) ) );
+            }
+        }
+        $whatsapp_pos = $input['whatsapp_float_position'] ?? '';
+        if ( in_array( $whatsapp_pos, array( 'left', 'right' ), true ) ) {
+            $output['whatsapp_float_position'] = $whatsapp_pos;
+        }
+        $captcha_providers = array( 'turnstile', 'recaptcha_v2', 'recaptcha_v3', 'hcaptcha' );
+        if ( in_array( $input['captcha_provider'] ?? '', $captcha_providers, true ) ) {
+            $output['captcha_provider'] = $input['captcha_provider'];
+        }
+
+        foreach ( $access_keys as $key ) {
+            $output[ $key ] = ! empty( $input[ $key ] );
+        }
+        // Also save membership settings if present.
+        if ( ! empty( $input['_membership'] ) && is_array( $input['_membership'] ) ) {
+            $mem = wp_parse_args( get_option( 'neonews_membership_settings', array() ), function_exists( 'neonews_membership_default_settings' ) ? neonews_membership_default_settings() : array() );
+            $mi  = $input['_membership'];
+            $mem['enable_paywall']            = ! empty( $mi['enable_paywall'] );
+            $mem['free_article_limit']        = max( 0, absint( $mi['free_article_limit'] ?? $mem['free_article_limit'] ) );
+            $mem['free_article_period']       = in_array( $mi['free_article_period'] ?? '', array( 'day', 'week', 'month' ), true ) ? $mi['free_article_period'] : 'month';
+            $mem['hide_ads_for_premium']      = ! empty( $mi['hide_ads_for_premium'] );
+            $mem['enable_upgrade_popup']      = ! empty( $mi['enable_upgrade_popup'] );
+            $mem['popup_delay_seconds']       = max( 0, absint( $mi['popup_delay_seconds'] ?? $mem['popup_delay_seconds'] ) );
+            $mem['popup_interval_hours']      = max( 1, absint( $mi['popup_interval_hours'] ?? $mem['popup_interval_hours'] ) );
+            $mem['show_home_premium_section'] = ! empty( $mi['show_home_premium_section'] );
+            $mem['home_premium_count']        = max( 1, min( 12, absint( $mi['home_premium_count'] ?? $mem['home_premium_count'] ) ) );
+            $mem['home_premium_title']        = sanitize_text_field( wp_unslash( $mi['home_premium_title'] ?? $mem['home_premium_title'] ) );
+            $mem['exclusive_page_count']      = max( 1, min( 50, absint( $mi['exclusive_page_count'] ?? $mem['exclusive_page_count'] ) ) );
+            $mem['exclusive_page_subtitle']   = sanitize_text_field( wp_unslash( $mi['exclusive_page_subtitle'] ?? $mem['exclusive_page_subtitle'] ) );
+            $mem['plan_title']                = sanitize_text_field( wp_unslash( $mi['plan_title'] ?? $mem['plan_title'] ) );
+            $mem['plan_price']                = sanitize_text_field( wp_unslash( $mi['plan_price'] ?? $mem['plan_price'] ) );
+            $mem['contact_email']             = sanitize_email( $mi['contact_email'] ?? $mem['contact_email'] );
+            $mem['enroll_note']               = sanitize_textarea_field( wp_unslash( $mi['enroll_note'] ?? $mem['enroll_note'] ) );
+            $mem['key_default_duration_days'] = max( 1, absint( $mi['key_default_duration_days'] ?? $mem['key_default_duration_days'] ) );
+            update_option( 'neonews_membership_settings', $mem );
+        }
+        // Also save smart settings if present.
+        if ( ! empty( $input['_smart'] ) && is_array( $input['_smart'] ) ) {
+            $smt = wp_parse_args( get_option( 'neonews_smart_settings', array() ), function_exists( 'neonews_smart_default_settings' ) ? neonews_smart_default_settings() : array() );
+            $si  = $input['_smart'];
+            $smt['enable_auto_excerpt']    = ! empty( $si['enable_auto_excerpt'] );
+            $smt['enable_story_glance']    = ! empty( $si['enable_story_glance'] );
+            $smt['enable_key_points']      = ! empty( $si['enable_key_points'] );
+            $smt['enable_toc']             = ! empty( $si['enable_toc'] );
+            $smt['enable_smart_related']   = ! empty( $si['enable_smart_related'] );
+            $smt['enable_personalized_home'] = ! empty( $si['enable_personalized_home'] );
+            $smt['enable_weekly_digest']   = ! empty( $si['enable_weekly_digest'] );
+            $smt['digest_day']             = max( 0, min( 6, absint( $si['digest_day'] ?? $smt['digest_day'] ) ) );
+            $smt['digest_hour']            = max( 0, min( 23, absint( $si['digest_hour'] ?? $smt['digest_hour'] ) ) );
+            update_option( 'neonews_smart_settings', $smt );
+        }
+    }
+
     return wp_parse_args( $output, $defaults );
 }
 
@@ -532,6 +666,7 @@ function neonews_render_settings_page() {
         'whatsapp'  => __( 'WhatsApp', 'neonews' ),
         'sidebar'   => __( 'Sidebar', 'neonews' ),
         'features'  => __( 'Features & Colors', 'neonews' ),
+        'access'    => __( '⚙ Feature Access', 'neonews' ),
     );
     if ( ! isset( $tabs[ $tab ] ) ) {
         $tab = 'platform';
@@ -895,6 +1030,8 @@ function neonews_render_settings_page() {
                 <?php neonews_admin_tab_sidebar( $settings ); ?>
             <?php elseif ( 'features' === $tab ) : ?>
                 <?php neonews_admin_tab_features( $settings ); ?>
+            <?php elseif ( 'access' === $tab ) : ?>
+                <?php neonews_admin_tab_access( $settings ); ?>
             <?php endif; ?>
 
             <?php submit_button(); ?>

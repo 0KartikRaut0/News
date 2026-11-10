@@ -24,10 +24,22 @@
 }
 
 .nn-seo-crumb-current {
-    color: var(--nn-text, #0f172a);
+    color: var(--nn-text-primary, var(--nn-text, #0f172a));
     font-weight: 600;
+}
+
+[data-theme="dark"] .nn-seo-crumb-current {
+    color: #f1f5f9;
 }
 
 .nn-seo-crumb-sep {
     opacity: 0.55;
+}
+
+[data-theme="dark"] .nn-seo-breadcrumbs {
+    color: var(--nn-text-muted, #64748b);
+}
+
+[data-theme="dark"] .nn-seo-crumb-sep {
+    opacity: 0.75;
 }
