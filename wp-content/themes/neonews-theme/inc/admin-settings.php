@@ -631,7 +631,9 @@ function neonews_sanitize_settings( $input ) {
         }
     }
 
-    return wp_parse_args( $output, $defaults );
+    // Merge priority: $output (newly submitted) → $previous (already saved) → $defaults.
+    // This ensures saving one tab never resets settings saved from another tab.
+    return wp_parse_args( $output, wp_parse_args( $previous, $defaults ) );
 }
 
 /**
