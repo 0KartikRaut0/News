@@ -296,7 +296,8 @@ function neonews_fallback_primary_menu_enhanced() {
     $home_class = is_front_page() ? ' class="current-menu-item"' : '';
     echo '<li' . $home_class . '><a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html__( 'Home', 'neonews' ) . '</a></li>';
 
-    if ( function_exists( 'neonews_membership_get_exclusive_page_id' ) ) {
+    $show_excl = ! class_exists( 'NeoNews_Membership' ) || NeoNews_Membership::get_settings( 'show_exclusive_nav_link' );
+    if ( $show_excl && function_exists( 'neonews_membership_get_exclusive_page_id' ) ) {
         $exclusive_id = neonews_membership_get_exclusive_page_id();
         if ( ! $exclusive_id && function_exists( 'neonews_membership_ensure_exclusive_page' ) ) {
             $exclusive_id = neonews_membership_ensure_exclusive_page();
