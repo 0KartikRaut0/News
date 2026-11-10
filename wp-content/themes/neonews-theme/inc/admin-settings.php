@@ -521,23 +521,34 @@ function neonews_sanitize_settings( $input ) {
         'show_home_videos', 'show_home_tipline', 'show_home_latest', 'show_home_newsletter',
         // Header / breaking news
         'show_breaking_news', 'show_header_search', 'show_header_auth', 'show_header_social',
+        'show_header_datetime',
+        // Footer
+        'show_footer_social', 'show_footer_newsletter',
         // Sidebar
         'sidebar_weather', 'sidebar_fresh_reads', 'sidebar_topics',
         // Post features
         'show_engagement_bar', 'show_post_likes', 'show_post_shares', 'show_post_views',
         // Ads
         'ads_master', 'mobile_ad_collapsible',
-        // Footer
-        'show_footer_social', 'show_footer_newsletter',
         // WhatsApp
         'whatsapp_float_enabled', 'whatsapp_float_mobile',
         'show_contact_whatsapp', 'show_advertise_whatsapp', 'show_careers_whatsapp',
+        'show_post_whatsapp',
+        // Social
+        'show_contact_social',
         // Auth / registration
-        'auth_allow_registration',
-        // Weather visitor location
+        'auth_allow_registration', 'auth_auto_username',
+        'captcha_enabled', 'captcha_on_login', 'captcha_on_register',
+        // Weather
         'weather_enabled', 'weather_visitor_location',
-        // Cookie banner
-        'cookie_banner_enabled',
+        // Cookie / privacy / analytics
+        'cookie_banner_enabled', 'cookie_gate_ads', 'cookie_gate_statistics',
+        'analytics_enabled',
+        // Performance
+        'perf_lightweight_mode', 'perf_system_fonts', 'perf_disable_emojis',
+        'perf_disable_embeds', 'perf_disable_dashicons', 'perf_disable_block_css',
+        'perf_disable_heartbeat', 'perf_lazy_captcha', 'perf_reduce_animations',
+        'perf_conditional_core_assets',
     );
     if ( 'access' === $active ) {
         // Text / number fields also present on this tab

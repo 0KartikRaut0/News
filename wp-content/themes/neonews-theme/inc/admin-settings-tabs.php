@@ -871,8 +871,22 @@ function neonews_admin_tab_access( $settings ) {
     .nn-toggle input:checked + .nn-toggle-slider:before { transform: translateX(18px); }
     </style>
 
+    <style>
+    .nn-mc-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .nn-mc-toolbar .button { display:inline-flex; align-items:center; gap:6px; font-size:0.82rem; }
+    .nn-mc-toolbar .nn-mc-scope { font-size:0.8rem; color:#555; margin-left:4px; }
+    .nn-mc-bulk-label { font-size:0.82rem; color:#3c434a; font-weight:600; }
+    </style>
+
     <h2><?php esc_html_e( 'Master Control', 'neonews' ); ?></h2>
     <p class="description"><?php esc_html_e( 'Every feature and setting in one place. Click a section to expand it. Toggle switches are instant on/off. Save Settings applies everything.', 'neonews' ); ?></p>
+
+    <div class="nn-mc-toolbar">
+        <span class="nn-mc-bulk-label"><?php esc_html_e( 'Bulk:', 'neonews' ); ?></span>
+        <button type="button" class="button button-primary" id="nn-mc-enable-all">✅ <?php esc_html_e( 'Enable All', 'neonews' ); ?></button>
+        <button type="button" class="button" id="nn-mc-disable-all">🚫 <?php esc_html_e( 'Disable All', 'neonews' ); ?></button>
+        <span class="nn-mc-scope"><?php esc_html_e( '(platform toggles only — membership & smart tools excluded)', 'neonews' ); ?></span>
+    </div>
 
     <div class="nn-mc-wrap">
 
@@ -1280,6 +1294,26 @@ function neonews_admin_tab_access( $settings ) {
                 h.closest('.nn-mc-section').classList.toggle('open');
             });
         });
+
+        /* ── Bulk Enable / Disable ── */
+        function nn_bulk_set( enable ) {
+            /* Only target platform toggles (not _membership or _smart sub-arrays) */
+            document.querySelectorAll(
+                '.nn-mc-wrap .nn-toggle input[type="checkbox"]:not([name*="[_membership]"]):not([name*="[_smart]"])'
+            ).forEach(function(cb){
+                if ( cb.checked !== enable ) {
+                    cb.checked = enable;
+                    cb.dispatchEvent( new Event('change', { bubbles: true }) );
+                }
+            });
+            /* Expand all sections so user can review */
+            document.querySelectorAll('.nn-mc-section').forEach(function(s){ s.classList.add('open'); });
+        }
+
+        var enableBtn  = document.getElementById('nn-mc-enable-all');
+        var disableBtn = document.getElementById('nn-mc-disable-all');
+        if ( enableBtn )  enableBtn.addEventListener('click',  function(){ nn_bulk_set(true);  });
+        if ( disableBtn ) disableBtn.addEventListener('click', function(){ nn_bulk_set(false); });
 
         /* Before form submit, save which sections are open */
         var form = document.querySelector('form[action="options.php"]') || document.querySelector('.nn-mc-wrap')?.closest('form');
