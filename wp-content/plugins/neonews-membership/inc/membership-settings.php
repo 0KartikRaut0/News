@@ -45,6 +45,7 @@ function neonews_membership_default_settings() {
         'popup_message'              => __( 'Unlock exclusive stories and the latest content without ads. Get your activation key from our team after payment.', 'neonews-membership' ),
         'exclusive_page_slug'        => 'exclusive',
         'show_home_premium_section'  => true,
+        'show_exclusive_nav_link'    => true,
         'home_premium_count'         => 4,
         'home_premium_title'         => __( 'Premium Picks', 'neonews-membership' ),
         'exclusive_page_count'       => 12,

@@ -1134,6 +1134,7 @@ function neonews_admin_tab_access( $settings ) {
                 $tog_m( 'hide_ads_for_premium',       __( 'Hide ads for premium members', 'neonews' ),         $mem['hide_ads_for_premium'] );
                 $tog_m( 'enable_upgrade_popup',       __( 'Show upgrade popup to non-members', 'neonews' ),    $mem['enable_upgrade_popup'] );
                 $tog_m( 'show_home_premium_section',  __( 'Premium Picks section on homepage', 'neonews' ),    $mem['show_home_premium_section'] );
+                $tog_m( 'show_exclusive_nav_link',    __( 'Exclusive page link in navigation', 'neonews' ),    $mem['show_exclusive_nav_link'] );
                 ?>
             </div>
             <div class="nn-mc-fields">

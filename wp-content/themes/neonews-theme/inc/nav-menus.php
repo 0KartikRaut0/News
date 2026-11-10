@@ -81,6 +81,23 @@ function neonews_get_or_create_primary_menu() {
  * @param int $menu_id Menu ID.
  */
 function neonews_sync_exclusive_nav_item( $menu_id ) {
+    // If the nav link has been disabled from Master Control, remove it and bail.
+    $show = true;
+    if ( function_exists( 'NeoNews_Membership' ) || class_exists( 'NeoNews_Membership' ) ) {
+        $show = (bool) NeoNews_Membership::get_settings( 'show_exclusive_nav_link' );
+    }
+    if ( ! $show ) {
+        // Remove the item if it already exists in this menu.
+        $page_id = function_exists( 'neonews_membership_get_exclusive_page_id' ) ? neonews_membership_get_exclusive_page_id() : 0;
+        if ( $page_id ) {
+            $existing_id = neonews_find_nav_item_by_page( $menu_id, $page_id );
+            if ( $existing_id ) {
+                wp_delete_post( $existing_id, true );
+            }
+        }
+        return;
+    }
+
     $page_id = 0;
     if ( function_exists( 'neonews_membership_get_exclusive_page_id' ) ) {
         $page_id = neonews_membership_get_exclusive_page_id();
@@ -231,6 +248,29 @@ function neonews_find_nav_item_by_class( $menu_id, $class ) {
 
     return 0;
 }
+
+/**
+ * Hide exclusive nav item at render time when the setting is off.
+ * This takes effect immediately without needing to re-save the menu.
+ *
+ * @param array $items Nav menu items.
+ * @return array
+ */
+function neonews_filter_exclusive_nav_items( $items ) {
+    if ( ! class_exists( 'NeoNews_Membership' ) ) {
+        return $items;
+    }
+    if ( NeoNews_Membership::get_settings( 'show_exclusive_nav_link' ) ) {
+        return $items; // visible — no change.
+    }
+    foreach ( $items as $key => $item ) {
+        if ( ! empty( $item->classes ) && in_array( 'nn-nav-exclusive', (array) $item->classes, true ) ) {
+            unset( $items[ $key ] );
+        }
+    }
+    return array_values( $items );
+}
+add_filter( 'wp_nav_menu_objects', 'neonews_filter_exclusive_nav_items' );
 
 /**
  * Allow HTML in exclusive nav menu title.

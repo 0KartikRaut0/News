@@ -663,8 +663,10 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                         <span class="nn-activity-card-body">
                             <span class="nn-activity-card-title"><?php echo esc_html( get_the_title( $pid ) ); ?></span>
                             <span class="nn-activity-card-meta">
-                                <?php echo esc_html( get_the_date( '', $pid ) ); ?> ·
-                                <?php echo esc_html( neonews_format_views( neonews_get_post_views( $pid ) ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>
+                                <?php echo esc_html( get_the_date( '', $pid ) ); ?>
+                                <?php if ( neonews_is_feature_enabled( 'show_post_views' ) ) : ?>
+                                · <?php echo esc_html( neonews_format_views( neonews_get_post_views( $pid ) ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>
+                                <?php endif; ?>
                             </span>
                         </span>
                     </a>

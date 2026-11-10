@@ -58,6 +58,7 @@ get_header();
                         </svg>
                         <?php echo esc_html( neonews_get_reading_time() ); ?> <?php esc_html_e( 'min read', 'neonews' ); ?>
                     </span>
+                    <?php if ( neonews_is_feature_enabled( 'show_post_views' ) ) : ?>
                     <span class="nn-post-meta-item">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -65,6 +66,7 @@ get_header();
                         </svg>
                         <?php echo esc_html( neonews_format_views( neonews_get_post_views() ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>
                     </span>
+                    <?php endif; ?>
                 </div>
             </header>
 

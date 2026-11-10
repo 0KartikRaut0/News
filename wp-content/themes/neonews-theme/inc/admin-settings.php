@@ -614,6 +614,7 @@ function neonews_sanitize_settings( $input ) {
             $mem['popup_delay_seconds']       = max( 0, absint( $mi['popup_delay_seconds'] ?? $mem['popup_delay_seconds'] ) );
             $mem['popup_interval_hours']      = max( 1, absint( $mi['popup_interval_hours'] ?? $mem['popup_interval_hours'] ) );
             $mem['show_home_premium_section'] = ! empty( $mi['show_home_premium_section'] );
+            $mem['show_exclusive_nav_link']   = ! empty( $mi['show_exclusive_nav_link'] );
             $mem['home_premium_count']        = max( 1, min( 12, absint( $mi['home_premium_count'] ?? $mem['home_premium_count'] ) ) );
             $mem['home_premium_title']        = sanitize_text_field( wp_unslash( $mi['home_premium_title'] ?? $mem['home_premium_title'] ) );
             $mem['exclusive_page_count']      = max( 1, min( 50, absint( $mi['exclusive_page_count'] ?? $mem['exclusive_page_count'] ) ) );
