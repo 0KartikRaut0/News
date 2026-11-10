@@ -108,8 +108,8 @@ class NeoNews_Smart_Related {
         }
         ?>
         <section class="nn-container nn-smart-trending nn-reveal">
-            <header class="nn-section-head">
-                <h2><span class="nn-smart-badge"><?php esc_html_e( 'Smart', 'neonews-smart' ); ?></span> <?php esc_html_e( 'Trending Now', 'neonews-smart' ); ?></h2>
+            <header class="nn-section-header">
+                <h2 class="nn-section-title"><span class="nn-smart-badge"><?php esc_html_e( 'Smart', 'neonews-smart' ); ?></span> <?php esc_html_e( 'Trending Now', 'neonews-smart' ); ?></h2>
             </header>
             <div class="nn-post-grid">
                 <?php

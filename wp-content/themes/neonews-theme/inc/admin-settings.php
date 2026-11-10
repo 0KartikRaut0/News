@@ -266,10 +266,13 @@ function neonews_sanitize_settings( $input ) {
         $output['auth_allow_registration'] = ! empty( $input['auth_allow_registration'] );
         $output['auth_auto_username']      = ! empty( $input['auth_auto_username'] );
         $output['reg_custom_fields']       = isset( $input['reg_custom_fields'] ) ? sanitize_textarea_field( wp_unslash( $input['reg_custom_fields'] ) ) : ( $previous['reg_custom_fields'] ?? '' );
-        $output['reg_fields']              = array();
-        foreach ( array_keys( neonews_get_builtin_registration_field_defs() ) as $field_key ) {
+        $output['reg_fields'] = array();
+        foreach ( neonews_get_builtin_registration_field_defs() as $field_key => $field_def ) {
+            $is_system = ! empty( $field_def['system'] );
             $output['reg_fields'][ $field_key ] = array(
-                'enabled'  => ! empty( $input['reg_fields'][ $field_key ]['enabled'] ),
+                // System fields (email, password) are always enabled — they are
+                // essential for registration and must never be disabled.
+                'enabled'  => $is_system ? true : ! empty( $input['reg_fields'][ $field_key ]['enabled'] ),
                 'required' => ! empty( $input['reg_fields'][ $field_key ]['required'] ),
             );
         }

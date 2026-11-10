@@ -724,6 +724,22 @@
     margin-bottom: 1rem;
 }
 
+.nn-exclusive-member-notice {
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.14), rgba(245, 158, 11, 0.04));
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: var(--nn-text-primary, #0f172a);
+}
+
+.nn-exclusive-member-notice strong {
+    color: #b45309;
+}
+
+[data-theme="dark"] .nn-exclusive-member-notice strong {
+    color: #fbbf24;
+}
+
 .nn-exclusive-grid {
     margin-top: 1.5rem;
 }

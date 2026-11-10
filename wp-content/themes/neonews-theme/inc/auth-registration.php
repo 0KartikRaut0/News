@@ -79,15 +79,21 @@ function neonews_get_registration_fields() {
     $settings = neonews_get_settings();
     $saved    = isset( $settings['reg_fields'] ) && is_array( $settings['reg_fields'] ) ? $settings['reg_fields'] : array();
     $fields   = array();
+    $defs     = neonews_get_builtin_registration_field_defs();
 
-    foreach ( neonews_get_builtin_registration_field_defs() as $key => $def ) {
+    foreach ( $defs as $key => $def ) {
         $cfg = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
 
-        if ( isset( $cfg['enabled'] ) && ! $cfg['enabled'] ) {
-            continue;
-        }
-        if ( ! $def['enabled'] && ! isset( $cfg['enabled'] ) ) {
-            continue;
+        // System fields (email, password) are always required — never skip them.
+        $is_system = ! empty( $def['system'] );
+
+        if ( ! $is_system ) {
+            if ( isset( $cfg['enabled'] ) && ! $cfg['enabled'] ) {
+                continue;
+            }
+            if ( ! $def['enabled'] && ! isset( $cfg['enabled'] ) ) {
+                continue;
+            }
         }
 
         $fields[] = array_merge(
@@ -97,6 +103,32 @@ function neonews_get_registration_fields() {
                 'required' => isset( $cfg['required'] ) ? (bool) $cfg['required'] : $def['required'],
             )
         );
+    }
+
+    // Fallback: if no optional fields made it through (all disabled in settings),
+    // include every built-in field that has enabled=true in its definition so the
+    // form is never left completely empty.
+    $has_optional = false;
+    foreach ( $fields as $f ) {
+        if ( empty( $f['system'] ) ) {
+            $has_optional = true;
+            break;
+        }
+    }
+    if ( ! $has_optional ) {
+        foreach ( $defs as $key => $def ) {
+            if ( ! empty( $def['system'] ) || ! $def['enabled'] ) {
+                continue; // system fields already included; skip disabled defs.
+            }
+            $cfg      = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
+            $fields[] = array_merge(
+                $def,
+                array(
+                    'key'      => $key,
+                    'required' => isset( $cfg['required'] ) ? (bool) $cfg['required'] : $def['required'],
+                )
+            );
+        }
     }
 
     $custom_raw = isset( $settings['reg_custom_fields'] ) ? (string) $settings['reg_custom_fields'] : '';

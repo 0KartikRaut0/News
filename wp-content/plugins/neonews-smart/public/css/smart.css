@@ -74,7 +74,21 @@
 
 .nn-smart-for-you,
 .nn-smart-trending {
-    margin: 2rem 0;
+    margin: 2rem auto;
+}
+
+.nn-smart-for-you .nn-section-title,
+.nn-smart-trending .nn-section-title {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (min-width: 992px) {
+    .nn-smart-for-you .nn-post-grid,
+    .nn-smart-trending .nn-post-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+    }
 }
 
 .nn-smart-keypoints a,

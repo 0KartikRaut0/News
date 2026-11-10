@@ -50,9 +50,9 @@ class NeoNews_Smart_Personalize {
         }
         ?>
         <section class="nn-container nn-smart-for-you nn-reveal">
-            <header class="nn-section-head">
-                <h2><span class="nn-smart-badge"><?php esc_html_e( 'For you', 'neonews-smart' ); ?></span> <?php esc_html_e( 'Recommended picks', 'neonews-smart' ); ?></h2>
-                <span class="nn-section-link"><?php esc_html_e( 'Based on your reading history', 'neonews-smart' ); ?></span>
+            <header class="nn-section-header">
+                <h2 class="nn-section-title"><span class="nn-smart-badge"><?php esc_html_e( 'For you', 'neonews-smart' ); ?></span> <?php esc_html_e( 'Recommended picks', 'neonews-smart' ); ?></h2>
+                <span class="nn-section-sub"><?php esc_html_e( 'Based on your reading history', 'neonews-smart' ); ?></span>
             </header>
             <div class="nn-post-grid">
                 <?php

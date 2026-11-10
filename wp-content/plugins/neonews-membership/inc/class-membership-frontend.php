@@ -37,6 +37,50 @@ class NeoNews_Membership_Frontend {
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ), 30 );
         add_filter( 'post_class', array( $this, 'premium_post_class' ), 10, 3 );
         add_filter( 'the_posts', array( $this, 'mark_locked_archive_posts' ), 10, 2 );
+        add_filter( 'the_content', array( $this, 'personalize_exclusive_intro' ), 20 );
+    }
+
+    /**
+     * Swap the "Not a member yet?" line on the Exclusive page for premium members.
+     *
+     * @param string $content Content.
+     * @return string
+     */
+    public function personalize_exclusive_intro( $content ) {
+        if ( ! is_page() || ! in_the_loop() || ! is_main_query() ) {
+            return $content;
+        }
+
+        if ( (int) get_the_ID() !== neonews_membership_get_exclusive_page_id() ) {
+            return $content;
+        }
+
+        if ( ! is_user_logged_in() || ! NeoNews_Membership_Levels::is_premium() ) {
+            return $content;
+        }
+
+        $days = NeoNews_Membership_Levels::get_days_until_expiry();
+        if ( null === $days ) {
+            $detail = __( 'Enjoy unlimited access to every exclusive story, ad-free.', 'neonews-membership' );
+        } else {
+            $detail = sprintf(
+                /* translators: %d: days remaining */
+                _n( 'Your plan is active for %d more day — enjoy every exclusive story, ad-free.', 'Your plan is active for %d more days — enjoy every exclusive story, ad-free.', $days, 'neonews-membership' ),
+                $days
+            );
+        }
+
+        $notice = '<p class="nn-exclusive-member-notice"><strong>' . esc_html__( 'Hurray! You are on the Premium plan.', 'neonews-membership' ) . '</strong> '
+            . esc_html( $detail ) . '</p>';
+
+        $pattern = '#<p>\s*<strong>[^<]*' . preg_quote( __( 'Not a member yet?', 'neonews-membership' ), '#' ) . '[^<]*</strong>.*?</p>#is';
+        $updated = preg_replace( $pattern, $notice, $content, 1, $count );
+
+        if ( ! $count ) {
+            $updated = preg_replace( '#<p>\s*<strong>\s*Not a member yet\?\s*</strong>.*?</p>#is', $notice, $content, 1, $count );
+        }
+
+        return $count ? $updated : $content;
     }
 
     /**
