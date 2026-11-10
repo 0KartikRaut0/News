@@ -244,6 +244,10 @@ function neonews_scripts() {
                 'reduceMotion' => function_exists( 'neonews_perf_option' ) && neonews_perf_option( 'perf_reduce_animations', true ),
                 'lazyCaptcha'  => function_exists( 'neonews_should_lazy_load_captcha' ) && neonews_should_lazy_load_captcha(),
             ),
+            'mobileAd' => array(
+                'collapsible'   => ! empty( neonews_get_setting( 'mobile_ad_collapsible', true ) ),
+                'collapsedText' => esc_html( neonews_get_setting( 'mobile_ad_collapsed_text', 'Ad' ) ?: 'Ad' ),
+            ),
             'i18n'     => array(
                 'loading' => esc_html__( 'Loading...', 'neonews' ),
                 'error'   => esc_html__( 'An error occurred.', 'neonews' ),

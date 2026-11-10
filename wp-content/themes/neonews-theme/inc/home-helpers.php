@@ -93,15 +93,33 @@ function neonews_category_accent( $slug ) {
  *
  * @param string $slug Category slug.
  */
-function neonews_render_home_category_block( $slug ) {
+/**
+ * @param string|array $slug_or_block Category slug string, or full block config array.
+ */
+function neonews_render_home_category_block( $slug_or_block ) {
+    // Accept both the old string form and the new block config array.
+    if ( is_array( $slug_or_block ) ) {
+        $block = $slug_or_block;
+        $slug  = $block['slug'] ?? '';
+    } else {
+        $slug  = (string) $slug_or_block;
+        $block = array();
+    }
+
     $cat = get_category_by_slug( $slug );
     if ( ! $cat ) {
         return;
     }
 
+    $default_count = absint( neonews_get_setting( 'home_category_posts', 3 ) );
+    $count         = ! empty( $block['count'] ) ? absint( $block['count'] ) : $default_count;
+    $label         = ! empty( $block['label'] ) ? $block['label'] : $cat->name;
+    $accent        = ! empty( $block['color'] ) ? $block['color'] : neonews_category_accent( $slug );
+    $see_all       = ! empty( $block['see_all_url'] ) ? $block['see_all_url'] : get_category_link( $cat->term_id );
+
     $query = new WP_Query( array(
         'cat'            => $cat->term_id,
-        'posts_per_page' => absint( neonews_get_setting( 'home_category_posts', 3 ) ),
+        'posts_per_page' => $count,
         'no_found_rows'  => true,
     ) );
 
@@ -109,13 +127,11 @@ function neonews_render_home_category_block( $slug ) {
         wp_reset_postdata();
         return;
     }
-
-    $accent = neonews_category_accent( $slug );
     ?>
     <section class="nn-home-cat-block nn-reveal" style="--nn-cat-accent: <?php echo esc_attr( $accent ); ?>">
         <header class="nn-home-cat-header">
-            <h2 class="nn-home-cat-title"><span class="nn-cat-bar"></span><?php echo esc_html( $cat->name ); ?></h2>
-            <a href="<?php echo esc_url( get_category_link( $cat->term_id ) ); ?>" class="nn-section-link"><?php esc_html_e( 'See all', 'neonews' ); ?> →</a>
+            <h2 class="nn-home-cat-title"><span class="nn-cat-bar"></span><?php echo esc_html( $label ); ?></h2>
+            <a href="<?php echo esc_url( $see_all ); ?>" class="nn-section-link"><?php esc_html_e( 'See all', 'neonews' ); ?> →</a>
         </header>
         <?php
         $i = 0;
@@ -418,4 +434,87 @@ function neonews_home_tipline() {
         </div>
     </section>
     <?php
+}
+
+/**
+ * Render a custom homepage section (tag, page, or html).
+ *
+ * @param array $cs Custom section config.
+ */
+function neonews_render_custom_home_section( $cs ) {
+    if ( empty( $cs['id'] ) || empty( $cs['type'] ) ) {
+        return;
+    }
+
+    $type  = $cs['type'];
+    $title = ! empty( $cs['title'] ) ? $cs['title'] : '';
+
+    if ( 'html' === $type ) {
+        if ( empty( $cs['html'] ) ) {
+            return;
+        }
+        echo '<section class="nn-custom-section nn-custom-section-html nn-reveal">';
+        if ( $title ) {
+            echo '<header class="nn-section-header"><h2 class="nn-section-title">' . esc_html( $title ) . '</h2></header>';
+        }
+        echo '<div class="nn-custom-html-body">';
+        echo wp_kses_post( $cs['html'] );
+        echo '</div></section>';
+        return;
+    }
+
+    if ( 'page' === $type ) {
+        $page_id = absint( $cs['page_id'] ?? 0 );
+        if ( ! $page_id ) {
+            return;
+        }
+        $page = get_post( $page_id );
+        if ( ! $page || 'publish' !== $page->post_status ) {
+            return;
+        }
+        $see_all = ! empty( $cs['see_all_url'] ) ? $cs['see_all_url'] : get_permalink( $page_id );
+        echo '<section class="nn-custom-section nn-custom-section-page nn-reveal">';
+        echo '<header class="nn-section-header">';
+        echo '<h2 class="nn-section-title">' . esc_html( $title ?: get_the_title( $page_id ) ) . '</h2>';
+        echo '<a href="' . esc_url( $see_all ) . '" class="nn-section-link">' . esc_html__( 'Read more', 'neonews' ) . ' →</a>';
+        echo '</header>';
+        echo '<div class="nn-custom-page-body nn-content-body">';
+        echo apply_filters( 'the_content', $page->post_content ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo '</div></section>';
+        return;
+    }
+
+    if ( 'tag' === $type ) {
+        $slug  = sanitize_title( $cs['slug'] ?? '' );
+        $count = max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) );
+        if ( ! $slug ) {
+            return;
+        }
+        $tag = get_term_by( 'slug', $slug, 'post_tag' );
+        if ( ! $tag ) {
+            return;
+        }
+        $query = new WP_Query( array(
+            'tag_id'         => $tag->term_id,
+            'posts_per_page' => $count,
+            'no_found_rows'  => true,
+        ) );
+        if ( ! $query->have_posts() ) {
+            wp_reset_postdata();
+            return;
+        }
+        $see_all = ! empty( $cs['see_all_url'] ) ? $cs['see_all_url'] : get_tag_link( $tag->term_id );
+        echo '<section class="nn-custom-section nn-custom-section-tag nn-reveal">';
+        echo '<header class="nn-section-header">';
+        echo '<h2 class="nn-section-title">' . esc_html( $title ?: $tag->name ) . '</h2>';
+        echo '<a href="' . esc_url( $see_all ) . '" class="nn-section-link">' . esc_html__( 'See all', 'neonews' ) . ' →</a>';
+        echo '</header>';
+        echo '<div class="nn-post-grid nn-post-grid-compact">';
+        while ( $query->have_posts() ) :
+            $query->the_post();
+            get_template_part( 'template-parts/content', 'card' );
+        endwhile;
+        wp_reset_postdata();
+        echo '</div></section>';
+    }
 }

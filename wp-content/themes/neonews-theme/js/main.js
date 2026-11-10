@@ -26,6 +26,7 @@
         initCookieConsent();
         initProfilePhotoPreview();
         initInlineVideos();
+        initMobileAdCollapse();
 
         var runHeavy = function() {
             initScrollReveal();
@@ -524,6 +525,95 @@
     }
 
     /**
+     * Collapsible mobile sticky ad banner.
+     */
+    function initMobileAdCollapse() {
+        if (typeof neonewsData === 'undefined' || !neonewsData.mobileAd || !neonewsData.mobileAd.collapsible) {
+            return;
+        }
+
+        var wrap = document.querySelector('.nn-ad-mobile-wrap');
+        if (!wrap) {
+            return;
+        }
+
+        var STORE_KEY = 'nn_mobile_ad_collapsed';
+        var STORE_TTL = 30 * 60 * 1000; // 30 minutes
+
+        function isCollapsed() {
+            try {
+                var item = JSON.parse(sessionStorage.getItem(STORE_KEY) || 'null');
+                return item && item.collapsed && (Date.now() - item.ts < STORE_TTL);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function saveState(collapsed) {
+            try {
+                sessionStorage.setItem(STORE_KEY, JSON.stringify({ collapsed: collapsed, ts: Date.now() }));
+            } catch (e) {}
+        }
+
+        function updateBodyPadding() {
+            var h = wrap.classList.contains('nn-ad-collapsed') ? 0 : (wrap.offsetHeight || 0);
+            document.body.style.paddingBottom = h ? (h + 'px') : '';
+            // also nudge floating WA icon
+            var waFloat = document.querySelector('.nn-wa-float-right');
+            if (waFloat) {
+                waFloat.style.bottom = h ? ((h + 16) + 'px') : '';
+            }
+        }
+
+        // Build toggle button
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nn-ad-mobile-collapse-btn';
+        btn.setAttribute('aria-label', 'Collapse ad');
+
+        var arrowSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+        var label = document.createElement('span');
+        label.className = 'nn-ad-mobile-collapse-label';
+        label.textContent = neonewsData.mobileAd.collapsedText || 'Ad';
+
+        btn.innerHTML = arrowSvg;
+        btn.appendChild(label);
+        wrap.insertBefore(btn, wrap.firstChild);
+
+        function setCollapsed(collapsed, animate) {
+            if (animate) {
+                wrap.classList.add('nn-ad-collapsing');
+            }
+            wrap.classList.toggle('nn-ad-collapsed', collapsed);
+            btn.setAttribute('aria-label', collapsed ? 'Expand ad' : 'Collapse ad');
+            btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+            label.textContent = collapsed
+                ? (neonewsData.mobileAd.collapsedText || 'Ad')
+                : '×';
+            saveState(collapsed);
+            setTimeout(function() {
+                wrap.classList.remove('nn-ad-collapsing');
+                updateBodyPadding();
+            }, 260);
+        }
+
+        btn.addEventListener('click', function() {
+            setCollapsed(!wrap.classList.contains('nn-ad-collapsed'), true);
+        });
+
+        // Restore previous state
+        if (isCollapsed()) {
+            setCollapsed(true, false);
+        } else {
+            label.textContent = '×';
+            btn.setAttribute('aria-expanded', 'true');
+        }
+
+        updateBodyPadding();
+        window.addEventListener('resize', updateBodyPadding);
+    }
+
+    /**
      * Play homepage video cards in place (one at a time).
      */
     function initInlineVideos() {
@@ -572,17 +662,22 @@
             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
             iframe.setAttribute('allowfullscreen', '');
 
+            var bar = document.createElement('div');
+            bar.className = 'nn-watch-player-bar';
+
             var close = document.createElement('button');
             close.type = 'button';
             close.className = 'nn-watch-player-close';
             close.setAttribute('aria-label', 'Close video');
             close.innerHTML = '&times;';
-            close.addEventListener('click', function() {
+            close.addEventListener('click', function(e) {
+                e.stopPropagation();
                 stop(card);
             });
 
+            bar.appendChild(close);
+            player.appendChild(bar);
             player.appendChild(iframe);
-            player.appendChild(close);
             card.appendChild(player);
             card.classList.add('is-playing');
             activeCard = card;
@@ -659,6 +754,25 @@
     }
 
     /**
+     * Fallback copy using a temporary textarea (works on http:// and older browsers).
+     */
+    function fallbackCopy(text, onSuccess) {
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            var ok = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (ok && onSuccess) {
+                onSuccess();
+            }
+        } catch (err) {}
+    }
+
+    /**
      * Likes, shares, copy link
      */
     function initEngagement() {
@@ -719,12 +833,24 @@
             var copyBtn = e.target.closest('.nn-copy-link');
             if (copyBtn) {
                 e.preventDefault();
-                var url = copyBtn.getAttribute('data-url');
-                if (navigator.clipboard && url) {
-                    navigator.clipboard.writeText(url).then(function() {
-                        copyBtn.textContent = '✓';
-                        setTimeout(function() { copyBtn.textContent = '⎘'; }, 2000);
+                var url = copyBtn.getAttribute('data-url') || window.location.href;
+                var originalText = copyBtn.textContent;
+
+                function markCopied() {
+                    copyBtn.textContent = '✓';
+                    copyBtn.setAttribute('aria-label', 'Copied!');
+                    setTimeout(function() {
+                        copyBtn.textContent = originalText;
+                        copyBtn.setAttribute('aria-label', 'Copy link');
+                    }, 2000);
+                }
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(url).then(markCopied).catch(function() {
+                        fallbackCopy(url, markCopied);
                     });
+                } else {
+                    fallbackCopy(url, markCopied);
                 }
                 trackShare(copyBtn.getAttribute('data-post'));
             }

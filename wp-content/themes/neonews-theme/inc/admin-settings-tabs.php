@@ -48,10 +48,142 @@ function neonews_admin_tab_homepage( $settings ) {
             <td><label><input type="checkbox" name="neonews_platform_settings[show_home_categories]" value="1" <?php checked( ! empty( $settings['show_home_categories'] ) ); ?> /> <?php esc_html_e( 'Show category grid sections', 'neonews' ); ?></label></td>
         </tr>
         <tr>
-            <th><?php esc_html_e( 'Category slugs', 'neonews' ); ?></th>
+            <th><?php esc_html_e( 'Category blocks', 'neonews' ); ?></th>
             <td>
-                <input type="text" name="neonews_platform_settings[home_category_slugs]" value="<?php echo esc_attr( $settings['home_category_slugs'] ); ?>" class="large-text" placeholder="business,technology,sports,entertainment" />
-                <p class="description"><?php esc_html_e( 'Comma-separated category slugs. Create categories in Posts → Categories.', 'neonews' ); ?></p>
+                <?php
+                // Build initial data from saved blocks, or from the old slug list.
+                $saved_blocks = (array) ( $settings['home_cat_blocks'] ?? array() );
+                if ( empty( $saved_blocks ) ) {
+                    $default_count = absint( $settings['home_category_posts'] ?? 3 );
+                    $old_slugs = array_filter( array_map( 'trim', explode( ',', (string) ( $settings['home_category_slugs'] ?? '' ) ) ) );
+                    $saved_blocks = array_map( function( $s ) use ( $default_count ) {
+                        return array( 'slug' => $s, 'label' => '', 'color' => '', 'count' => $default_count, 'see_all_url' => '', 'enabled' => true );
+                    }, $old_slugs );
+                }
+                $all_wp_cats = get_categories( array( 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
+                ?>
+                <input type="hidden" name="neonews_platform_settings[home_cat_blocks]" id="nn-cat-blocks-json" value="<?php echo esc_attr( wp_json_encode( array_values( $saved_blocks ) ) ); ?>" />
+                <p class="description" style="margin-bottom:8px;"><?php esc_html_e( 'Each row is one section on the homepage. Drag to reorder. The "Display title" overrides the WordPress category name (so your category "politics" can show as "Trending Now").', 'neonews' ); ?></p>
+
+                <style>
+                .nn-catblk-tbl{width:100%;max-width:680px;border-collapse:collapse;font-size:0.82rem;}
+                .nn-catblk-tbl th{background:#f6f7f7;padding:7px 10px;text-align:left;border:1px solid #c3c4c7;font-size:0.78rem;}
+                .nn-catblk-tbl td{padding:6px 8px;border:1px solid #dcdcde;vertical-align:middle;}
+                .nn-catblk-tbl tr.nn-cb-disabled td{opacity:.45;}
+                .nn-catblk-drag{cursor:grab;color:#aaa;font-size:1rem;padding:0 4px;}
+                .nn-catblk-tbl input[type=text],.nn-catblk-tbl input[type=url],.nn-catblk-tbl select{width:100%;padding:4px 6px;border:1px solid #c3c4c7;border-radius:3px;font-size:0.82rem;box-sizing:border-box;}
+                .nn-catblk-tbl input[type=number]{width:52px;padding:4px 6px;border:1px solid #c3c4c7;border-radius:3px;font-size:0.82rem;}
+                .nn-catblk-tbl input[type=color]{width:42px;height:28px;padding:2px;border:1px solid #c3c4c7;border-radius:3px;cursor:pointer;}
+                .nn-cb-del{color:#b32d2e;background:none;border:none;cursor:pointer;font-size:1rem;padding:2px 6px;}
+                </style>
+
+                <table class="nn-catblk-tbl" id="nn-catblk-table">
+                    <thead><tr>
+                        <th></th>
+                        <th><?php esc_html_e( 'On', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Category', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Display title', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Posts', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Color', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( '"See all" URL', 'neonews' ); ?></th>
+                        <th></th>
+                    </tr></thead>
+                    <tbody id="nn-catblk-body"></tbody>
+                </table>
+                <button type="button" id="nn-catblk-add" class="button" style="margin-top:8px;">+ <?php esc_html_e( 'Add block', 'neonews' ); ?></button>
+
+                <script>
+                (function(){
+                    var tbody  = document.getElementById('nn-catblk-body');
+                    var jsonIn = document.getElementById('nn-catblk-json');
+                    var addBtn = document.getElementById('nn-catblk-add');
+                    jsonIn = document.getElementById('nn-cat-blocks-json');
+                    var blocks = <?php echo wp_json_encode( array_values( $saved_blocks ) ); ?>;
+                    var cats   = <?php echo wp_json_encode( array_map( function( $c ) { return array( 'slug' => $c->slug, 'name' => $c->name ); }, $all_wp_cats ) ); ?>;
+
+                    function catOptions(selected) {
+                        var out = '<option value="">— choose —</option>';
+                        cats.forEach(function(c){
+                            out += '<option value="'+esc(c.slug)+'"'+(c.slug===selected?' selected':'')+'>'+esc(c.name)+' ('+esc(c.slug)+')</option>';
+                        });
+                        return out;
+                    }
+
+                    function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+                    function save(){
+                        jsonIn.value = JSON.stringify(blocks);
+                    }
+
+                    function makeRow(blk, idx){
+                        var tr = document.createElement('tr');
+                        tr.className = blk.enabled ? '' : 'nn-cb-disabled';
+                        tr.setAttribute('draggable','true');
+                        tr.innerHTML =
+                            '<td class="nn-catblk-drag">⣿</td>'
+                           +'<td><input type="checkbox" class="nn-cb-enabled"'+(blk.enabled?' checked':'')+' /></td>'
+                           +'<td><select class="nn-cb-slug">'+catOptions(blk.slug)+'</select></td>'
+                           +'<td><input type="text" class="nn-cb-label" value="'+esc(blk.label||'')+'" placeholder="'+esc(<?php echo wp_json_encode( __( 'e.g. Trending Now', 'neonews' ) ); ?>)+'" /></td>'
+                           +'<td><input type="number" class="nn-cb-count" min="1" max="20" value="'+(blk.count||3)+'" /></td>'
+                           +'<td><input type="color" class="nn-cb-color" value="'+(blk.color||'#ff7a18')+'" /></td>'
+                           +'<td><input type="url" class="nn-cb-seeall" value="'+esc(blk.see_all_url||'')+'" placeholder="https://…" /></td>'
+                           +'<td><button type="button" class="nn-cb-del" title="Remove">✕</button></td>';
+
+                        function update(){
+                            blk.slug        = tr.querySelector('.nn-cb-slug').value;
+                            blk.label       = tr.querySelector('.nn-cb-label').value;
+                            blk.count       = parseInt(tr.querySelector('.nn-cb-count').value)||3;
+                            blk.color       = tr.querySelector('.nn-cb-color').value;
+                            blk.see_all_url = tr.querySelector('.nn-cb-seeall').value;
+                            blk.enabled     = tr.querySelector('.nn-cb-enabled').checked;
+                            tr.className    = blk.enabled ? '' : 'nn-cb-disabled';
+                            save();
+                        }
+
+                        tr.querySelectorAll('input,select').forEach(function(el){ el.addEventListener('change',update); el.addEventListener('input',update); });
+                        tr.querySelector('.nn-cb-del').addEventListener('click',function(){
+                            var i = blocks.indexOf(blk);
+                            if(i>-1){blocks.splice(i,1);}
+                            tr.remove();
+                            save();
+                        });
+
+                        // drag
+                        var dragging = null;
+                        tr.addEventListener('dragstart',function(e){ dragging=tr; tr.style.opacity='0.45'; e.dataTransfer.effectAllowed='move'; });
+                        tr.addEventListener('dragend',function(){ tr.style.opacity=''; dragging=null; reindexAndSave(); });
+                        tr.addEventListener('dragover',function(e){ e.preventDefault(); if(!dragging||dragging===tr)return; var b=tr.getBoundingClientRect(); tbody.insertBefore(dragging,e.clientY>b.top+b.height/2?tr.nextSibling:tr); });
+
+                        return tr;
+                    }
+
+                    function reindexAndSave(){
+                        var newOrder = [];
+                        tbody.querySelectorAll('tr').forEach(function(tr){
+                            var slug = tr.querySelector('.nn-cb-slug').value;
+                            var blk = blocks.find(function(b){ return b.slug===slug; });
+                            if(blk) newOrder.push(blk);
+                        });
+                        blocks.length = 0;
+                        newOrder.forEach(function(b){ blocks.push(b); });
+                        save();
+                    }
+
+                    function render(){
+                        tbody.innerHTML='';
+                        blocks.forEach(function(blk,i){ tbody.appendChild(makeRow(blk,i)); });
+                    }
+
+                    addBtn.addEventListener('click',function(){
+                        var blk={slug:'',label:'',color:'#ff7a18',count:3,see_all_url:'',enabled:true};
+                        blocks.push(blk);
+                        tbody.appendChild(makeRow(blk,blocks.length-1));
+                        save();
+                    });
+
+                    render();
+                })();
+                </script>
             </td>
         </tr>
         <tr>
@@ -132,6 +264,278 @@ function neonews_admin_tab_homepage( $settings ) {
             <td><label><input type="checkbox" name="neonews_platform_settings[show_home_newsletter]" value="1" <?php checked( ! empty( $settings['show_home_newsletter'] ) ); ?> /> <?php esc_html_e( 'Show newsletter box in homepage sidebar', 'neonews' ); ?></label></td>
         </tr>
     </table>
+
+    <?php
+    $section_labels = array(
+        'hero_text'  => '🅷  ' . __( 'Hero headline & subtitle', 'neonews' ),
+        'carousel'   => '🎠  ' . __( 'Featured posts carousel', 'neonews' ),
+        'ad_hero'    => '📢  ' . __( 'Ad banner (below carousel)', 'neonews' ),
+        'categories' => '📰  ' . __( 'Category blocks', 'neonews' ),
+        'videos'     => '▶  ' . __( 'Videos section', 'neonews' ),
+        'tipline'    => '✏  ' . __( 'Pitch a story', 'neonews' ),
+        'latest'     => '🕐  ' . __( 'Latest news grid', 'neonews' ),
+        'ad_footer'  => '📢  ' . __( 'Ad banner (bottom)', 'neonews' ),
+    );
+    $order_raw  = $settings['home_section_order'] ?? '';
+    $order_keys = array_filter( array_map( 'trim', explode( ',', $order_raw ) ) );
+    // fill any missing sections at the end
+    $all_keys   = array_keys( $section_labels );
+    $order_keys = array_merge( $order_keys, array_diff( $all_keys, $order_keys ) );
+    ?>
+    <h3><?php esc_html_e( 'Section order', 'neonews' ); ?></h3>
+    <p class="description"><?php esc_html_e( 'Drag rows up or down to change the order sections appear on the homepage.', 'neonews' ); ?></p>
+    <input type="hidden" name="neonews_platform_settings[home_section_order]" id="nn-section-order-input" value="<?php echo esc_attr( implode( ',', $order_keys ) ); ?>" />
+    <ul id="nn-section-sortable" style="max-width:520px;margin:0.75rem 0 1.5rem;padding:0;list-style:none;border:1px solid #c3c4c7;border-radius:6px;overflow:hidden;">
+        <?php foreach ( $order_keys as $k ) :
+            if ( ! isset( $section_labels[ $k ] ) ) continue; ?>
+            <li data-key="<?php echo esc_attr( $k ); ?>" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid #c3c4c7;cursor:grab;user-select:none;" class="nn-sort-row">
+                <span style="color:#aaa;font-size:1.1rem;line-height:1;">⣿</span>
+                <span><?php echo esc_html( $section_labels[ $k ] ); ?></span>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+    <script id="nn-custom-section-data">
+    var nnCustomSections = <?php echo wp_json_encode( array_values( (array) ( $settings['home_custom_sections'] ?? array() ) ) ); ?>;
+    </script>
+    <script>
+    (function(){
+        var list = document.getElementById('nn-section-sortable');
+        var input = document.getElementById('nn-section-order-input');
+        if (!list || !input) return;
+
+        var dragging = null;
+
+        list.querySelectorAll('.nn-sort-row').forEach(function(row){
+            row.setAttribute('draggable','true');
+            row.addEventListener('dragstart', function(e){
+                dragging = row;
+                row.style.opacity = '0.45';
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            row.addEventListener('dragend', function(){
+                row.style.opacity = '';
+                dragging = null;
+                saveOrder();
+            });
+            row.addEventListener('dragover', function(e){
+                e.preventDefault();
+                if (!dragging || dragging === row) return;
+                var bounding = row.getBoundingClientRect();
+                var after = e.clientY > bounding.top + bounding.height / 2;
+                list.insertBefore(dragging, after ? row.nextSibling : row);
+            });
+        });
+
+        // touch support
+        var touchDragging = null, touchClone = null, touchOffsetY = 0;
+        list.querySelectorAll('.nn-sort-row').forEach(function(row){
+            row.addEventListener('touchstart', function(e){
+                touchDragging = row;
+                var t = e.touches[0];
+                var rect = row.getBoundingClientRect();
+                touchOffsetY = t.clientY - rect.top;
+                touchClone = row.cloneNode(true);
+                touchClone.style.cssText = 'position:fixed;z-index:9999;width:'+rect.width+'px;left:'+rect.left+'px;top:'+(t.clientY - touchOffsetY)+'px;opacity:0.85;pointer-events:none;background:#f0f7ff;';
+                document.body.appendChild(touchClone);
+                row.style.opacity = '0.35';
+            }, {passive:true});
+            row.addEventListener('touchmove', function(e){
+                if (!touchDragging || !touchClone) return;
+                var t = e.touches[0];
+                touchClone.style.top = (t.clientY - touchOffsetY) + 'px';
+                var rows = list.querySelectorAll('.nn-sort-row');
+                rows.forEach(function(r){
+                    if (r === touchDragging) return;
+                    var rb = r.getBoundingClientRect();
+                    if (t.clientY > rb.top && t.clientY < rb.bottom) {
+                        var after = t.clientY > rb.top + rb.height / 2;
+                        list.insertBefore(touchDragging, after ? r.nextSibling : r);
+                    }
+                });
+            }, {passive:true});
+            row.addEventListener('touchend', function(){
+                if (touchClone) { document.body.removeChild(touchClone); touchClone = null; }
+                if (touchDragging) { touchDragging.style.opacity = ''; touchDragging = null; }
+                saveOrder();
+            });
+        });
+
+        function saveOrder(){
+            var keys = [];
+            list.querySelectorAll('.nn-sort-row').forEach(function(r){ keys.push(r.getAttribute('data-key')); });
+            input.value = keys.join(',');
+        }
+
+        // ── Custom section rows in sort list ──────────────────────────────
+        function addCustomSortRow(cs) {
+            var existing = list.querySelector('[data-key="custom_' + cs.id + '"]');
+            if (existing) { return; }
+            var icons = { tag: '🏷', page: '📄', html: '🖊' };
+            var li = document.createElement('li');
+            li.setAttribute('data-key', 'custom_' + cs.id);
+            li.className = 'nn-sort-row nn-sort-custom';
+            li.setAttribute('draggable', 'true');
+            li.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0f7ff;border-bottom:1px solid #c3c4c7;cursor:grab;user-select:none;';
+            li.innerHTML = '<span style="color:#aaa;font-size:1.1rem;">⣿</span><span>' + (icons[cs.type]||'📦') + '  ' + (cs.title || cs.id) + '</span>';
+            attachDragToRow(li);
+            list.appendChild(li);
+            saveOrder();
+        }
+
+        function removeCustomSortRow(id) {
+            var row = list.querySelector('[data-key="custom_' + id + '"]');
+            if (row) { row.remove(); saveOrder(); }
+        }
+
+        function attachDragToRow(row) {
+            row.addEventListener('dragstart', function(e){ dragging = row; row.style.opacity='0.45'; e.dataTransfer.effectAllowed='move'; });
+            row.addEventListener('dragend', function(){ row.style.opacity=''; dragging=null; saveOrder(); });
+            row.addEventListener('dragover', function(e){ e.preventDefault(); if(!dragging||dragging===row)return; var b=row.getBoundingClientRect(); list.insertBefore(dragging, e.clientY>b.top+b.height/2?row.nextSibling:row); });
+            // touch
+            row.addEventListener('touchstart', function(e){ touchDragging=row; var t=e.touches[0]; var rect=row.getBoundingClientRect(); touchOffsetY=t.clientY-rect.top; touchClone=row.cloneNode(true); touchClone.style.cssText='position:fixed;z-index:9999;width:'+rect.width+'px;left:'+rect.left+'px;top:'+(t.clientY-touchOffsetY)+'px;opacity:0.85;pointer-events:none;background:#dbeafe;'; document.body.appendChild(touchClone); row.style.opacity='0.35'; }, {passive:true});
+        }
+
+        window.nnAddCustomSortRow    = addCustomSortRow;
+        window.nnRemoveCustomSortRow = removeCustomSortRow;
+    })();
+    </script>
+
+    <?php
+    // ── Pages dropdown for admin ──────────────────────────────────────────
+    $all_pages = get_pages( array( 'post_status' => 'publish', 'sort_column' => 'post_title' ) );
+    ?>
+
+    <h3><?php esc_html_e( 'Custom sections', 'neonews' ); ?></h3>
+    <p class="description"><?php esc_html_e( 'Add extra sections — posts from a tag, a page\'s content, or any custom HTML block. Each one appears in the order list above.', 'neonews' ); ?></p>
+
+    <input type="hidden" name="neonews_platform_settings[home_custom_sections]" id="nn-custom-sections-json" value="<?php echo esc_attr( wp_json_encode( array_values( (array) ( $settings['home_custom_sections'] ?? array() ) ) ) ); ?>" />
+
+    <div id="nn-custom-sections-wrap" style="max-width:660px;"></div>
+
+    <button type="button" id="nn-add-custom-section" class="button" style="margin-top:0.5rem;">+ <?php esc_html_e( 'Add section', 'neonews' ); ?></button>
+
+    <style>
+    .nn-cs-row{background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:14px 16px;margin-bottom:10px;}
+    .nn-cs-row h4{margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-size:0.9rem;}
+    .nn-cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
+    .nn-cs-grid label{display:flex;flex-direction:column;gap:3px;font-size:0.82rem;font-weight:600;color:#50575e;}
+    .nn-cs-grid input,.nn-cs-grid select,.nn-cs-grid textarea{padding:5px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:0.85rem;width:100%;box-sizing:border-box;}
+    .nn-cs-row .nn-cs-html-wrap{grid-column:1/-1;}
+    .nn-cs-row .nn-cs-page-wrap,.nn-cs-row .nn-cs-slug-wrap{grid-column:1/-1;}
+    </style>
+
+    <script>
+    (function(){
+        var wrap    = document.getElementById('nn-custom-sections-wrap');
+        var jsonIn  = document.getElementById('nn-custom-sections-json');
+        var addBtn  = document.getElementById('nn-add-custom-section');
+        var sections = (typeof nnCustomSections !== 'undefined') ? JSON.parse(JSON.stringify(nnCustomSections)) : [];
+        var pages = <?php echo wp_json_encode( array_map( function( $p ) { return array( 'id' => $p->ID, 'title' => $p->post_title ); }, $all_pages ) ); ?>;
+
+        function uid() {
+            return 'cs' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+        }
+
+        function saveAll() {
+            jsonIn.value = JSON.stringify(sections);
+        }
+
+        function pageOptions(selectedId) {
+            var out = '<option value="0">— select page —</option>';
+            pages.forEach(function(p){ out += '<option value="'+p.id+'"'+(parseInt(selectedId)===p.id?' selected':'')+'>'+p.title+'</option>'; });
+            return out;
+        }
+
+        function buildRow(cs, idx) {
+            var row = document.createElement('div');
+            row.className = 'nn-cs-row';
+            row.innerHTML =
+                '<h4><span>'+( cs.title || ('Section '+(idx+1)) )+'</span>'
+                +'<button type="button" class="button-link-delete nn-cs-delete" style="color:#b32d2e;">✕ '+<?php echo wp_json_encode( __( 'Remove', 'neonews' ) ); ?>+'</button></h4>'
+                +'<div class="nn-cs-grid">'
+                +'<label>'+<?php echo wp_json_encode( __( 'Type', 'neonews' ) ); ?>+'<select class="nn-cs-type"><option value="tag"'+(cs.type==='tag'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Posts by Tag', 'neonews' ) ); ?>+'</option><option value="page"'+(cs.type==='page'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Page content', 'neonews' ) ); ?>+'</option><option value="html"'+(cs.type==='html'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Free HTML / Embed', 'neonews' ) ); ?>+'</option></select></label>'
+                +'<label>'+<?php echo wp_json_encode( __( 'Section title', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-title" value="'+escHtml(cs.title||'')+'" placeholder="'+<?php echo wp_json_encode( __( 'e.g. From our readers', 'neonews' ) ); ?>+'" /></label>'
+                +'<div class="nn-cs-slug-wrap"><label>'+<?php echo wp_json_encode( __( 'Tag slug', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-slug" value="'+escHtml(cs.slug||'')+'" placeholder="featured-interviews" /></label></div>'
+                +'<label>'+<?php echo wp_json_encode( __( 'Post count', 'neonews' ) ); ?>+'<input type="number" class="nn-cs-count" min="1" max="20" value="'+(cs.count||4)+'" /></label>'
+                +'<div class="nn-cs-page-wrap"><label>'+<?php echo wp_json_encode( __( 'Page', 'neonews' ) ); ?>+'<select class="nn-cs-page">'+pageOptions(cs.page_id)+'</select></label></div>'
+                +'<label>'+<?php echo wp_json_encode( __( '"See all" link', 'neonews' ) ); ?>+'<input type="url" class="nn-cs-seeall" value="'+escHtml(cs.see_all_url||'')+'" placeholder="https://…" /></label>'
+                +'<div class="nn-cs-html-wrap"><label>'+<?php echo wp_json_encode( __( 'HTML / embed code', 'neonews' ) ); ?>+'<textarea class="nn-cs-html" rows="3">'+escHtml(cs.html||'')+'</textarea></label></div>'
+                +'</div>';
+
+            updateVisibility(row, cs.type || 'tag');
+
+            row.querySelector('.nn-cs-delete').addEventListener('click', function(){
+                var i = sections.findIndex(function(s){ return s.id === cs.id; });
+                if (i > -1) { sections.splice(i,1); }
+                row.remove();
+                if (window.nnRemoveCustomSortRow) { window.nnRemoveCustomSortRow(cs.id); }
+                saveAll();
+            });
+
+            function update() {
+                var type = row.querySelector('.nn-cs-type').value;
+                cs.type       = type;
+                cs.title      = row.querySelector('.nn-cs-title').value;
+                cs.slug       = row.querySelector('.nn-cs-slug').value;
+                cs.count      = parseInt(row.querySelector('.nn-cs-count').value) || 4;
+                cs.page_id    = parseInt(row.querySelector('.nn-cs-page').value) || 0;
+                cs.html       = row.querySelector('.nn-cs-html').value;
+                cs.see_all_url = row.querySelector('.nn-cs-seeall').value;
+                row.querySelector('h4 span').textContent = cs.title || ('Section '+(sections.indexOf(cs)+1));
+                updateVisibility(row, type);
+                saveAll();
+                if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
+                // update label in sort list
+                var sortRow = document.querySelector('[data-key="custom_'+cs.id+'"]');
+                if (sortRow) {
+                    var icons = {tag:'🏷',page:'📄',html:'🖊'};
+                    sortRow.querySelectorAll('span')[1].textContent = (icons[type]||'📦')+'  '+(cs.title||cs.id);
+                }
+            }
+
+            row.querySelectorAll('input,select,textarea').forEach(function(el){
+                el.addEventListener('change', update);
+                el.addEventListener('input', update);
+            });
+
+            return row;
+        }
+
+        function updateVisibility(row, type) {
+            row.querySelector('.nn-cs-slug-wrap').style.display   = type === 'tag'  ? '' : 'none';
+            row.querySelector('.nn-cs-page-wrap').style.display   = type === 'page' ? '' : 'none';
+            row.querySelector('.nn-cs-html-wrap').style.display   = type === 'html' ? '' : 'none';
+            row.querySelectorAll('.nn-cs-grid > label')[2].style.display = type !== 'html' ? '' : 'none'; // see-all
+            row.querySelectorAll('.nn-cs-grid > label')[1].style.display = type !== 'html' ? '' : 'none'; // count
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/[&<>"']/g, function(c){
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+            });
+        }
+
+        function render() {
+            wrap.innerHTML = '';
+            sections.forEach(function(cs, i){ wrap.appendChild(buildRow(cs, i)); });
+        }
+
+        addBtn.addEventListener('click', function(){
+            var cs = { id: uid(), type: 'tag', title: '', slug: '', count: 4, page_id: 0, html: '', show_title: true, see_all_url: '' };
+            sections.push(cs);
+            wrap.appendChild(buildRow(cs, sections.length-1));
+            if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
+            saveAll();
+        });
+
+        render();
+        // register existing custom sections in sort list (in case they aren't there yet)
+        sections.forEach(function(cs){
+            if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
+        });
+    })();
+    </script>
+
     <?php
 }
 

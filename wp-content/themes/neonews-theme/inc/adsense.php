@@ -23,6 +23,8 @@ function neonews_get_ad_zone_ids() {
         'ad-home-mid',
         'ad-home-videos',
         'ad-home-sidebar',
+        'ad-home-sidebar-mid',
+        'ad-home-sidebar-bottom',
         'ad-home-footer',
         'ad-single',
         'ad-archive',
@@ -243,7 +245,7 @@ function neonews_should_load_adsense_script() {
  * @return array{format?:string,full_width?:bool}
  */
 function neonews_get_adsense_zone_format( $zone_id ) {
-    $sidebar_zones = array( 'ad-home-sidebar', 'ad-sidebar' );
+    $sidebar_zones = array( 'ad-home-sidebar', 'ad-home-sidebar-mid', 'ad-home-sidebar-bottom', 'ad-sidebar' );
     $mobile_zones  = array( 'ad-mobile' );
 
     if ( in_array( $zone_id, $sidebar_zones, true ) ) {

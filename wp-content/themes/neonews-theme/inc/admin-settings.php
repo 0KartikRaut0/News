@@ -18,6 +18,8 @@ function neonews_get_default_settings() {
     return array(
         'ads_master'          => true,
         'adsense_enabled'          => false,
+        'mobile_ad_collapsible'    => true,
+        'mobile_ad_collapsed_text' => __( 'Ad', 'neonews' ),
         'adsense_publisher_id'     => '',
         'adsense_default_slot_id'  => '',
         'adsense_auto_ads'         => false,
@@ -35,8 +37,10 @@ function neonews_get_default_settings() {
             'ad-home-hero'    => true,
             'ad-home-mid'     => true,
             'ad-home-videos'  => true,
-            'ad-home-sidebar' => true,
-            'ad-home-footer'  => true,
+            'ad-home-sidebar'        => true,
+            'ad-home-sidebar-mid'    => true,
+            'ad-home-sidebar-bottom' => true,
+            'ad-home-footer'         => true,
             'ad-single'       => true,
             'ad-archive'      => true,
             'ad-sidebar'      => true,
@@ -62,6 +66,7 @@ function neonews_get_default_settings() {
         'home_carousel_count'     => 6,
         'show_home_categories'    => true,
         'home_category_slugs'     => 'business,technology,sports,entertainment',
+        'home_cat_blocks'         => array(),
         'home_category_posts'     => 3,
         'home_mid_ad_after_cat'   => 2,
         'show_home_videos'        => true,
@@ -69,6 +74,8 @@ function neonews_get_default_settings() {
         'home_video_count'        => 5,
         'home_video_title'        => __( 'Watch', 'neonews' ),
         'home_video_subtitle'     => __( 'Original video reporting', 'neonews' ),
+        'home_section_order'      => 'hero_text,carousel,ad_hero,categories,videos,tipline,latest,ad_footer',
+        'home_custom_sections'    => array(),
         'show_home_tipline'       => true,
         'tipline_badge'           => __( 'Reader Tipline', 'neonews' ),
         'tipline_title'           => __( 'Got a story we should cover?', 'neonews' ),
@@ -267,6 +274,8 @@ function neonews_sanitize_settings( $input ) {
             $output['ad_zones'][ $zone ] = ! empty( $input['ad_zones'][ $zone ] );
         }
 
+        $output['mobile_ad_collapsible']    = ! empty( $input['mobile_ad_collapsible'] );
+        $output['mobile_ad_collapsed_text'] = sanitize_text_field( $input['mobile_ad_collapsed_text'] ?? '' );
         $output['adsense_enabled']           = ! empty( $input['adsense_enabled'] );
         $output['adsense_auto_ads']          = ! empty( $input['adsense_auto_ads'] );
         $output['adsense_publisher_id']      = sanitize_text_field( $input['adsense_publisher_id'] ?? '' );
@@ -338,6 +347,44 @@ function neonews_sanitize_settings( $input ) {
         $output['show_home_carousel']  = ! empty( $input['show_home_carousel'] );
         $output['show_home_categories'] = ! empty( $input['show_home_categories'] );
         $output['show_home_videos']    = ! empty( $input['show_home_videos'] );
+        // Custom sections.
+        $custom_sections = array();
+        if ( ! empty( $input['home_custom_sections'] ) ) {
+            $raw_custom = json_decode( wp_unslash( $input['home_custom_sections'] ), true );
+            if ( is_array( $raw_custom ) ) {
+                foreach ( $raw_custom as $cs ) {
+                    if ( empty( $cs['id'] ) || empty( $cs['type'] ) ) {
+                        continue;
+                    }
+                    $entry = array(
+                        'id'    => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
+                        'type'  => in_array( $cs['type'], array( 'tag', 'page', 'html' ), true ) ? $cs['type'] : 'tag',
+                        'title' => sanitize_text_field( $cs['title'] ?? '' ),
+                        'count' => max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) ),
+                        'slug'  => sanitize_text_field( $cs['slug'] ?? '' ),
+                        'page_id' => absint( $cs['page_id'] ?? 0 ),
+                        'html'  => wp_kses_post( $cs['html'] ?? '' ),
+                        'show_title' => ! empty( $cs['show_title'] ),
+                        'see_all_url' => esc_url_raw( $cs['see_all_url'] ?? '' ),
+                    );
+                    if ( $entry['id'] ) {
+                        $custom_sections[] = $entry;
+                    }
+                }
+            }
+        }
+        $output['home_custom_sections'] = $custom_sections;
+
+        $allowed_sections = array( 'hero_text', 'carousel', 'ad_hero', 'categories', 'videos', 'tipline', 'latest', 'ad_footer' );
+        foreach ( $custom_sections as $cs ) {
+            $allowed_sections[] = 'custom_' . $cs['id'];
+        }
+        if ( ! empty( $input['home_section_order'] ) ) {
+            $raw_order = array_filter( array_map( 'sanitize_key', explode( ',', $input['home_section_order'] ) ) );
+            $clean     = array_values( array_intersect( array_unique( $raw_order ), $allowed_sections ) );
+            $missing   = array_diff( $allowed_sections, $clean );
+            $output['home_section_order'] = implode( ',', array_merge( $clean, $missing ) );
+        }
         $output['show_home_tipline']   = ! empty( $input['show_home_tipline'] );
         foreach ( array( 'tipline_badge', 'tipline_title', 'tipline_text', 'tipline_form_title', 'tipline_form_desc', 'tipline_cta_open', 'tipline_cta_locked', 'tipline_locked_text' ) as $tip_key ) {
             $output[ $tip_key ] = sanitize_text_field( wp_unslash( $input[ $tip_key ] ?? $previous[ $tip_key ] ) );
@@ -349,6 +396,27 @@ function neonews_sanitize_settings( $input ) {
         $output['home_hero_title_accent'] = sanitize_text_field( wp_unslash( $input['home_hero_title_accent'] ?? $previous['home_hero_title_accent'] ) );
         $output['home_hero_subtitle']     = sanitize_text_field( wp_unslash( $input['home_hero_subtitle'] ?? $previous['home_hero_subtitle'] ) );
         $output['home_category_slugs']    = sanitize_text_field( wp_unslash( $input['home_category_slugs'] ?? $previous['home_category_slugs'] ) );
+
+        $home_cat_blocks = array();
+        if ( isset( $input['home_cat_blocks'] ) ) {
+            $raw_blocks = json_decode( wp_unslash( $input['home_cat_blocks'] ), true );
+            if ( is_array( $raw_blocks ) ) {
+                foreach ( $raw_blocks as $blk ) {
+                    if ( empty( $blk['slug'] ) ) {
+                        continue;
+                    }
+                    $home_cat_blocks[] = array(
+                        'slug'        => sanitize_title( $blk['slug'] ),
+                        'label'       => sanitize_text_field( $blk['label'] ?? '' ),
+                        'color'       => sanitize_hex_color( $blk['color'] ?? '' ) ?: '',
+                        'count'       => max( 1, min( 20, absint( $blk['count'] ?? 3 ) ) ),
+                        'see_all_url' => esc_url_raw( $blk['see_all_url'] ?? '' ),
+                        'enabled'     => ! empty( $blk['enabled'] ),
+                    );
+                }
+            }
+        }
+        $output['home_cat_blocks'] = $home_cat_blocks;
         $output['home_video_category']    = sanitize_title( wp_unslash( $input['home_video_category'] ?? $previous['home_video_category'] ) );
         $output['home_video_title']       = sanitize_text_field( wp_unslash( $input['home_video_title'] ?? $previous['home_video_title'] ) );
         $output['home_video_subtitle']    = sanitize_text_field( wp_unslash( $input['home_video_subtitle'] ?? $previous['home_video_subtitle'] ) );
@@ -475,8 +543,10 @@ function neonews_render_settings_page() {
         'ad-home-mid'     => __( 'Home — between categories', 'neonews' ),
         'ad-home-videos'  => __( 'Home — before videos', 'neonews' ),
         'ad-content'      => __( 'Home — in-content', 'neonews' ),
-        'ad-home-sidebar' => __( 'Home — sidebar rail', 'neonews' ),
-        'ad-home-footer'  => __( 'Home — footer area', 'neonews' ),
+        'ad-home-sidebar'        => __( 'Home — sidebar top (300×600)', 'neonews' ),
+        'ad-home-sidebar-mid'    => __( 'Home — sidebar middle (300×250)', 'neonews' ),
+        'ad-home-sidebar-bottom' => __( 'Home — sidebar bottom (300×250)', 'neonews' ),
+        'ad-home-footer'         => __( 'Home — footer area', 'neonews' ),
         'ad-mobile'       => __( 'Mobile sticky bottom', 'neonews' ),
         'ad-single'       => __( 'Single post — after article', 'neonews' ),
         'ad-archive'      => __( 'Archive — below title', 'neonews' ),
@@ -524,6 +594,17 @@ function neonews_render_settings_page() {
                     </td>
                 </tr>
                 <?php endforeach; ?>
+                <tr>
+                    <th><?php esc_html_e( 'Mobile sticky — collapse button', 'neonews' ); ?></th>
+                    <td>
+                        <label><input type="checkbox" name="neonews_platform_settings[mobile_ad_collapsible]" value="1" <?php checked( ! empty( $settings['mobile_ad_collapsible'] ) ); ?> /> <?php esc_html_e( 'Show a collapse / expand toggle on the mobile sticky ad banner', 'neonews' ); ?></label>
+                        <p style="margin-top:0.5rem;">
+                            <label><?php esc_html_e( 'Label when collapsed:', 'neonews' ); ?>
+                            <input type="text" name="neonews_platform_settings[mobile_ad_collapsed_text]" value="<?php echo esc_attr( $settings['mobile_ad_collapsed_text'] ); ?>" class="small-text" placeholder="Ad" /></label>
+                        </p>
+                        <p class="description"><?php esc_html_e( 'Visitors can tap the arrow to hide the banner while browsing and restore it at any time. The choice is remembered for 30 minutes.', 'neonews' ); ?></p>
+                    </td>
+                </tr>
             </table>
 
             <h3><?php esc_html_e( 'Google AdSense', 'neonews' ); ?></h3>

@@ -58,6 +58,31 @@ function neonews_get_home_categories() {
 }
 
 /**
+ * Get home category blocks as structured config.
+ * Falls back to plain slug list when no blocks are saved yet.
+ *
+ * @return array[] Each entry: slug, label, color, count, see_all_url, enabled.
+ */
+function neonews_get_home_cat_blocks() {
+    $saved = (array) neonews_get_setting( 'home_cat_blocks', array() );
+    if ( ! empty( $saved ) ) {
+        return array_filter( $saved, function( $b ) { return ! empty( $b['enabled'] ) || ! isset( $b['enabled'] ); } );
+    }
+    // Fall back to plain slug list — treat each as enabled with no overrides.
+    $default_count = absint( neonews_get_setting( 'home_category_posts', 3 ) );
+    return array_map( function( $slug ) use ( $default_count ) {
+        return array(
+            'slug'        => $slug,
+            'label'       => '',
+            'color'       => '',
+            'count'       => $default_count,
+            'see_all_url' => '',
+            'enabled'     => true,
+        );
+    }, neonews_get_home_categories() );
+}
+
+/**
  * Footer section category slugs.
  *
  * @return string[]
