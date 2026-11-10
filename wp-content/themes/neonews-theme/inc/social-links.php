@@ -10,22 +10,82 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Pages that support a WhatsApp contact block.
+ *
+ * @return array Key => label.
+ */
+function neonews_get_whatsapp_pages() {
+    return array(
+        'contact'   => __( 'Contact', 'neonews' ),
+        'advertise' => __( 'Advertise', 'neonews' ),
+        'careers'   => __( 'Careers', 'neonews' ),
+    );
+}
+
+/**
  * Sanitized WhatsApp digits-only number from settings.
  *
+ * @param string $page Optional page key; uses its own number when set.
  * @return string
  */
-function neonews_get_whatsapp_number() {
-    $raw = neonews_get_setting( 'whatsapp_number', '' );
+function neonews_get_whatsapp_number( $page = '' ) {
+    $raw = '';
+    if ( $page ) {
+        $raw = preg_replace( '/[^0-9]/', '', (string) neonews_get_setting( 'whatsapp_' . $page . '_number', '' ) );
+    }
+    if ( strlen( $raw ) < 8 ) {
+        $raw = neonews_get_setting( 'whatsapp_number', '' );
+    }
     return preg_replace( '/[^0-9]/', '', (string) $raw );
 }
 
 /**
  * Whether WhatsApp number is configured.
  *
+ * @param string $page Optional page key.
  * @return bool
  */
-function neonews_has_whatsapp_number() {
-    return strlen( neonews_get_whatsapp_number() ) >= 8;
+function neonews_has_whatsapp_number( $page = '' ) {
+    return strlen( neonews_get_whatsapp_number( $page ) ) >= 8;
+}
+
+/**
+ * WhatsApp page key for the current request (contact|advertise|careers), or ''.
+ *
+ * @return string
+ */
+function neonews_get_current_whatsapp_page() {
+    if ( ! is_page() ) {
+        return '';
+    }
+
+    foreach ( array_keys( neonews_get_whatsapp_pages() ) as $key ) {
+        if ( is_page_template( 'templates/template-' . $key . '.php' ) ) {
+            return $key;
+        }
+    }
+
+    $slug = get_post_field( 'post_name', get_queried_object_id() );
+    $map  = array(
+        'contact'    => 'contact',
+        'contact-us' => 'contact',
+        'advertise'  => 'advertise',
+        'advertise-with-us' => 'advertise',
+        'careers'    => 'careers',
+        'jobs'       => 'careers',
+    );
+
+    return $map[ $slug ] ?? '';
+}
+
+/**
+ * Whether WhatsApp is enabled and configured for a page.
+ *
+ * @param string $page Page key.
+ * @return bool
+ */
+function neonews_show_page_whatsapp( $page ) {
+    return neonews_is_feature_enabled( 'show_' . $page . '_whatsapp' ) && neonews_has_whatsapp_number( $page );
 }
 
 /**
@@ -109,7 +169,7 @@ function neonews_post_allows_whatsapp_share( $post_id = null ) {
  * @return bool
  */
 function neonews_show_contact_whatsapp() {
-    return neonews_is_feature_enabled( 'show_contact_whatsapp' ) && neonews_has_whatsapp_number();
+    return neonews_show_page_whatsapp( 'contact' );
 }
 
 /**
@@ -118,7 +178,7 @@ function neonews_show_contact_whatsapp() {
  * @return bool
  */
 function neonews_show_advertise_whatsapp() {
-    return neonews_is_feature_enabled( 'show_advertise_whatsapp' ) && neonews_has_whatsapp_number();
+    return neonews_show_page_whatsapp( 'advertise' );
 }
 
 /**
@@ -127,7 +187,7 @@ function neonews_show_advertise_whatsapp() {
  * @return bool
  */
 function neonews_show_careers_whatsapp() {
-    return neonews_is_feature_enabled( 'show_careers_whatsapp' ) && neonews_has_whatsapp_number();
+    return neonews_show_page_whatsapp( 'careers' );
 }
 
 /**
@@ -205,8 +265,8 @@ function neonews_get_whatsapp_share_url( $post_id = null ) {
  * @param string $message Prefilled chat text.
  * @return string
  */
-function neonews_get_whatsapp_chat_url( $message ) {
-    $number = neonews_get_whatsapp_number();
+function neonews_get_whatsapp_chat_url( $message, $page = '' ) {
+    $number = neonews_get_whatsapp_number( $page );
     if ( ! $number ) {
         return '';
     }
@@ -220,12 +280,17 @@ function neonews_get_whatsapp_chat_url( $message ) {
  * @return string
  */
 function neonews_get_whatsapp_contact_url() {
-    $message = neonews_get_setting(
-        'whatsapp_contact_message',
-        __( 'Hello, I would like to get in touch.', 'neonews' )
-    );
+    return neonews_get_whatsapp_page_url( 'contact' );
+}
 
-    return neonews_get_whatsapp_chat_url( $message );
+/**
+ * WhatsApp chat URL for a page, using its number and prefilled message.
+ *
+ * @param string $page Page key.
+ * @return string
+ */
+function neonews_get_whatsapp_page_url( $page ) {
+    return neonews_get_whatsapp_chat_url( (string) neonews_get_setting( 'whatsapp_' . $page . '_message', '' ), $page );
 }
 
 /**
@@ -234,12 +299,7 @@ function neonews_get_whatsapp_contact_url() {
  * @return string
  */
 function neonews_get_whatsapp_advertise_url() {
-    $message = neonews_get_setting(
-        'whatsapp_advertise_message',
-        __( 'Hello, I am interested in advertising on your site.', 'neonews' )
-    );
-
-    return neonews_get_whatsapp_chat_url( $message );
+    return neonews_get_whatsapp_page_url( 'advertise' );
 }
 
 /**
@@ -248,12 +308,7 @@ function neonews_get_whatsapp_advertise_url() {
  * @return string
  */
 function neonews_get_whatsapp_careers_url() {
-    $message = neonews_get_setting(
-        'whatsapp_careers_message',
-        __( 'Hello, I would like to apply for a role at your newsroom.', 'neonews' )
-    );
-
-    return neonews_get_whatsapp_chat_url( $message );
+    return neonews_get_whatsapp_page_url( 'careers' );
 }
 
 /**
@@ -331,6 +386,8 @@ function neonews_render_whatsapp_cta_block( $args ) {
             'url'         => '',
             'title'       => __( 'Chat on WhatsApp', 'neonews' ),
             'description' => '',
+            'button'      => __( 'Open WhatsApp', 'neonews' ),
+            'hours'       => '',
         )
     );
 
@@ -339,55 +396,90 @@ function neonews_render_whatsapp_cta_block( $args ) {
     }
     ?>
     <div class="nn-contact-whatsapp">
-        <h4><?php echo esc_html( $args['title'] ); ?></h4>
+        <div class="nn-contact-whatsapp-head">
+            <span class="nn-contact-whatsapp-icon"><?php echo neonews_whatsapp_svg( 22 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+            <h4><?php echo esc_html( $args['title'] ); ?></h4>
+        </div>
         <?php if ( ! empty( $args['description'] ) ) : ?>
             <p><?php echo esc_html( $args['description'] ); ?></p>
         <?php endif; ?>
         <a href="<?php echo esc_url( $args['url'] ); ?>" class="nn-btn nn-btn-whatsapp" target="_blank" rel="noopener noreferrer">
             <?php echo neonews_whatsapp_svg( 18 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-            <?php esc_html_e( 'Open WhatsApp', 'neonews' ); ?>
+            <?php echo esc_html( $args['button'] ? $args['button'] : __( 'Open WhatsApp', 'neonews' ) ); ?>
         </a>
+        <?php if ( ! empty( $args['hours'] ) ) : ?>
+            <small class="nn-contact-whatsapp-hours"><?php echo esc_html( $args['hours'] ); ?></small>
+        <?php endif; ?>
     </div>
     <?php
+}
+
+/**
+ * Render the configured WhatsApp block for a page.
+ *
+ * @param string $page Page key.
+ */
+function neonews_render_page_whatsapp_block( $page ) {
+    neonews_render_whatsapp_cta_block(
+        array(
+            'enabled'     => neonews_show_page_whatsapp( $page ),
+            'url'         => neonews_get_whatsapp_page_url( $page ),
+            'title'       => neonews_get_setting( 'whatsapp_' . $page . '_title', '' ),
+            'description' => neonews_get_setting( 'whatsapp_' . $page . '_desc', '' ),
+            'button'      => neonews_get_setting( 'whatsapp_' . $page . '_button', '' ),
+            'hours'       => neonews_get_setting( 'whatsapp_hours', '' ),
+        )
+    );
 }
 
 /**
  * Render Contact page WhatsApp block.
  */
 function neonews_render_contact_whatsapp_block() {
-    neonews_render_whatsapp_cta_block(
-        array(
-            'enabled'     => neonews_show_contact_whatsapp(),
-            'url'         => neonews_get_whatsapp_contact_url(),
-            'description' => __( 'Message us directly — we usually reply within one business day.', 'neonews' ),
-        )
-    );
+    neonews_render_page_whatsapp_block( 'contact' );
 }
 
 /**
  * Render Advertise page WhatsApp block.
  */
 function neonews_render_advertise_whatsapp_block() {
-    neonews_render_whatsapp_cta_block(
-        array(
-            'enabled'     => neonews_show_advertise_whatsapp(),
-            'url'         => neonews_get_whatsapp_advertise_url(),
-            'title'       => __( 'Talk to our ad team', 'neonews' ),
-            'description' => __( 'Get rate cards, custom packages, and campaign ideas on WhatsApp.', 'neonews' ),
-        )
-    );
+    neonews_render_page_whatsapp_block( 'advertise' );
 }
 
 /**
  * Render Careers page WhatsApp block.
  */
 function neonews_render_careers_whatsapp_block() {
-    neonews_render_whatsapp_cta_block(
-        array(
-            'enabled'     => neonews_show_careers_whatsapp(),
-            'url'         => neonews_get_whatsapp_careers_url(),
-            'title'       => __( 'Apply via WhatsApp', 'neonews' ),
-            'description' => __( 'Send your portfolio or ask about open roles — our hiring team is on WhatsApp.', 'neonews' ),
-        )
+    neonews_render_page_whatsapp_block( 'careers' );
+}
+
+/**
+ * Floating WhatsApp icon on Contact / Advertise / Careers pages.
+ */
+function neonews_render_whatsapp_float() {
+    if ( ! neonews_is_feature_enabled( 'whatsapp_float_enabled' ) ) {
+        return;
+    }
+
+    $page = neonews_get_current_whatsapp_page();
+    if ( ! $page || ! neonews_show_page_whatsapp( $page ) ) {
+        return;
+    }
+
+    $label    = (string) neonews_get_setting( 'whatsapp_float_label', '' );
+    $position = 'left' === neonews_get_setting( 'whatsapp_float_position', 'right' ) ? 'left' : 'right';
+    $classes  = 'nn-wa-float nn-wa-float-' . $position;
+    if ( ! neonews_is_feature_enabled( 'whatsapp_float_mobile' ) ) {
+        $classes .= ' nn-wa-float-desktop-only';
+    }
+
+    printf(
+        '<a href="%1$s" class="%2$s" target="_blank" rel="noopener noreferrer" aria-label="%3$s"><span class="nn-wa-float-icon">%4$s</span>%5$s</a>',
+        esc_url( neonews_get_whatsapp_page_url( $page ) ),
+        esc_attr( $classes ),
+        esc_attr( $label ? $label : __( 'Chat on WhatsApp', 'neonews' ) ),
+        neonews_whatsapp_svg( 28 ), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        $label ? '<span class="nn-wa-float-label">' . esc_html( $label ) . '</span>' : ''
     );
 }
+add_action( 'wp_footer', 'neonews_render_whatsapp_float', 20 );

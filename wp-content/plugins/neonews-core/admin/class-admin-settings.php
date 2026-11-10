@@ -116,6 +116,109 @@ class NeoNews_Admin_Settings {
         );
 
         add_settings_section(
+            'neonews_submission_section',
+            __( 'Story Submissions', 'neonews-core' ),
+            array( $this, 'render_submission_section' ),
+            'neonews-core-settings'
+        );
+
+        add_settings_field(
+            'submission_allow_premium',
+            __( 'Premium members can submit', 'neonews-core' ),
+            array( $this, 'render_checkbox_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_allow_premium',
+                'description' => __( 'Let Premium members submit stories for review. Basic users see a "become Premium" message instead of the form.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_allow_basic',
+            __( 'Basic members can submit too', 'neonews-core' ),
+            array( $this, 'render_checkbox_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_allow_basic',
+                'description' => __( 'Unlock Submit Story and the homepage “Pitch a story” box for every logged-in member, not just Premium. Visitors still need to sign in.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_page_id',
+            __( 'Submit Story page', 'neonews-core' ),
+            array( $this, 'render_page_select_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_page_id',
+                'description' => __( 'Page with the [neonews_submit_form] shortcode. The homepage “Pitch a story” box links here. Auto-detect finds it for you.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_locked_title',
+            __( 'Message title for basic users', 'neonews-core' ),
+            array( $this, 'render_text_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_locked_title',
+                'description' => __( 'Leave blank for: "Story submissions are for Premium members".', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_locked_message',
+            __( 'Message text for basic users', 'neonews-core' ),
+            array( $this, 'render_textarea_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_locked_message',
+                'description' => __( 'Leave blank to use the default explanation of the Premium → review → publish process.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_upgrade_url',
+            __( '"Become Premium" button link', 'neonews-core' ),
+            array( $this, 'render_url_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_upgrade_url',
+                'description' => __( 'Leave blank to link to the Exclusive page.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_notify_author',
+            __( 'Email authors', 'neonews-core' ),
+            array( $this, 'render_checkbox_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_notify_author',
+                'description' => __( 'Email the author when their story is approved (live) or rejected.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_field(
+            'submission_notify_admin',
+            __( 'Email editorial team', 'neonews-core' ),
+            array( $this, 'render_checkbox_field' ),
+            'neonews-core-settings',
+            'neonews_submission_section',
+            array(
+                'id'          => 'submission_notify_admin',
+                'description' => __( 'Email the site admin address when a new story is submitted.', 'neonews-core' ),
+            )
+        );
+
+        add_settings_section(
             'neonews_activity_alerts_section',
             __( 'Activity Alerts', 'neonews-core' ),
             array( $this, 'render_activity_alerts_section' ),
@@ -238,6 +341,14 @@ class NeoNews_Admin_Settings {
         $sanitized = $previous;
 
         $sanitized['enable_submission'] = ! empty( $input['enable_submission'] );
+        $sanitized['submission_allow_premium']  = ! empty( $input['submission_allow_premium'] );
+        $sanitized['submission_allow_basic']    = ! empty( $input['submission_allow_basic'] );
+        $sanitized['submission_page_id']        = absint( $input['submission_page_id'] ?? 0 );
+        $sanitized['submission_locked_title']   = sanitize_text_field( $input['submission_locked_title'] ?? '' );
+        $sanitized['submission_locked_message'] = sanitize_textarea_field( $input['submission_locked_message'] ?? '' );
+        $sanitized['submission_upgrade_url']    = esc_url_raw( $input['submission_upgrade_url'] ?? '' );
+        $sanitized['submission_notify_author']  = ! empty( $input['submission_notify_author'] );
+        $sanitized['submission_notify_admin']   = ! empty( $input['submission_notify_admin'] );
         $sanitized['enable_view_counter'] = ! empty( $input['enable_view_counter'] );
         $sanitized['enable_activity_tracking'] = ! empty( $input['enable_activity_tracking'] );
         $sanitized['enable_activity_alerts'] = ! empty( $input['enable_activity_alerts'] );
@@ -289,8 +400,8 @@ class NeoNews_Admin_Settings {
                 <h2><?php esc_html_e( 'Quick Links', 'neonews-core' ); ?></h2>
                 <ul>
                     <li>
-                        <a href="<?php echo esc_url( admin_url( 'edit.php?post_status=pending&post_type=post' ) ); ?>">
-                            <?php esc_html_e( 'View Pending Submissions', 'neonews-core' ); ?>
+                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-submissions' ) ); ?>">
+                            <?php esc_html_e( 'Review Story Submissions', 'neonews-core' ); ?>
                         </a>
                     </li>
                     <li>
@@ -321,6 +432,46 @@ class NeoNews_Admin_Settings {
      */
     public function render_general_section() {
         echo '<p>' . esc_html__( 'Configure the core features of NeoNews.', 'neonews-core' ) . '</p>';
+    }
+
+    /**
+     * Render submission section.
+     */
+    public function render_submission_section() {
+        echo '<p id="nn-submission-settings">' . esc_html__( 'Reporters, authors, editors, and admins can always submit. Per-user overrides are on each user\'s profile screen.', 'neonews-core' ) . ' ';
+        echo '<a href="' . esc_url( admin_url( 'admin.php?page=neonews-submissions' ) ) . '">' . esc_html__( 'Review submissions', 'neonews-core' ) . '</a></p>';
+    }
+
+    /**
+     * Render page dropdown field.
+     */
+    public function render_page_select_field( $args ) {
+        $settings = NeoNews_Core::get_settings();
+        wp_dropdown_pages( array(
+            'name'              => 'neonews_core_settings[' . esc_attr( $args['id'] ) . ']',
+            'id'                => esc_attr( $args['id'] ),
+            'selected'          => absint( $settings[ $args['id'] ] ?? 0 ),
+            'show_option_none'  => esc_html__( '— Auto-detect —', 'neonews-core' ),
+            'option_none_value' => '0',
+        ) );
+        ?>
+        <p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+        <?php
+    }
+
+    /**
+     * Render textarea field.
+     */
+    public function render_textarea_field( $args ) {
+        $settings = NeoNews_Core::get_settings();
+        $value    = isset( $settings[ $args['id'] ] ) ? $settings[ $args['id'] ] : '';
+        ?>
+        <textarea id="<?php echo esc_attr( $args['id'] ); ?>"
+                  name="neonews_core_settings[<?php echo esc_attr( $args['id'] ); ?>]"
+                  rows="3"
+                  class="large-text"><?php echo esc_textarea( $value ); ?></textarea>
+        <p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+        <?php
     }
 
     /**

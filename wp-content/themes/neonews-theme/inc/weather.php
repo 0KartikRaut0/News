@@ -27,10 +27,36 @@ function neonews_weather_enabled() {
 function neonews_get_weather_data_attrs() {
     $settings = neonews_get_settings();
     return array(
-        'city' => ! empty( $settings['weather_city'] ) ? $settings['weather_city'] : 'New York',
-        'lat'  => isset( $settings['weather_lat'] ) ? $settings['weather_lat'] : '',
-        'lon'  => isset( $settings['weather_lon'] ) ? $settings['weather_lon'] : '',
+        'city'     => ! empty( $settings['weather_city'] ) ? $settings['weather_city'] : 'New York',
+        'lat'      => isset( $settings['weather_lat'] ) ? $settings['weather_lat'] : '',
+        'lon'      => isset( $settings['weather_lon'] ) ? $settings['weather_lon'] : '',
+        'personal' => ! empty( $settings['weather_visitor_location'] ) ? '1' : '0',
+        'tz_guess' => ! empty( $settings['weather_timezone_guess'] ) ? '1' : '0',
     );
+}
+
+/**
+ * Data attribute string for weather containers.
+ *
+ * @return string
+ */
+function neonews_weather_data_attr_html() {
+    $attrs = neonews_get_weather_data_attrs();
+    $out   = '';
+    foreach ( $attrs as $key => $value ) {
+        $out .= ' data-' . esc_attr( str_replace( '_', '-', $key ) ) . '="' . esc_attr( $value ) . '"';
+    }
+    return $out;
+}
+
+/**
+ * Round coordinates to ~11 km so a precise visitor position never leaves the server.
+ *
+ * @param float $value Latitude or longitude.
+ * @return float
+ */
+function neonews_weather_round_coord( $value ) {
+    return round( (float) $value, 1 );
 }
 
 /**
@@ -41,9 +67,8 @@ function neonews_render_weather_header() {
         return;
     }
 
-    $attrs = neonews_get_weather_data_attrs();
     ?>
-    <div class="nn-header-weather" id="nn-weather-header" data-city="<?php echo esc_attr( $attrs['city'] ); ?>" data-lat="<?php echo esc_attr( $attrs['lat'] ); ?>" data-lon="<?php echo esc_attr( $attrs['lon'] ); ?>" aria-live="polite">
+    <div class="nn-header-weather" id="nn-weather-header"<?php echo neonews_weather_data_attr_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?> aria-live="polite">
         <span class="nn-header-weather-loading"><?php esc_html_e( 'Weather…', 'neonews' ); ?></span>
     </div>
     <?php
@@ -57,9 +82,8 @@ function neonews_render_weather_widget() {
         return;
     }
 
-    $attrs = neonews_get_weather_data_attrs();
     ?>
-    <div class="nn-widget nn-widget-graphical nn-weather-widget" id="nn-weather-widget" data-city="<?php echo esc_attr( $attrs['city'] ); ?>" data-lat="<?php echo esc_attr( $attrs['lat'] ); ?>" data-lon="<?php echo esc_attr( $attrs['lon'] ); ?>">
+    <div class="nn-widget nn-widget-graphical nn-weather-widget" id="nn-weather-widget"<?php echo neonews_weather_data_attr_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
         <h3 class="nn-widget-title"><span class="nn-widget-icon">🌤</span> <?php esc_html_e( 'Weather', 'neonews' ); ?></h3>
         <div class="nn-weather-body">
             <div class="nn-weather-loading"><?php esc_html_e( 'Loading forecast…', 'neonews' ); ?></div>
@@ -75,8 +99,13 @@ function neonews_ajax_weather() {
     check_ajax_referer( 'neonews_nonce', 'nonce' );
 
     $city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : 'New York';
-    $lat  = isset( $_POST['lat'] ) ? floatval( $_POST['lat'] ) : 0;
-    $lon  = isset( $_POST['lon'] ) ? floatval( $_POST['lon'] ) : 0;
+    $city = mb_substr( $city, 0, 60 );
+    $lat  = isset( $_POST['lat'] ) ? neonews_weather_round_coord( $_POST['lat'] ) : 0;
+    $lon  = isset( $_POST['lon'] ) ? neonews_weather_round_coord( $_POST['lon'] ) : 0;
+    if ( abs( $lat ) > 90 || abs( $lon ) > 180 ) {
+        $lat = 0;
+        $lon = 0;
+    }
 
     $cache_key = 'neonews_weather_' . md5( $city . $lat . $lon );
     $cached    = get_transient( $cache_key );
@@ -144,6 +173,61 @@ function neonews_ajax_weather() {
 }
 add_action( 'wp_ajax_neonews_weather', 'neonews_ajax_weather' );
 add_action( 'wp_ajax_nopriv_neonews_weather', 'neonews_ajax_weather' );
+
+/**
+ * AJAX city search for visitor weather (proxied so the browser never contacts a third party).
+ */
+function neonews_ajax_weather_search() {
+    check_ajax_referer( 'neonews_nonce', 'nonce' );
+
+    if ( ! neonews_is_feature_enabled( 'weather_visitor_location' ) ) {
+        wp_send_json_error( array( 'message' => __( 'Location search is disabled.', 'neonews' ) ) );
+    }
+
+    $query = isset( $_POST['q'] ) ? sanitize_text_field( wp_unslash( $_POST['q'] ) ) : '';
+    $query = trim( mb_substr( $query, 0, 60 ) );
+    if ( mb_strlen( $query ) < 2 ) {
+        wp_send_json_error( array( 'message' => __( 'Type at least 2 letters.', 'neonews' ) ) );
+    }
+
+    $cache_key = 'neonews_wsearch_' . md5( mb_strtolower( $query ) );
+    $cached    = get_transient( $cache_key );
+    if ( false !== $cached ) {
+        wp_send_json_success( $cached );
+    }
+
+    $response = wp_remote_get( add_query_arg( array(
+        'name'     => $query,
+        'count'    => 6,
+        'language' => 'en',
+    ), 'https://geocoding-api.open-meteo.com/v1/search' ), array( 'timeout' => 8 ) );
+
+    if ( is_wp_error( $response ) ) {
+        wp_send_json_error( array( 'message' => __( 'Search unavailable, try again.', 'neonews' ) ) );
+    }
+
+    $body    = json_decode( wp_remote_retrieve_body( $response ), true );
+    $results = array();
+    if ( ! empty( $body['results'] ) && is_array( $body['results'] ) ) {
+        foreach ( $body['results'] as $row ) {
+            if ( ! isset( $row['latitude'], $row['longitude'], $row['name'] ) ) {
+                continue;
+            }
+            $results[] = array(
+                'city'    => sanitize_text_field( $row['name'] ),
+                'region'  => isset( $row['admin1'] ) ? sanitize_text_field( $row['admin1'] ) : '',
+                'country' => isset( $row['country'] ) ? sanitize_text_field( $row['country'] ) : '',
+                'lat'     => neonews_weather_round_coord( $row['latitude'] ),
+                'lon'     => neonews_weather_round_coord( $row['longitude'] ),
+            );
+        }
+    }
+
+    set_transient( $cache_key, $results, DAY_IN_SECONDS );
+    wp_send_json_success( $results );
+}
+add_action( 'wp_ajax_neonews_weather_search', 'neonews_ajax_weather_search' );
+add_action( 'wp_ajax_nopriv_neonews_weather_search', 'neonews_ajax_weather_search' );
 
 /**
  * WMO weather code label.

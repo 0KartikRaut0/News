@@ -135,15 +135,38 @@ class NeoNews_User_Roles {
             return false;
         }
 
+        $allowed = false;
+
         $allowed_roles = array( 'nn_reporter', 'editor', 'administrator', 'author' );
-        
         foreach ( $allowed_roles as $role ) {
             if ( in_array( $role, (array) $user->roles, true ) ) {
-                return true;
+                $allowed = true;
+                break;
             }
         }
 
-        return false;
+        $override = get_user_meta( $user_id, '_neonews_submission_access', true );
+        if ( 'deny' === $override ) {
+            $allowed = false;
+        } elseif ( 'allow' === $override ) {
+            $allowed = true;
+        } elseif ( ! $allowed && NeoNews_Core::get_settings( 'submission_allow_basic' ) ) {
+            $allowed = true;
+        } elseif ( ! $allowed && NeoNews_Core::get_settings( 'submission_allow_premium' ) && self::is_premium_member( $user_id ) ) {
+            $allowed = true;
+        }
+
+        return (bool) apply_filters( 'neonews_can_submit_news', $allowed, $user_id );
+    }
+
+    /**
+     * Premium status from the membership plugin, when it is active.
+     *
+     * @param int $user_id User ID.
+     * @return bool
+     */
+    public static function is_premium_member( $user_id ) {
+        return class_exists( 'NeoNews_Membership_Levels' ) && NeoNews_Membership_Levels::is_premium( $user_id );
     }
 
     /**

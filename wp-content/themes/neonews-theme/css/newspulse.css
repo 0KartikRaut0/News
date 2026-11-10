@@ -1515,6 +1515,14 @@ html {
     margin: 1.5rem 0;
 }
 
+.nn-container.nn-ad-row {
+    margin: 1.5rem auto;
+}
+
+.nn-ad-row > .nn-ad-zone {
+    margin: 0;
+}
+
 .nn-ad-row-full {
     grid-column: 1 / -1;
 }
@@ -1673,6 +1681,97 @@ html {
 
 .nn-watch-featured .nn-watch-title {
     font-size: 1.15rem;
+}
+
+.nn-watch-card .nn-watch-media {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nn-watch-trigger:focus-visible {
+    outline: 3px solid var(--nn-primary);
+    outline-offset: -3px;
+}
+
+.nn-watch-body {
+    pointer-events: none;
+}
+
+.nn-watch-body a {
+    pointer-events: auto;
+}
+
+.nn-watch-card a.nn-watch-title {
+    color: #fff;
+    text-decoration: none;
+}
+
+.nn-watch-card a.nn-watch-title:hover {
+    text-decoration: underline;
+}
+
+.nn-watch-playable:hover .nn-watch-play span {
+    transform: scale(1.1);
+}
+
+.nn-watch-play span {
+    transition: transform 0.2s ease;
+}
+
+.nn-watch-player {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.nn-watch-player iframe {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    aspect-ratio: 16 / 9;
+    border: 0;
+}
+
+.nn-watch-player-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 6;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.nn-watch-player-close:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.nn-watch-card.is-playing {
+    transform: none;
+    box-shadow: var(--nn-glow);
+}
+
+.nn-watch-card.is-playing .nn-watch-body,
+.nn-watch-card.is-playing .nn-watch-duration {
+    visibility: hidden;
 }
 
 /* Tipline */
@@ -2283,6 +2382,120 @@ html {
     background: #1da851;
     border-color: #1da851;
     color: #fff;
+}
+
+.nn-contact-whatsapp-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.35rem;
+}
+
+.nn-contact-whatsapp-head h4 {
+    margin: 0;
+}
+
+.nn-contact-whatsapp-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #25d366;
+    color: #fff;
+}
+
+.nn-contact-whatsapp-hours {
+    display: block;
+    margin-top: 0.6rem;
+    color: var(--nn-text-secondary);
+    font-size: 0.8rem;
+}
+
+/* Floating WhatsApp icon */
+.nn-wa-float {
+    position: fixed;
+    bottom: 5.25rem;
+    z-index: 999;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 56px;
+    border-radius: 999px;
+    background: #25d366;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.nn-wa-float-right {
+    right: 1.5rem;
+}
+
+.nn-wa-float-left {
+    left: 1.5rem;
+}
+
+.nn-wa-float:hover,
+.nn-wa-float:focus-visible {
+    background: #1da851;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(37, 211, 102, 0.45);
+}
+
+.nn-wa-float-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+}
+
+.nn-wa-float-label {
+    padding-right: 1.25rem;
+    margin-left: -0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+    .nn-wa-float {
+        bottom: 4.75rem;
+    }
+
+    .nn-wa-float-left {
+        bottom: 1.25rem;
+    }
+
+    .nn-wa-float-right {
+        right: 1rem;
+    }
+
+    .nn-wa-float-left {
+        left: 1rem;
+    }
+
+    body.nn-has-mobile-ad .nn-wa-float {
+        bottom: 9rem;
+    }
+
+    body.nn-has-mobile-ad .nn-wa-float-left {
+        bottom: 5.5rem;
+    }
+
+    .nn-wa-float-label {
+        display: none;
+    }
+
+    .nn-wa-float-desktop-only {
+        display: none;
+    }
 }
 
 /* 728×90 leaderboard ads */
@@ -3461,6 +3674,127 @@ body.nn-mobile-menu-open {
     margin: 0;
 }
 
+.nn-tipline-form-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.nn-tipline-form-head h3 {
+    margin: 0;
+}
+
+.nn-tipline-lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.nn-tipline-form {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.nn-tipline-input {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-lg);
+    background: var(--nn-bg-primary);
+    color: var(--nn-text-primary);
+    font-size: 0.9rem;
+}
+
+.nn-tipline-input:focus {
+    outline: none;
+    border-color: var(--nn-primary);
+    box-shadow: 0 0 0 3px var(--nn-primary-light);
+}
+
+.nn-tipline-form .nn-tipline-cta {
+    justify-self: start;
+    margin-bottom: 0;
+    border: 0;
+    cursor: pointer;
+}
+
+.nn-tipline-locked-box {
+    position: relative;
+    margin: 0.75rem 0 1rem;
+}
+
+.nn-tipline-locked-box .nn-tipline-fields-visual {
+    margin-bottom: 0;
+    filter: blur(1.5px);
+    opacity: 0.55;
+    user-select: none;
+}
+
+.nn-tipline-lock-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.nn-tipline-lock-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--nn-bg-primary);
+    border: 1px solid var(--nn-border-color);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+}
+
+.nn-tipline-lock-overlay p {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--nn-text-primary);
+}
+
+.nn-tipline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+}
+
+.nn-tipline-actions .nn-tipline-cta {
+    margin-bottom: 0;
+}
+
+.nn-tipline-how {
+    font-size: 0.8rem;
+    color: var(--nn-text-secondary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.nn-tipline-how:hover {
+    color: var(--nn-primary);
+}
+
 /* ==========================================================================
    Legal pages — dedicated layouts
    ========================================================================== */
@@ -3730,9 +4064,178 @@ body.nn-consent-all:not(.nn-consent-no-marketing) .nn-consent-marketing:not(.nn-
     margin: 0;
 }
 
+.nn-header-weather {
+    position: relative;
+}
+
+.nn-header-weather-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.15rem 0.4rem;
+    margin: -0.15rem -0.4rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.nn-header-weather-btn:hover,
+.nn-header-weather-btn[aria-expanded="true"] {
+    background: var(--nn-bg-tertiary);
+}
+
+.nn-weather-change {
+    margin-top: 0.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--nn-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.nn-weather-change:hover {
+    text-decoration: underline;
+}
+
+.nn-weather-picker {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-lg, 12px);
+    background: var(--nn-bg-primary);
+    white-space: normal;
+}
+
+.nn-weather-picker[hidden] {
+    display: none;
+}
+
+.nn-weather-picker-pop {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 1100;
+    width: 280px;
+    max-width: calc(100vw - 2rem);
+    margin-top: 0;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.nn-weather-gps,
+.nn-weather-reset {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-md, 8px);
+    background: var(--nn-bg-secondary);
+    color: var(--nn-text-primary);
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nn-weather-gps:hover,
+.nn-weather-reset:hover {
+    border-color: var(--nn-primary);
+}
+
+.nn-weather-reset {
+    margin-top: 0.5rem;
+    background: transparent;
+    font-weight: 500;
+    color: var(--nn-text-secondary);
+}
+
+.nn-weather-search {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.nn-weather-search input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-md, 8px);
+    background: var(--nn-bg-primary);
+    color: var(--nn-text-primary);
+    font-size: 0.85rem;
+}
+
+.nn-weather-search button {
+    padding: 0.45rem 0.75rem;
+    border: 0;
+    border-radius: var(--nn-radius-md, 8px);
+    background: var(--nn-primary);
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.nn-weather-picker-status {
+    margin: 0.4rem 0 0;
+    font-size: 0.78rem;
+    color: var(--nn-text-muted);
+}
+
+.nn-weather-picker-status:empty {
+    display: none;
+}
+
+.nn-weather-results {
+    list-style: none;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.nn-weather-results button {
+    display: block;
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--nn-text-primary);
+    font-size: 0.83rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.nn-weather-results button:hover,
+.nn-weather-results button:focus-visible {
+    background: var(--nn-bg-tertiary);
+}
+
+.nn-weather-privacy {
+    margin: 0.6rem 0 0;
+    font-size: 0.72rem;
+    color: var(--nn-text-muted);
+}
+
 @media (max-width: 640px) {
     .nn-header-weather-label {
         display: none;
+    }
+
+    .nn-weather-picker-pop {
+        position: fixed;
+        top: auto;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        width: auto;
+        max-width: none;
     }
 }
 

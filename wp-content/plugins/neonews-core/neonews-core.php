@@ -87,6 +87,7 @@ final class NeoNews_Core {
         require_once NEONEWS_CORE_DIR . 'inc/class-view-counter.php';
         require_once NEONEWS_CORE_DIR . 'inc/class-breaking-news.php';
         require_once NEONEWS_CORE_DIR . 'inc/class-onesignal-integration.php';
+        require_once NEONEWS_CORE_DIR . 'admin/class-submission-admin.php';
 
         if ( is_admin() ) {
             require_once NEONEWS_CORE_DIR . 'admin/class-admin-settings.php';
@@ -168,8 +169,10 @@ final class NeoNews_Core {
         NeoNews_View_Counter::get_instance();
         NeoNews_Breaking_News::get_instance();
         NeoNews_OneSignal_Integration::get_instance();
+        NeoNews_Submission_Admin::register_global_hooks();
 
         if ( is_admin() ) {
+            NeoNews_Submission_Admin::get_instance();
             NeoNews_Admin_Settings::get_instance();
             NeoNews_Post_Meta::get_instance();
             NeoNews_Activity_Log_Admin::get_instance();
@@ -264,6 +267,14 @@ final class NeoNews_Core {
         
         $defaults = array(
             'enable_submission'        => true,
+            'submission_allow_premium' => true,
+            'submission_allow_basic'   => false,
+            'submission_page_id'       => 0,
+            'submission_locked_title'  => '',
+            'submission_locked_message'=> '',
+            'submission_upgrade_url'   => '',
+            'submission_notify_author' => true,
+            'submission_notify_admin'  => true,
             'enable_view_counter'      => true,
             'enable_activity_tracking' => true,
             'enable_activity_alerts'   => false,

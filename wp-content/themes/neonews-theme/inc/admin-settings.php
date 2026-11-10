@@ -51,6 +51,8 @@ function neonews_get_default_settings() {
         'weather_city'          => 'New York',
         'weather_lat'           => '',
         'weather_lon'           => '',
+        'weather_visitor_location' => true,
+        'weather_timezone_guess'   => true,
         // Homepage.
         'show_home_hero'          => true,
         'home_hero_title'         => __( "The day's most important stories,", 'neonews' ),
@@ -68,6 +70,15 @@ function neonews_get_default_settings() {
         'home_video_title'        => __( 'Watch', 'neonews' ),
         'home_video_subtitle'     => __( 'Original video reporting', 'neonews' ),
         'show_home_tipline'       => true,
+        'tipline_badge'           => __( 'Reader Tipline', 'neonews' ),
+        'tipline_title'           => __( 'Got a story we should cover?', 'neonews' ),
+        'tipline_text'            => __( 'Write it up and send it to our editors — approved stories go live on the site with your name.', 'neonews' ),
+        'tipline_points'          => __( "Reviewed by our editors within 48 hours\nYou get an email when it goes live\nYour byline on every published story", 'neonews' ),
+        'tipline_form_title'      => __( 'Pitch a story', 'neonews' ),
+        'tipline_form_desc'       => __( 'Start with a headline — you will write the full story on the next page.', 'neonews' ),
+        'tipline_cta_open'        => __( 'Continue to write', 'neonews' ),
+        'tipline_cta_locked'      => __( 'Unlock with Premium', 'neonews' ),
+        'tipline_locked_text'     => __( 'Pitching stories is a Premium member feature.', 'neonews' ),
         'show_home_latest'        => true,
         'home_latest_count'       => 6,
         'show_home_newsletter'    => true,
@@ -97,6 +108,23 @@ function neonews_get_default_settings() {
         'whatsapp_contact_message' => __( 'Hello, I would like to get in touch.', 'neonews' ),
         'whatsapp_advertise_message' => __( 'Hello, I am interested in advertising on your site.', 'neonews' ),
         'whatsapp_careers_message'   => __( 'Hello, I would like to apply for a role at your newsroom.', 'neonews' ),
+        'whatsapp_contact_number'    => '',
+        'whatsapp_advertise_number'  => '',
+        'whatsapp_careers_number'    => '',
+        'whatsapp_contact_title'     => __( 'Chat on WhatsApp', 'neonews' ),
+        'whatsapp_advertise_title'   => __( 'Talk to our ad team', 'neonews' ),
+        'whatsapp_careers_title'     => __( 'Apply via WhatsApp', 'neonews' ),
+        'whatsapp_contact_desc'      => __( 'Message us directly — we usually reply within one business day.', 'neonews' ),
+        'whatsapp_advertise_desc'    => __( 'Get rate cards, custom packages, and campaign ideas on WhatsApp.', 'neonews' ),
+        'whatsapp_careers_desc'      => __( 'Send your portfolio or ask about open roles — our hiring team is on WhatsApp.', 'neonews' ),
+        'whatsapp_contact_button'    => __( 'Open WhatsApp', 'neonews' ),
+        'whatsapp_advertise_button'  => __( 'Open WhatsApp', 'neonews' ),
+        'whatsapp_careers_button'    => __( 'Open WhatsApp', 'neonews' ),
+        'whatsapp_hours'             => '',
+        'whatsapp_float_enabled'     => true,
+        'whatsapp_float_position'    => 'right',
+        'whatsapp_float_label'       => __( 'Chat with us', 'neonews' ),
+        'whatsapp_float_mobile'      => true,
         'social_x'                => '',
         'social_facebook'         => '',
         'social_linkedin'         => '',
@@ -262,6 +290,8 @@ function neonews_sanitize_settings( $input ) {
         $output['weather_city']           = sanitize_text_field( $input['weather_city'] ?? 'New York' );
         $output['weather_lat']            = sanitize_text_field( $input['weather_lat'] ?? '' );
         $output['weather_lon']            = sanitize_text_field( $input['weather_lon'] ?? '' );
+        $output['weather_visitor_location'] = ! empty( $input['weather_visitor_location'] );
+        $output['weather_timezone_guess']   = ! empty( $input['weather_timezone_guess'] );
 
         $output['auth_allow_registration'] = ! empty( $input['auth_allow_registration'] );
         $output['auth_auto_username']      = ! empty( $input['auth_auto_username'] );
@@ -309,6 +339,10 @@ function neonews_sanitize_settings( $input ) {
         $output['show_home_categories'] = ! empty( $input['show_home_categories'] );
         $output['show_home_videos']    = ! empty( $input['show_home_videos'] );
         $output['show_home_tipline']   = ! empty( $input['show_home_tipline'] );
+        foreach ( array( 'tipline_badge', 'tipline_title', 'tipline_text', 'tipline_form_title', 'tipline_form_desc', 'tipline_cta_open', 'tipline_cta_locked', 'tipline_locked_text' ) as $tip_key ) {
+            $output[ $tip_key ] = sanitize_text_field( wp_unslash( $input[ $tip_key ] ?? $previous[ $tip_key ] ) );
+        }
+        $output['tipline_points'] = sanitize_textarea_field( wp_unslash( $input['tipline_points'] ?? $previous['tipline_points'] ) );
         $output['show_home_latest']    = ! empty( $input['show_home_latest'] );
         $output['show_home_newsletter'] = ! empty( $input['show_home_newsletter'] );
         $output['home_hero_title']        = sanitize_text_field( wp_unslash( $input['home_hero_title'] ?? $previous['home_hero_title'] ) );
@@ -343,14 +377,6 @@ function neonews_sanitize_settings( $input ) {
         $output['show_footer_social']     = ! empty( $input['show_footer_social'] );
         $output['show_header_social']     = ! empty( $input['show_header_social'] );
         $output['show_contact_social']    = ! empty( $input['show_contact_social'] );
-        $output['show_post_whatsapp']       = ! empty( $input['show_post_whatsapp'] );
-        $output['show_contact_whatsapp']    = ! empty( $input['show_contact_whatsapp'] );
-        $output['show_advertise_whatsapp']  = ! empty( $input['show_advertise_whatsapp'] );
-        $output['show_careers_whatsapp']    = ! empty( $input['show_careers_whatsapp'] );
-        $output['whatsapp_number']          = preg_replace( '/[^0-9]/', '', (string) ( $input['whatsapp_number'] ?? '' ) );
-        $output['whatsapp_contact_message']   = sanitize_text_field( wp_unslash( $input['whatsapp_contact_message'] ?? $previous['whatsapp_contact_message'] ) );
-        $output['whatsapp_advertise_message'] = sanitize_text_field( wp_unslash( $input['whatsapp_advertise_message'] ?? $previous['whatsapp_advertise_message'] ) );
-        $output['whatsapp_careers_message']   = sanitize_text_field( wp_unslash( $input['whatsapp_careers_message'] ?? $previous['whatsapp_careers_message'] ) );
         $output['show_footer_newsletter'] = ! empty( $input['show_footer_newsletter'] );
         $output['footer_tagline']         = sanitize_text_field( wp_unslash( $input['footer_tagline'] ?? $previous['footer_tagline'] ) );
         $output['footer_copyright']       = isset( $input['footer_copyright'] ) ? wp_kses_post( wp_unslash( $input['footer_copyright'] ) ) : $previous['footer_copyright'];
@@ -363,6 +389,25 @@ function neonews_sanitize_settings( $input ) {
         $output['social_linkedin']  = esc_url_raw( $input['social_linkedin'] ?? '' );
         $output['social_instagram'] = esc_url_raw( $input['social_instagram'] ?? '' );
         $output['newsletter_form_action'] = esc_url_raw( $input['newsletter_form_action'] ?? '' );
+    }
+
+    if ( 'whatsapp' === $active ) {
+        $output['whatsapp_number']         = preg_replace( '/[^0-9]/', '', (string) ( $input['whatsapp_number'] ?? '' ) );
+        $output['whatsapp_hours']          = sanitize_text_field( wp_unslash( $input['whatsapp_hours'] ?? '' ) );
+        $output['show_post_whatsapp']      = ! empty( $input['show_post_whatsapp'] );
+        $output['whatsapp_float_enabled']  = ! empty( $input['whatsapp_float_enabled'] );
+        $output['whatsapp_float_mobile']   = ! empty( $input['whatsapp_float_mobile'] );
+        $output['whatsapp_float_position'] = in_array( $input['whatsapp_float_position'] ?? '', array( 'left', 'right' ), true ) ? $input['whatsapp_float_position'] : 'right';
+        $output['whatsapp_float_label']    = sanitize_text_field( wp_unslash( $input['whatsapp_float_label'] ?? $previous['whatsapp_float_label'] ) );
+
+        foreach ( array( 'contact', 'advertise', 'careers' ) as $wa_page ) {
+            $output[ 'show_' . $wa_page . '_whatsapp' ]   = ! empty( $input[ 'show_' . $wa_page . '_whatsapp' ] );
+            $output[ 'whatsapp_' . $wa_page . '_number' ] = preg_replace( '/[^0-9]/', '', (string) ( $input[ 'whatsapp_' . $wa_page . '_number' ] ?? '' ) );
+            foreach ( array( 'message', 'title', 'desc', 'button' ) as $wa_field ) {
+                $wa_key            = 'whatsapp_' . $wa_page . '_' . $wa_field;
+                $output[ $wa_key ] = sanitize_text_field( wp_unslash( $input[ $wa_key ] ?? $previous[ $wa_key ] ) );
+            }
+        }
     }
 
     if ( 'sidebar' === $active ) {
@@ -416,6 +461,7 @@ function neonews_render_settings_page() {
         'homepage'  => __( 'Homepage', 'neonews' ),
         'header'    => __( 'Header', 'neonews' ),
         'footer'    => __( 'Footer', 'neonews' ),
+        'whatsapp'  => __( 'WhatsApp', 'neonews' ),
         'sidebar'   => __( 'Sidebar', 'neonews' ),
         'features'  => __( 'Features & Colors', 'neonews' ),
     );
@@ -746,6 +792,14 @@ function neonews_render_settings_page() {
                     <th><?php esc_html_e( 'Longitude (optional)', 'neonews' ); ?></th>
                     <td><input type="text" name="neonews_platform_settings[weather_lon]" value="<?php echo esc_attr( $settings['weather_lon'] ); ?>" class="small-text" /></td>
                 </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Per-visitor weather', 'neonews' ); ?></th>
+                    <td>
+                        <label><input type="checkbox" name="neonews_platform_settings[weather_visitor_location]" value="1" <?php checked( ! empty( $settings['weather_visitor_location'] ) ); ?> /> <?php esc_html_e( 'Let visitors pick their own city or use their device location', 'neonews' ); ?></label><br />
+                        <label><input type="checkbox" name="neonews_platform_settings[weather_timezone_guess]" value="1" <?php checked( ! empty( $settings['weather_timezone_guess'] ) ); ?> /> <?php esc_html_e( 'For first-time visitors, guess the city from their device time zone (no permission prompt)', 'neonews' ); ?></label>
+                        <p class="description"><?php esc_html_e( 'Privacy: the visitor’s choice is saved only in their own browser. Your server fetches the forecast using an approximate area (about 10 km) — no IP address, cookie or account details are passed to the weather service, and nothing is stored per visitor.', 'neonews' ); ?></p>
+                    </td>
+                </tr>
             </table>
 
             <?php elseif ( 'homepage' === $tab ) : ?>
@@ -754,6 +808,8 @@ function neonews_render_settings_page() {
                 <?php neonews_admin_tab_header( $settings ); ?>
             <?php elseif ( 'footer' === $tab ) : ?>
                 <?php neonews_admin_tab_footer( $settings ); ?>
+            <?php elseif ( 'whatsapp' === $tab ) : ?>
+                <?php neonews_admin_tab_whatsapp( $settings ); ?>
             <?php elseif ( 'sidebar' === $tab ) : ?>
                 <?php neonews_admin_tab_sidebar( $settings ); ?>
             <?php elseif ( 'features' === $tab ) : ?>

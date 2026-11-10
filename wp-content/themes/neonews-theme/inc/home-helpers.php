@@ -343,30 +343,78 @@ function neonews_render_sidebar_topics( $limit = 8 ) {
  * Reader tipline pitch section.
  */
 function neonews_home_tipline() {
-    $contact = get_page_by_path( 'contact' );
-    $url     = $contact ? get_permalink( $contact ) : home_url( '/contact/' );
+    $core_active = class_exists( 'NeoNews_News_Submission' ) && class_exists( 'NeoNews_Core' );
+    $submit_url  = $core_active ? NeoNews_News_Submission::get_submit_page_url() : home_url( '/submit/' );
+    $state       = $core_active ? NeoNews_News_Submission::get_access_state() : ( is_user_logged_in() ? 'open' : 'guest' );
+    $basic_open  = $core_active && NeoNews_Core::get_settings( 'submission_allow_basic' );
+    $upgrade_url = $core_active ? NeoNews_News_Submission::get_upgrade_url() : $submit_url;
+    $points      = array_filter( array_map( 'trim', explode( "\n", (string) neonews_get_setting( 'tipline_points', '' ) ) ) );
+    $locked      = 'open' !== $state;
+    $needs_plan  = $locked && ! $basic_open;
+
+    wp_parse_str( (string) wp_parse_url( $submit_url, PHP_URL_QUERY ), $submit_query );
     ?>
-    <section class="nn-tipline nn-reveal">
+    <section class="nn-tipline nn-reveal<?php echo $locked ? ' is-locked' : ''; ?>">
         <div class="nn-tipline-info">
-            <span class="nn-tipline-badge"><?php esc_html_e( 'Reader Tipline', 'neonews' ); ?></span>
-            <h2><?php esc_html_e( 'Got a story we should cover?', 'neonews' ); ?></h2>
-            <p><?php esc_html_e( 'Send tips, documents, or story ideas directly to our editors.', 'neonews' ); ?></p>
-            <ul class="nn-tipline-list">
-                <li><?php esc_html_e( 'Read by our editors within 48 hours', 'neonews' ); ?></li>
-                <li><?php esc_html_e( 'Anonymity respected on request', 'neonews' ); ?></li>
-                <li><?php esc_html_e( 'Get credit when your tip becomes a story', 'neonews' ); ?></li>
-            </ul>
+            <span class="nn-tipline-badge"><?php echo esc_html( neonews_get_setting( 'tipline_badge', '' ) ); ?></span>
+            <h2><?php echo esc_html( neonews_get_setting( 'tipline_title', '' ) ); ?></h2>
+            <p><?php echo esc_html( neonews_get_setting( 'tipline_text', '' ) ); ?></p>
+            <?php if ( $points ) : ?>
+                <ul class="nn-tipline-list">
+                    <?php foreach ( $points as $point ) : ?>
+                        <li><?php echo esc_html( $point ); ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
         </div>
         <div class="nn-tipline-form-wrap">
-            <h3><?php esc_html_e( 'Pitch a story', 'neonews' ); ?></h3>
-            <p class="nn-tipline-desc"><?php esc_html_e( 'Share your lead — our editors review every submission.', 'neonews' ); ?></p>
-            <div class="nn-tipline-fields nn-tipline-fields-visual">
-                <span class="nn-tipline-field"><?php esc_html_e( 'Your name', 'neonews' ); ?></span>
-                <span class="nn-tipline-field"><?php esc_html_e( 'Email', 'neonews' ); ?></span>
-                <span class="nn-tipline-field nn-tipline-field-lg"><?php esc_html_e( 'Tell us about the story…', 'neonews' ); ?></span>
+            <div class="nn-tipline-form-head">
+                <h3><?php echo esc_html( neonews_get_setting( 'tipline_form_title', '' ) ); ?></h3>
+                <?php if ( $needs_plan ) : ?>
+                    <span class="nn-tipline-lock-badge"><span aria-hidden="true">🔒</span> <?php esc_html_e( 'Premium', 'neonews' ); ?></span>
+                <?php endif; ?>
             </div>
-            <a href="<?php echo esc_url( $url ); ?>" class="nn-btn nn-tipline-cta"><?php esc_html_e( 'Send pitch', 'neonews' ); ?></a>
-            <p class="nn-tipline-note"><?php esc_html_e( 'Opens our secure contact form.', 'neonews' ); ?></p>
+
+            <?php if ( ! $locked ) : ?>
+                <p class="nn-tipline-desc"><?php echo esc_html( neonews_get_setting( 'tipline_form_desc', '' ) ); ?></p>
+                <form class="nn-tipline-form" method="get" action="<?php echo esc_url( strtok( $submit_url, '?' ) ); ?>">
+                    <?php foreach ( $submit_query as $q_key => $q_value ) : ?>
+                        <input type="hidden" name="<?php echo esc_attr( $q_key ); ?>" value="<?php echo esc_attr( $q_value ); ?>" />
+                    <?php endforeach; ?>
+                    <label class="screen-reader-text" for="nn-pitch-title"><?php esc_html_e( 'Story headline', 'neonews' ); ?></label>
+                    <input type="text" id="nn-pitch-title" name="pitch_title" class="nn-tipline-input" maxlength="200" required placeholder="<?php esc_attr_e( 'Your story headline…', 'neonews' ); ?>" />
+                    <button type="submit" class="nn-btn nn-tipline-cta"><?php echo esc_html( neonews_get_setting( 'tipline_cta_open', '' ) ); ?> →</button>
+                </form>
+                <p class="nn-tipline-note"><?php esc_html_e( 'Our editors review every story before it goes live.', 'neonews' ); ?></p>
+            <?php else : ?>
+                <div class="nn-tipline-locked-box">
+                    <div class="nn-tipline-fields nn-tipline-fields-visual" aria-hidden="true">
+                        <span class="nn-tipline-field"><?php esc_html_e( 'Your story headline…', 'neonews' ); ?></span>
+                        <span class="nn-tipline-field nn-tipline-field-lg"><?php esc_html_e( 'Tell us about the story…', 'neonews' ); ?></span>
+                    </div>
+                    <div class="nn-tipline-lock-overlay">
+                        <span class="nn-tipline-lock-icon" aria-hidden="true">🔒</span>
+                        <p>
+                            <?php
+                            if ( $needs_plan ) {
+                                echo esc_html( neonews_get_setting( 'tipline_locked_text', '' ) );
+                            } else {
+                                esc_html_e( 'Sign in to pitch your story.', 'neonews' );
+                            }
+                            ?>
+                        </p>
+                    </div>
+                </div>
+                <div class="nn-tipline-actions">
+                    <?php if ( 'guest' === $state ) : ?>
+                        <a href="<?php echo esc_url( wp_login_url( $submit_url ) ); ?>" class="nn-btn nn-tipline-cta nn-open-login"><?php esc_html_e( 'Sign in to pitch', 'neonews' ); ?></a>
+                    <?php endif; ?>
+                    <?php if ( $needs_plan ) : ?>
+                        <a href="<?php echo esc_url( $upgrade_url ); ?>" class="nn-btn nn-tipline-cta<?php echo 'guest' === $state ? ' nn-btn-outline' : ''; ?>"><?php echo esc_html( neonews_get_setting( 'tipline_cta_locked', '' ) ); ?></a>
+                    <?php endif; ?>
+                    <a href="<?php echo esc_url( $submit_url ); ?>" class="nn-tipline-how"><?php esc_html_e( 'How story submissions work', 'neonews' ); ?></a>
+                </div>
+            <?php endif; ?>
         </div>
     </section>
     <?php

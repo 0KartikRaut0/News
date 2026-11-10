@@ -251,6 +251,18 @@ function neonews_scripts() {
                 'captcha' => esc_html__( 'Please complete the CAPTCHA verification.', 'neonews' ),
                 'signUp'  => esc_html__( 'Sign up', 'neonews' ),
                 'logoutConfirm' => esc_html__( 'Are you sure you want to log out?', 'neonews' ),
+                'weather'       => array(
+                    'change'     => esc_html__( 'Change location', 'neonews' ),
+                    'useMine'    => esc_html__( 'Use my location', 'neonews' ),
+                    'locating'   => esc_html__( 'Finding your area…', 'neonews' ),
+                    'yourArea'   => esc_html__( 'Your area', 'neonews' ),
+                    'searchCity' => esc_html__( 'Search city…', 'neonews' ),
+                    'go'         => esc_html__( 'Search', 'neonews' ),
+                    'noResults'  => esc_html__( 'No matching city found.', 'neonews' ),
+                    'denied'     => esc_html__( 'Location permission denied — search your city instead.', 'neonews' ),
+                    'reset'      => esc_html__( 'Reset to default', 'neonews' ),
+                    'privacy'    => esc_html__( 'Saved only on this device. Never shared.', 'neonews' ),
+                ),
             ),
             'consent'  => neonews_get_consent_js_config(),
         )

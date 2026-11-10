@@ -84,7 +84,40 @@ function neonews_admin_tab_homepage( $settings ) {
         </tr>
         <tr>
             <th><?php esc_html_e( 'Reader tipline', 'neonews' ); ?></th>
-            <td><label><input type="checkbox" name="neonews_platform_settings[show_home_tipline]" value="1" <?php checked( ! empty( $settings['show_home_tipline'] ) ); ?> /> <?php esc_html_e( 'Show “Have a tip?” callout', 'neonews' ); ?></label></td>
+            <td>
+                <label><input type="checkbox" name="neonews_platform_settings[show_home_tipline]" value="1" <?php checked( ! empty( $settings['show_home_tipline'] ) ); ?> /> <?php esc_html_e( 'Show “Pitch a story” section', 'neonews' ); ?></label>
+                <p class="description">
+                    <?php esc_html_e( 'Uses the same access rules as Submit Story — who can pitch (Premium only, or basic members too) is set in', 'neonews' ); ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-core-settings#nn-submission-settings' ) ); ?>"><?php esc_html_e( 'Core Features → Story Submissions', 'neonews' ); ?></a>.
+                    <?php esc_html_e( 'Pitches are reviewed under', 'neonews' ); ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-submissions' ) ); ?>"><?php esc_html_e( 'Story Submissions', 'neonews' ); ?></a>.
+                </p>
+            </td>
+        </tr>
+        <?php
+        $tip_fields = array(
+            'tipline_badge'       => __( 'Pitch — badge', 'neonews' ),
+            'tipline_title'       => __( 'Pitch — heading', 'neonews' ),
+            'tipline_text'        => __( 'Pitch — intro text', 'neonews' ),
+            'tipline_form_title'  => __( 'Pitch — box title', 'neonews' ),
+            'tipline_form_desc'   => __( 'Pitch — box description', 'neonews' ),
+            'tipline_cta_open'    => __( 'Pitch — button (can submit)', 'neonews' ),
+            'tipline_cta_locked'  => __( 'Pitch — button (locked)', 'neonews' ),
+            'tipline_locked_text' => __( 'Pitch — locked message', 'neonews' ),
+        );
+        foreach ( $tip_fields as $tip_key => $tip_label ) :
+            ?>
+            <tr>
+                <th><?php echo esc_html( $tip_label ); ?></th>
+                <td><input type="text" name="neonews_platform_settings[<?php echo esc_attr( $tip_key ); ?>]" value="<?php echo esc_attr( $settings[ $tip_key ] ); ?>" class="large-text" /></td>
+            </tr>
+        <?php endforeach; ?>
+        <tr>
+            <th><?php esc_html_e( 'Pitch — bullet points', 'neonews' ); ?></th>
+            <td>
+                <textarea name="neonews_platform_settings[tipline_points]" rows="3" class="large-text"><?php echo esc_textarea( $settings['tipline_points'] ); ?></textarea>
+                <p class="description"><?php esc_html_e( 'One per line.', 'neonews' ); ?></p>
+            </td>
         </tr>
         <tr>
             <th><?php esc_html_e( 'Latest posts', 'neonews' ); ?></th>
@@ -200,33 +233,14 @@ function neonews_admin_tab_footer( $settings ) {
                 <p>
                     <label>Instagram<br /><input type="url" name="neonews_platform_settings[social_instagram]" value="<?php echo esc_url( $settings['social_instagram'] ); ?>" class="large-text" /></label>
                 </p>
-                <p style="margin-top:1rem;"><strong><?php esc_html_e( 'WhatsApp', 'neonews' ); ?></strong></p>
-                <p>
-                    <label><?php esc_html_e( 'WhatsApp number (country code, no +)', 'neonews' ); ?><br />
-                    <input type="text" name="neonews_platform_settings[whatsapp_number]" value="<?php echo esc_attr( $settings['whatsapp_number'] ); ?>" class="regular-text" placeholder="15551234567" /></label>
-                    <span class="description"><?php esc_html_e( 'Required for page chat buttons. Example: 919876543210 for India, 15551234567 for US.', 'neonews' ); ?></span>
-                </p>
-                <p>
-                    <label><?php esc_html_e( 'Default WhatsApp message (Contact page)', 'neonews' ); ?><br />
-                    <input type="text" name="neonews_platform_settings[whatsapp_contact_message]" value="<?php echo esc_attr( $settings['whatsapp_contact_message'] ); ?>" class="large-text" /></label>
-                </p>
-                <p>
-                    <label><?php esc_html_e( 'Default WhatsApp message (Advertise page)', 'neonews' ); ?><br />
-                    <input type="text" name="neonews_platform_settings[whatsapp_advertise_message]" value="<?php echo esc_attr( $settings['whatsapp_advertise_message'] ); ?>" class="large-text" /></label>
-                </p>
-                <p>
-                    <label><?php esc_html_e( 'Default WhatsApp message (Careers page)', 'neonews' ); ?><br />
-                    <input type="text" name="neonews_platform_settings[whatsapp_careers_message]" value="<?php echo esc_attr( $settings['whatsapp_careers_message'] ); ?>" class="large-text" /></label>
+                <p class="description">
+                    <?php esc_html_e( 'WhatsApp number, page chat buttons and the floating icon are configured in the', 'neonews' ); ?>
+                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-settings&tab=whatsapp' ) ); ?>"><?php esc_html_e( 'WhatsApp tab', 'neonews' ); ?></a>.
                 </p>
                 <p style="margin-top:1rem;"><strong><?php esc_html_e( 'Where to show', 'neonews' ); ?></strong></p>
                 <label><input type="checkbox" name="neonews_platform_settings[show_header_social]" value="1" <?php checked( ! empty( $settings['show_header_social'] ) ); ?> /> <?php esc_html_e( 'Social icons in header date/time bar', 'neonews' ); ?></label><br />
                 <label><input type="checkbox" name="neonews_platform_settings[show_footer_social]" value="1" <?php checked( ! empty( $settings['show_footer_social'] ) ); ?> /> <?php esc_html_e( 'Social icons in footer', 'neonews' ); ?></label><br />
-                <label><input type="checkbox" name="neonews_platform_settings[show_contact_social]" value="1" <?php checked( ! empty( $settings['show_contact_social'] ) ); ?> /> <?php esc_html_e( 'Social icons on Contact page', 'neonews' ); ?></label><br />
-                <label><input type="checkbox" name="neonews_platform_settings[show_post_whatsapp]" value="1" <?php checked( ! empty( $settings['show_post_whatsapp'] ) ); ?> /> <?php esc_html_e( 'WhatsApp share button on posts', 'neonews' ); ?></label><br />
-                <label><input type="checkbox" name="neonews_platform_settings[show_contact_whatsapp]" value="1" <?php checked( ! empty( $settings['show_contact_whatsapp'] ) ); ?> /> <?php esc_html_e( 'WhatsApp chat button on Contact page', 'neonews' ); ?></label><br />
-                <label><input type="checkbox" name="neonews_platform_settings[show_advertise_whatsapp]" value="1" <?php checked( ! empty( $settings['show_advertise_whatsapp'] ) ); ?> /> <?php esc_html_e( 'WhatsApp chat button on Advertise page', 'neonews' ); ?></label><br />
-                <label><input type="checkbox" name="neonews_platform_settings[show_careers_whatsapp]" value="1" <?php checked( ! empty( $settings['show_careers_whatsapp'] ) ); ?> /> <?php esc_html_e( 'WhatsApp chat button on Careers page', 'neonews' ); ?></label>
-                <p class="description"><?php esc_html_e( 'Post WhatsApp requires “Post shares” enabled under Features & Colors. Chat buttons require a WhatsApp number above.', 'neonews' ); ?></p>
+                <label><input type="checkbox" name="neonews_platform_settings[show_contact_social]" value="1" <?php checked( ! empty( $settings['show_contact_social'] ) ); ?> /> <?php esc_html_e( 'Social icons on Contact page', 'neonews' ); ?></label>
             </td>
         </tr>
         <tr>
@@ -253,6 +267,100 @@ function neonews_admin_tab_footer( $settings ) {
             </td>
         </tr>
     </table>
+    <?php
+}
+
+/**
+ * Render WhatsApp settings tab.
+ *
+ * @param array $settings Current settings.
+ */
+function neonews_admin_tab_whatsapp( $settings ) {
+    $name  = 'neonews_platform_settings';
+    $pages = neonews_get_whatsapp_pages();
+    ?>
+    <h2><?php esc_html_e( 'WhatsApp contact', 'neonews' ); ?></h2>
+    <?php if ( ! neonews_has_whatsapp_number() ) : ?>
+        <div class="notice notice-warning inline"><p><?php esc_html_e( 'No WhatsApp number saved yet — WhatsApp buttons and the floating icon stay hidden until you add one below.', 'neonews' ); ?></p></div>
+    <?php endif; ?>
+    <table class="form-table">
+        <tr>
+            <th><label for="nn-wa-number"><?php esc_html_e( 'WhatsApp number', 'neonews' ); ?></label></th>
+            <td>
+                <input type="text" id="nn-wa-number" name="<?php echo esc_attr( $name ); ?>[whatsapp_number]" value="<?php echo esc_attr( $settings['whatsapp_number'] ); ?>" class="regular-text" placeholder="919876543210" />
+                <p class="description"><?php esc_html_e( 'Country code + number, digits only (no +, spaces or dashes). Example: 919876543210 for India. Used on every page unless a page has its own number below.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="nn-wa-hours"><?php esc_html_e( 'Availability note', 'neonews' ); ?></label></th>
+            <td>
+                <input type="text" id="nn-wa-hours" name="<?php echo esc_attr( $name ); ?>[whatsapp_hours]" value="<?php echo esc_attr( $settings['whatsapp_hours'] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Mon–Sat, 10am–7pm IST', 'neonews' ); ?>" />
+                <p class="description"><?php esc_html_e( 'Optional. Shown under each WhatsApp button.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Floating WhatsApp icon', 'neonews' ); ?></th>
+            <td>
+                <label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[whatsapp_float_enabled]" value="1" <?php checked( ! empty( $settings['whatsapp_float_enabled'] ) ); ?> /> <?php esc_html_e( 'Show a floating WhatsApp icon on pages where WhatsApp is enabled below', 'neonews' ); ?></label><br />
+                <label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[whatsapp_float_mobile]" value="1" <?php checked( ! empty( $settings['whatsapp_float_mobile'] ) ); ?> /> <?php esc_html_e( 'Also show on mobile', 'neonews' ); ?></label>
+                <p>
+                    <label><?php esc_html_e( 'Position', 'neonews' ); ?>
+                        <select name="<?php echo esc_attr( $name ); ?>[whatsapp_float_position]">
+                            <option value="right" <?php selected( $settings['whatsapp_float_position'], 'right' ); ?>><?php esc_html_e( 'Bottom right', 'neonews' ); ?></option>
+                            <option value="left" <?php selected( $settings['whatsapp_float_position'], 'left' ); ?>><?php esc_html_e( 'Bottom left', 'neonews' ); ?></option>
+                        </select>
+                    </label>
+                </p>
+                <p>
+                    <label><?php esc_html_e( 'Label next to icon (desktop)', 'neonews' ); ?><br />
+                    <input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_float_label]" value="<?php echo esc_attr( $settings['whatsapp_float_label'] ); ?>" class="regular-text" /></label>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Post sharing', 'neonews' ); ?></th>
+            <td>
+                <label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[show_post_whatsapp]" value="1" <?php checked( ! empty( $settings['show_post_whatsapp'] ) ); ?> /> <?php esc_html_e( 'WhatsApp share button on posts', 'neonews' ); ?></label>
+                <p class="description"><?php esc_html_e( 'Requires “Post shares” enabled under Features & Colors. Does not need a number.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+    </table>
+
+    <?php foreach ( $pages as $key => $label ) : ?>
+        <h2><?php echo esc_html( sprintf( __( '%s page', 'neonews' ), $label ) ); ?></h2>
+        <table class="form-table">
+            <tr>
+                <th><?php esc_html_e( 'Enable', 'neonews' ); ?></th>
+                <td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[show_<?php echo esc_attr( $key ); ?>_whatsapp]" value="1" <?php checked( ! empty( $settings[ 'show_' . $key . '_whatsapp' ] ) ); ?> /> <?php echo esc_html( sprintf( __( 'Show WhatsApp contact on the %s page', 'neonews' ), $label ) ); ?></label></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Number for this page', 'neonews' ); ?></th>
+                <td>
+                    <input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_<?php echo esc_attr( $key ); ?>_number]" value="<?php echo esc_attr( $settings[ 'whatsapp_' . $key . '_number' ] ); ?>" class="regular-text" placeholder="<?php esc_attr_e( 'Leave blank to use the main number', 'neonews' ); ?>" />
+                    <p class="description"><?php esc_html_e( 'Optional — e.g. route Advertise to your sales team and Careers to HR.', 'neonews' ); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Box title', 'neonews' ); ?></th>
+                <td><input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_<?php echo esc_attr( $key ); ?>_title]" value="<?php echo esc_attr( $settings[ 'whatsapp_' . $key . '_title' ] ); ?>" class="regular-text" /></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Box description', 'neonews' ); ?></th>
+                <td><input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_<?php echo esc_attr( $key ); ?>_desc]" value="<?php echo esc_attr( $settings[ 'whatsapp_' . $key . '_desc' ] ); ?>" class="large-text" /></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Button text', 'neonews' ); ?></th>
+                <td><input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_<?php echo esc_attr( $key ); ?>_button]" value="<?php echo esc_attr( $settings[ 'whatsapp_' . $key . '_button' ] ); ?>" class="regular-text" /></td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e( 'Prefilled message', 'neonews' ); ?></th>
+                <td>
+                    <input type="text" name="<?php echo esc_attr( $name ); ?>[whatsapp_<?php echo esc_attr( $key ); ?>_message]" value="<?php echo esc_attr( $settings[ 'whatsapp_' . $key . '_message' ] ); ?>" class="large-text" />
+                    <p class="description"><?php esc_html_e( 'Text already typed in the visitor’s WhatsApp when they open the chat.', 'neonews' ); ?></p>
+                </td>
+            </tr>
+        </table>
+    <?php endforeach; ?>
     <?php
 }
 

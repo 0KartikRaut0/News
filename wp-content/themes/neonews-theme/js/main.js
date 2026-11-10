@@ -25,6 +25,7 @@
         showLogoutToast();
         initCookieConsent();
         initProfilePhotoPreview();
+        initInlineVideos();
 
         var runHeavy = function() {
             initScrollReveal();
@@ -520,6 +521,85 @@
             }
         }
         return null;
+    }
+
+    /**
+     * Play homepage video cards in place (one at a time).
+     */
+    function initInlineVideos() {
+        var triggers = document.querySelectorAll('.nn-watch-trigger[data-yt-id]');
+        if (!triggers.length) {
+            return;
+        }
+
+        var activeCard = null;
+
+        function stop(card) {
+            if (!card) {
+                return;
+            }
+            var player = card.querySelector('.nn-watch-player');
+            if (player) {
+                player.remove();
+            }
+            card.classList.remove('is-playing');
+            var trigger = card.querySelector('.nn-watch-trigger');
+            if (trigger) {
+                trigger.focus({ preventScroll: true });
+            }
+            if (activeCard === card) {
+                activeCard = null;
+            }
+        }
+
+        function play(trigger) {
+            var card = trigger.closest('.nn-watch-card');
+            var id = trigger.getAttribute('data-yt-id');
+            if (!card || !/^[A-Za-z0-9_-]{11}$/.test(id)) {
+                return;
+            }
+
+            if (activeCard && activeCard !== card) {
+                stop(activeCard);
+            }
+
+            var player = document.createElement('div');
+            player.className = 'nn-watch-player';
+
+            var iframe = document.createElement('iframe');
+            iframe.src = 'https://www.youtube-nocookie.com/embed/' + id + '?autoplay=1&rel=0&playsinline=1&modestbranding=1';
+            iframe.title = trigger.getAttribute('aria-label') || 'Video';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+            iframe.setAttribute('allowfullscreen', '');
+
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'nn-watch-player-close';
+            close.setAttribute('aria-label', 'Close video');
+            close.innerHTML = '&times;';
+            close.addEventListener('click', function() {
+                stop(card);
+            });
+
+            player.appendChild(iframe);
+            player.appendChild(close);
+            card.appendChild(player);
+            card.classList.add('is-playing');
+            activeCard = card;
+        }
+
+        triggers.forEach(function(trigger) {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                play(trigger);
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && activeCard) {
+                stop(activeCard);
+            }
+        });
     }
 
     /**
@@ -1334,7 +1414,248 @@
         });
     }
 
-    function loadWeatherTarget(el) {
+    var WEATHER_STORE = 'nn_weather_loc';
+
+    function weatherText(key, fallback) {
+        var w = (typeof neonewsData !== 'undefined' && neonewsData.i18n && neonewsData.i18n.weather) || {};
+        return w[key] || fallback;
+    }
+
+    function weatherEsc(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function getSavedWeatherLoc() {
+        try {
+            var loc = JSON.parse(window.localStorage.getItem(WEATHER_STORE) || 'null');
+            return loc && (loc.city || loc.lat) ? loc : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function saveWeatherLoc(loc) {
+        try {
+            if (loc) {
+                window.localStorage.setItem(WEATHER_STORE, JSON.stringify(loc));
+            } else {
+                window.localStorage.removeItem(WEATHER_STORE);
+            }
+        } catch (e) {}
+    }
+
+    function guessCityFromTimezone() {
+        try {
+            var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+            var aliases = {
+                'Asia/Calcutta': 'Kolkata',
+                'Asia/Saigon': 'Ho Chi Minh City',
+                'Asia/Katmandu': 'Kathmandu',
+                'Asia/Rangoon': 'Yangon',
+                'Europe/Kiev': 'Kyiv'
+            };
+            if (aliases[tz]) {
+                return aliases[tz];
+            }
+            if (tz.indexOf('/') === -1 || /^(Etc|UTC|GMT)/.test(tz)) {
+                return '';
+            }
+            return tz.split('/').pop().replace(/_/g, ' ');
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function getDefaultWeatherLoc(el) {
+        return {
+            city: el.getAttribute('data-city') || 'New York',
+            lat: el.getAttribute('data-lat') || '',
+            lon: el.getAttribute('data-lon') || '',
+            mode: 'default'
+        };
+    }
+
+    function resolveWeatherLoc(el) {
+        if (el.getAttribute('data-personal') === '1') {
+            var saved = getSavedWeatherLoc();
+            if (saved) {
+                return saved;
+            }
+            if (el.getAttribute('data-tz-guess') === '1') {
+                var guess = guessCityFromTimezone();
+                if (guess) {
+                    return { city: guess, lat: '', lon: '', mode: 'tz' };
+                }
+            }
+        }
+        return getDefaultWeatherLoc(el);
+    }
+
+    function getWeatherTargets() {
+        return [document.getElementById('nn-weather-header'), document.getElementById('nn-weather-widget')].filter(Boolean);
+    }
+
+    function refreshAllWeather() {
+        getWeatherTargets().forEach(function(el) {
+            loadWeatherTarget(el);
+        });
+    }
+
+    function chooseWeatherLoc(loc) {
+        saveWeatherLoc(loc);
+        refreshAllWeather();
+    }
+
+    function buildWeatherPicker(el, isHeader) {
+        var picker = document.createElement('div');
+        picker.className = 'nn-weather-picker' + (isHeader ? ' nn-weather-picker-pop' : '');
+        picker.hidden = true;
+        picker.innerHTML =
+            ('geolocation' in navigator
+                ? '<button type="button" class="nn-weather-gps">📍 ' + weatherEsc(weatherText('useMine', 'Use my location')) + '</button>'
+                : '') +
+            '<form class="nn-weather-search" role="search">' +
+                '<input type="search" maxlength="60" placeholder="' + weatherEsc(weatherText('searchCity', 'Search city…')) + '" aria-label="' + weatherEsc(weatherText('searchCity', 'Search city…')) + '" />' +
+                '<button type="submit">' + weatherEsc(weatherText('go', 'Search')) + '</button>' +
+            '</form>' +
+            '<p class="nn-weather-picker-status" aria-live="polite"></p>' +
+            '<ul class="nn-weather-results"></ul>' +
+            (getSavedWeatherLoc()
+                ? '<button type="button" class="nn-weather-reset">' + weatherEsc(weatherText('reset', 'Reset to default')) + '</button>'
+                : '') +
+            '<p class="nn-weather-privacy">🔒 ' + weatherEsc(weatherText('privacy', 'Saved only on this device. Never shared.')) + '</p>';
+
+        var status = picker.querySelector('.nn-weather-picker-status');
+        var list = picker.querySelector('.nn-weather-results');
+        var form = picker.querySelector('.nn-weather-search');
+        var gps = picker.querySelector('.nn-weather-gps');
+        var reset = picker.querySelector('.nn-weather-reset');
+
+        picker.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        if (gps) {
+            gps.addEventListener('click', function() {
+                status.textContent = weatherText('locating', 'Finding your area…');
+                navigator.geolocation.getCurrentPosition(function(pos) {
+                    chooseWeatherLoc({
+                        city: weatherText('yourArea', 'Your area'),
+                        lat: Math.round(pos.coords.latitude * 10) / 10,
+                        lon: Math.round(pos.coords.longitude * 10) / 10,
+                        mode: 'gps'
+                    });
+                }, function() {
+                    status.textContent = weatherText('denied', 'Location permission denied — search your city instead.');
+                }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 1800000 });
+            });
+        }
+
+        if (reset) {
+            reset.addEventListener('click', function() {
+                chooseWeatherLoc(null);
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var q = form.querySelector('input').value.trim();
+            if (q.length < 2) {
+                return;
+            }
+            status.textContent = neonewsData.i18n.loading;
+            list.innerHTML = '';
+
+            var fd = new FormData();
+            fd.append('action', 'neonews_weather_search');
+            fd.append('nonce', neonewsData.nonce);
+            fd.append('q', q);
+
+            fetch(neonewsData.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (!res.success) {
+                        status.textContent = (res.data && res.data.message) || neonewsData.i18n.error;
+                        return;
+                    }
+                    if (!res.data.length) {
+                        status.textContent = weatherText('noResults', 'No matching city found.');
+                        return;
+                    }
+                    status.textContent = '';
+                    res.data.forEach(function(row) {
+                        var li = document.createElement('li');
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.textContent = [row.city, row.region, row.country].filter(Boolean).join(', ');
+                        btn.addEventListener('click', function() {
+                            chooseWeatherLoc({ city: row.city, country: row.country, lat: row.lat, lon: row.lon, mode: 'city' });
+                        });
+                        li.appendChild(btn);
+                        list.appendChild(li);
+                    });
+                })
+                .catch(function() {
+                    status.textContent = neonewsData.i18n.error;
+                });
+        });
+
+        return picker;
+    }
+
+    function attachWeatherPicker(el, body, isHeader) {
+        if (el.getAttribute('data-personal') !== '1') {
+            return;
+        }
+
+        var picker = buildWeatherPicker(el, isHeader);
+        var toggle;
+
+        if (isHeader) {
+            toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'nn-header-weather-btn';
+            toggle.setAttribute('aria-label', weatherText('change', 'Change location'));
+            toggle.title = weatherText('change', 'Change location');
+            while (body.firstChild) {
+                toggle.appendChild(body.firstChild);
+            }
+            body.appendChild(toggle);
+        } else {
+            toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'nn-weather-change';
+            toggle.textContent = '📍 ' + weatherText('change', 'Change location');
+            body.appendChild(toggle);
+        }
+
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var open = picker.hidden;
+            document.querySelectorAll('.nn-weather-picker').forEach(function(p) { p.hidden = true; });
+            picker.hidden = !open;
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+                var input = picker.querySelector('input');
+                if (input) {
+                    input.focus();
+                }
+            }
+        });
+
+        body.appendChild(picker);
+    }
+
+    function renderWeatherError(body, isHeader, message) {
+        body.innerHTML = isHeader
+            ? '<span class="nn-header-weather-error">' + weatherEsc(message) + '</span>'
+            : '<p class="nn-weather-error">' + weatherEsc(message) + '</p>';
+    }
+
+    function loadWeatherTarget(el, forcedLoc) {
         if (!el || typeof neonewsData === 'undefined') {
             return;
         }
@@ -1345,12 +1666,14 @@
             return;
         }
 
+        var loc = forcedLoc || resolveWeatherLoc(el);
+
         var formData = new FormData();
         formData.append('action', 'neonews_weather');
         formData.append('nonce', neonewsData.nonce);
-        formData.append('city', el.getAttribute('data-city') || 'New York');
-        formData.append('lat', el.getAttribute('data-lat') || '');
-        formData.append('lon', el.getAttribute('data-lon') || '');
+        formData.append('city', loc.city || '');
+        formData.append('lat', loc.lat || '');
+        formData.append('lon', loc.lon || '');
 
         fetch(neonewsData.ajaxUrl, {
             method: 'POST',
@@ -1360,50 +1683,59 @@
         .then(function(r) { return r.json(); })
         .then(function(res) {
             if (!res.success) {
-                var err = (res.data && res.data.message) ? res.data.message : neonewsData.i18n.error;
-                body.innerHTML = isHeader
-                    ? '<span class="nn-header-weather-error">' + err + '</span>'
-                    : '<p class="nn-weather-error">' + err + '</p>';
+                if (loc.mode === 'tz') {
+                    loadWeatherTarget(el, getDefaultWeatherLoc(el));
+                    return;
+                }
+                renderWeatherError(body, isHeader, (res.data && res.data.message) ? res.data.message : neonewsData.i18n.error);
+                attachWeatherPicker(el, body, isHeader);
                 return;
             }
             var d = res.data;
+            var country = d.country || loc.country || '';
             if (isHeader) {
                 body.innerHTML =
-                    '<span class="nn-header-weather-icon" aria-hidden="true">' + d.icon + '</span>' +
-                    '<span class="nn-header-weather-temp">' + d.temp + d.unit + '</span>' +
-                    '<span class="nn-header-weather-city">' + d.city + '</span>' +
-                    '<span class="nn-header-weather-label">' + d.label + '</span>';
-                return;
+                    '<span class="nn-header-weather-icon" aria-hidden="true">' + weatherEsc(d.icon) + '</span>' +
+                    '<span class="nn-header-weather-temp">' + weatherEsc(d.temp + d.unit) + '</span>' +
+                    '<span class="nn-header-weather-city">' + weatherEsc(d.city) + '</span>' +
+                    '<span class="nn-header-weather-label">' + weatherEsc(d.label) + '</span>';
+            } else {
+                body.innerHTML =
+                    '<div class="nn-weather-main">' +
+                        '<span class="nn-weather-icon">' + weatherEsc(d.icon) + '</span>' +
+                        '<div class="nn-weather-temp">' + weatherEsc(d.temp + d.unit) + '</div>' +
+                    '</div>' +
+                    '<div class="nn-weather-location">' + weatherEsc(d.city + (country ? ', ' + country : '')) + '</div>' +
+                    '<div class="nn-weather-label">' + weatherEsc(d.label) + '</div>' +
+                    '<div class="nn-weather-stats">' +
+                        '<span>H ' + weatherEsc(d.high + d.unit) + '</span>' +
+                        '<span>L ' + weatherEsc(d.low + d.unit) + '</span>' +
+                        '<span>💧 ' + weatherEsc(d.humidity) + '%</span>' +
+                        '<span>💨 ' + weatherEsc(d.wind) + ' km/h</span>' +
+                    '</div>';
             }
-            body.innerHTML =
-                '<div class="nn-weather-main">' +
-                    '<span class="nn-weather-icon">' + d.icon + '</span>' +
-                    '<div class="nn-weather-temp">' + d.temp + d.unit + '</div>' +
-                '</div>' +
-                '<div class="nn-weather-location">' + d.city + (d.country ? ', ' + d.country : '') + '</div>' +
-                '<div class="nn-weather-label">' + d.label + '</div>' +
-                '<div class="nn-weather-stats">' +
-                    '<span>H ' + d.high + d.unit + '</span>' +
-                    '<span>L ' + d.low + d.unit + '</span>' +
-                    '<span>💧 ' + d.humidity + '%</span>' +
-                    '<span>💨 ' + d.wind + ' km/h</span>' +
-                '</div>';
+            attachWeatherPicker(el, body, isHeader);
         })
         .catch(function() {
-            body.innerHTML = isHeader
-                ? '<span class="nn-header-weather-error">' + neonewsData.i18n.error + '</span>'
-                : '<p class="nn-weather-error">' + neonewsData.i18n.error + '</p>';
+            renderWeatherError(body, isHeader, neonewsData.i18n.error);
         });
     }
 
     function initWeather() {
-        var header = document.getElementById('nn-weather-header');
-        var widget = document.getElementById('nn-weather-widget');
-        var targets = [header, widget].filter(Boolean);
+        var targets = getWeatherTargets();
 
         if (!targets.length) {
             return;
         }
+
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.nn-weather-picker').forEach(function(p) { p.hidden = true; });
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.nn-weather-picker').forEach(function(p) { p.hidden = true; });
+            }
+        });
 
         if ('IntersectionObserver' in window) {
             var observer = new IntersectionObserver(function(entries) {
