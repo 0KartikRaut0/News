@@ -1250,12 +1250,47 @@ function neonews_admin_tab_access( $settings ) {
     </div><!-- .nn-mc-wrap -->
 
     <script>
-    document.querySelectorAll('.nn-mc-head').forEach(function(h){
-        h.addEventListener('click', function(){
-            var s = h.closest('.nn-mc-section');
-            s.classList.toggle('open');
+    (function(){
+        var STORE_KEY = 'nn_mc_open_sections';
+
+        /* Give every section a stable id from its heading text */
+        document.querySelectorAll('.nn-mc-section').forEach(function(sec, i){
+            if ( ! sec.id ) {
+                var h = sec.querySelector('.nn-mc-head h3');
+                var slug = h ? h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-') : 'section-' + i;
+                sec.id = 'nn-mc-' + slug;
+            }
         });
-    });
+
+        /* Restore previously open sections from localStorage */
+        var saved = [];
+        try { saved = JSON.parse( localStorage.getItem( STORE_KEY ) || '[]' ); } catch(e){}
+        if ( saved.length ) {
+            /* Close the default-open section first, then open saved ones */
+            document.querySelectorAll('.nn-mc-section.open').forEach(function(s){ s.classList.remove('open'); });
+            saved.forEach(function(id){
+                var el = document.getElementById(id);
+                if (el) el.classList.add('open');
+            });
+        }
+
+        /* Toggle on click */
+        document.querySelectorAll('.nn-mc-head').forEach(function(h){
+            h.addEventListener('click', function(){
+                h.closest('.nn-mc-section').classList.toggle('open');
+            });
+        });
+
+        /* Before form submit, save which sections are open */
+        var form = document.querySelector('form[action="options.php"]') || document.querySelector('.nn-mc-wrap')?.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(){
+                var open = [];
+                document.querySelectorAll('.nn-mc-section.open').forEach(function(s){ if(s.id) open.push(s.id); });
+                try { localStorage.setItem( STORE_KEY, JSON.stringify(open) ); } catch(e){}
+            });
+        }
+    })();
     </script>
     <?php
 

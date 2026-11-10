@@ -591,10 +591,10 @@ function neonews_sanitize_settings( $input ) {
         foreach ( $access_keys as $key ) {
             $output[ $key ] = ! empty( $input[ $key ] );
         }
-        // Also save membership settings if present.
-        if ( ! empty( $input['_membership'] ) && is_array( $input['_membership'] ) ) {
-            $mem = wp_parse_args( get_option( 'neonews_membership_settings', array() ), function_exists( 'neonews_membership_default_settings' ) ? neonews_membership_default_settings() : array() );
-            $mi  = $input['_membership'];
+        // Also save membership settings — always run so unchecking all toggles still saves.
+        if ( function_exists( 'neonews_membership_default_settings' ) ) {
+            $mem = wp_parse_args( get_option( 'neonews_membership_settings', array() ), neonews_membership_default_settings() );
+            $mi  = is_array( $input['_membership'] ?? null ) ? $input['_membership'] : array();
             $mem['enable_paywall']            = ! empty( $mi['enable_paywall'] );
             $mem['free_article_limit']        = max( 0, absint( $mi['free_article_limit'] ?? $mem['free_article_limit'] ) );
             $mem['free_article_period']       = in_array( $mi['free_article_period'] ?? '', array( 'day', 'week', 'month' ), true ) ? $mi['free_article_period'] : 'month';
@@ -614,10 +614,10 @@ function neonews_sanitize_settings( $input ) {
             $mem['key_default_duration_days'] = max( 1, absint( $mi['key_default_duration_days'] ?? $mem['key_default_duration_days'] ) );
             update_option( 'neonews_membership_settings', $mem );
         }
-        // Also save smart settings if present.
-        if ( ! empty( $input['_smart'] ) && is_array( $input['_smart'] ) ) {
-            $smt = wp_parse_args( get_option( 'neonews_smart_settings', array() ), function_exists( 'neonews_smart_default_settings' ) ? neonews_smart_default_settings() : array() );
-            $si  = $input['_smart'];
+        // Also save smart settings — always run so unchecking all toggles still saves.
+        if ( function_exists( 'neonews_smart_default_settings' ) ) {
+            $smt = wp_parse_args( get_option( 'neonews_smart_settings', array() ), neonews_smart_default_settings() );
+            $si  = is_array( $input['_smart'] ?? null ) ? $input['_smart'] : array();
             $smt['enable_auto_excerpt']    = ! empty( $si['enable_auto_excerpt'] );
             $smt['enable_story_glance']    = ! empty( $si['enable_story_glance'] );
             $smt['enable_key_points']      = ! empty( $si['enable_key_points'] );
