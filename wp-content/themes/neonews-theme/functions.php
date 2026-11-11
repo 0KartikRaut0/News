@@ -234,9 +234,10 @@ function neonews_scripts() {
         'neonews-main',
         'neonewsData',
         array(
-            'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
-            'nonce'    => wp_create_nonce( 'neonews_nonce' ),
-            'homeUrl'  => home_url(),
+            'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+            'nonce'      => wp_create_nonce( 'neonews_nonce' ),
+            'homeUrl'    => home_url(),
+            'isLoggedIn' => is_user_logged_in(),
             'themeUrl' => NEONEWS_THEME_URI,
             'captcha'  => $captcha_config,
             'perf'     => array(
@@ -255,6 +256,7 @@ function neonews_scripts() {
                 'captcha' => esc_html__( 'Please complete the CAPTCHA verification.', 'neonews' ),
                 'signUp'  => esc_html__( 'Sign up', 'neonews' ),
                 'logoutConfirm' => esc_html__( 'Are you sure you want to log out?', 'neonews' ),
+                'likeNudge'     => esc_html__( '❤ Liked! Sign in to save it', 'neonews' ),
                 'weather'       => array(
                     'change'     => esc_html__( 'Change location', 'neonews' ),
                     'useMine'    => esc_html__( 'Use my location', 'neonews' ),
@@ -565,7 +567,17 @@ function neonews_comment_callback( $comment, $args, $depth ) {
                     <?php echo get_avatar( $comment, 48, '', '', array( 'class' => 'avatar' ) ); ?>
                 </div>
                 <div class="nn-comment-meta">
-                    <span class="nn-comment-author"><?php echo esc_html( get_comment_author() ); ?></span>
+                    <span class="nn-comment-author">
+                        <?php echo esc_html( $comment->comment_author ); ?>
+                        <?php
+                        if ( function_exists( 'neonews_get_comment_member_badges_html' ) ) {
+                            $comment_badges = neonews_get_comment_member_badges_html( $comment->comment_ID );
+                            if ( $comment_badges ) {
+                                echo ' ' . wp_kses_post( $comment_badges );
+                            }
+                        }
+                        ?>
+                    </span>
                     <time class="nn-comment-date" datetime="<?php echo esc_attr( get_comment_date( 'c' ) ); ?>">
                         <?php
                         printf(

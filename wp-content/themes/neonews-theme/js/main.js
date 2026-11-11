@@ -780,6 +780,30 @@
             return;
         }
 
+        var isLoggedIn = !!(neonewsData.isLoggedIn);
+
+        // Show a brief "Sign in to save your like" tooltip near the like button.
+        function showLikeLoginNudge(btn) {
+            var existing = btn.querySelector('.nn-like-nudge');
+            if (existing) { return; }
+
+            var nudge = document.createElement('span');
+            nudge.className = 'nn-like-nudge';
+            nudge.textContent = neonewsData.i18n.likeNudge || '❤ Sign in to save it!';
+            btn.appendChild(nudge);
+
+            // After 2.5 s, fade the nudge out and open the sign-in modal.
+            setTimeout(function() {
+                nudge.classList.add('nn-like-nudge-hide');
+                setTimeout(function() {
+                    if (nudge.parentNode) { nudge.parentNode.removeChild(nudge); }
+                }, 400);
+                // trigger existing sign-in modal
+                var loginBtn = document.querySelector('.nn-open-login');
+                if (loginBtn) { loginBtn.click(); }
+            }, 2000);
+        }
+
         document.addEventListener('click', function(e) {
             var likeBtn = e.target.closest('.nn-like-btn');
             if (likeBtn) {
@@ -789,8 +813,11 @@
                     return;
                 }
 
+                // Guest path — fire the deduplicated guest-like endpoint.
+                var action = isLoggedIn ? 'neonews_toggle_like' : 'neonews_guest_like';
+
                 var formData = new FormData();
-                formData.append('action', 'neonews_toggle_like');
+                formData.append('action', action);
                 formData.append('nonce', neonewsData.nonce);
                 formData.append('post_id', postId);
 
@@ -818,6 +845,10 @@
                         var svg = likeBtn.querySelector('svg');
                         if (svg) {
                             svg.setAttribute('fill', data.data.liked ? 'currentColor' : 'none');
+                        }
+                        // Guest nudge — show tooltip then open sign-in modal.
+                        if (data.data.needs_login && !data.data.already) {
+                            showLikeLoginNudge(likeBtn);
                         }
                     }
                 })

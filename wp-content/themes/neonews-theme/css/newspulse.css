@@ -2753,6 +2753,37 @@ body.nn-mobile-menu-open {
     position: relative;
 }
 
+/* Guest like nudge tooltip */
+.nn-like-nudge {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+    z-index: 20;
+}
+.nn-like-nudge::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+.nn-like-nudge.nn-like-nudge-hide {
+    opacity: 0;
+}
+
 .nn-heart-particle {
     position: absolute;
     top: 50%;
