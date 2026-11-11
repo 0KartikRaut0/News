@@ -571,7 +571,13 @@ function neonews_comment_callback( $comment, $args, $depth ) {
                     <?php echo get_avatar( $comment, 48, '', '', array( 'class' => 'avatar' ) ); ?>
                 </div>
                 <div class="nn-comment-meta">
-                    <span class="nn-comment-author"><?php echo esc_html( get_comment_author() ); ?></span>
+                    <span class="nn-comment-author"><?php
+                        echo wp_kses( get_comment_author(), array(
+                            'span' => array( 'class' => array(), 'aria-hidden' => array(), 'aria-label' => array() ),
+                            'svg'  => array( 'width' => array(), 'height' => array(), 'viewbox' => array(), 'fill' => array(), 'aria-hidden' => array() ),
+                            'path' => array( 'd' => array(), 'fill' => array() ),
+                        ) );
+                    ?></span>
                     <time class="nn-comment-date" datetime="<?php echo esc_attr( get_comment_date( 'c' ) ); ?>">
                         <?php
                         printf(
