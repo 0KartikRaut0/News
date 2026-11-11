@@ -242,26 +242,27 @@ function neonews_is_ad_zone_enabled( $zone_id ) {
  * Register admin menu.
  */
 function neonews_register_admin_settings_page() {
-    add_menu_page(
-        __( 'NewsPulse Settings', 'neonews' ),
-        __( 'NewsPulse', 'neonews' ),
-        'manage_options',
-        'neonews-settings',
-        'neonews_render_settings_page',
-        'dashicons-admin-site-alt3',
-        59
-    );
-
-    add_submenu_page(
-        'neonews-settings',
-        __( 'Platform Settings', 'neonews' ),
-        __( 'Platform', 'neonews' ),
-        'manage_options',
-        'neonews-settings',
-        'neonews_render_settings_page'
-    );
+    // Settings page removed. Settings remain registered so existing values
+    // can still be read by the theme and plugins, but there is no admin menu.
 }
 add_action( 'admin_menu', 'neonews_register_admin_settings_page', 9 );
+
+/**
+ * Redirect old settings URLs away from the removed page.
+ */
+function neonews_redirect_removed_settings_page() {
+    if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    if ( empty( $_GET['page'] ) || 'neonews-settings' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification
+        return;
+    }
+
+    wp_safe_redirect( admin_url( 'index.php' ) );
+    exit;
+}
+add_action( 'admin_init', 'neonews_redirect_removed_settings_page', 1 );
 
 /**
  * Register settings.
@@ -331,7 +332,6 @@ function neonews_sanitize_settings( $input ) {
         $output['weather_timezone_guess']   = ! empty( $input['weather_timezone_guess'] );
 
         $output['auth_allow_registration'] = ! empty( $input['auth_allow_registration'] );
-        $output['auth_auto_username']      = ! empty( $input['auth_auto_username'] );
         $output['reg_custom_fields']       = isset( $input['reg_custom_fields'] ) ? sanitize_textarea_field( wp_unslash( $input['reg_custom_fields'] ) ) : ( $previous['reg_custom_fields'] ?? '' );
         $output['reg_fields'] = array();
         foreach ( neonews_get_builtin_registration_field_defs() as $field_key => $field_def ) {
@@ -560,7 +560,7 @@ function neonews_sanitize_settings( $input ) {
         // Social
         'show_contact_social',
         // Auth / registration
-        'auth_allow_registration', 'auth_auto_username',
+        'auth_allow_registration',
         'captcha_enabled', 'captcha_on_login', 'captcha_on_register',
         // Weather
         'weather_enabled', 'weather_visitor_location',
@@ -633,11 +633,8 @@ function neonews_sanitize_settings( $input ) {
             $mem['free_article_limit']        = max( 0, absint( $mi['free_article_limit'] ?? $mem['free_article_limit'] ) );
             $mem['free_article_period']       = in_array( $mi['free_article_period'] ?? '', array( 'day', 'week', 'month' ), true ) ? $mi['free_article_period'] : 'month';
             $mem['hide_ads_for_premium']      = ! empty( $mi['hide_ads_for_premium'] );
-            $mem['enable_upgrade_popup']      = ! empty( $mi['enable_upgrade_popup'] );
             $mem['popup_delay_seconds']       = max( 0, absint( $mi['popup_delay_seconds'] ?? $mem['popup_delay_seconds'] ) );
             $mem['popup_interval_hours']      = max( 1, absint( $mi['popup_interval_hours'] ?? $mem['popup_interval_hours'] ) );
-            $mem['show_home_premium_section'] = ! empty( $mi['show_home_premium_section'] );
-            $mem['show_exclusive_nav_link']   = ! empty( $mi['show_exclusive_nav_link'] );
             $mem['home_premium_count']        = max( 1, min( 12, absint( $mi['home_premium_count'] ?? $mem['home_premium_count'] ) ) );
             $mem['home_premium_title']        = sanitize_text_field( wp_unslash( $mi['home_premium_title'] ?? $mem['home_premium_title'] ) );
             $mem['exclusive_page_count']      = max( 1, min( 50, absint( $mi['exclusive_page_count'] ?? $mem['exclusive_page_count'] ) ) );

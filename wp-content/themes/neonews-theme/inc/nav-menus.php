@@ -81,7 +81,7 @@ function neonews_get_or_create_primary_menu() {
  * @param int $menu_id Menu ID.
  */
 function neonews_sync_exclusive_nav_item( $menu_id ) {
-    // If the nav link has been disabled from Master Control, remove it and bail.
+    // If the nav link has been disabled in settings, remove it and bail.
     $show = true;
     if ( function_exists( 'NeoNews_Membership' ) || class_exists( 'NeoNews_Membership' ) ) {
         $show = (bool) NeoNews_Membership::get_settings( 'show_exclusive_nav_link' );

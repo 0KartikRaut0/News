@@ -670,8 +670,7 @@ function neonews_admin_tab_footer( $settings ) {
                     <label>Instagram<br /><input type="url" name="neonews_platform_settings[social_instagram]" value="<?php echo esc_url( $settings['social_instagram'] ); ?>" class="large-text" /></label>
                 </p>
                 <p class="description">
-                    <?php esc_html_e( 'WhatsApp number, page chat buttons and the floating icon are configured in the', 'neonews' ); ?>
-                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-settings&tab=whatsapp' ) ); ?>"><?php esc_html_e( 'WhatsApp tab', 'neonews' ); ?></a>.
+                    <?php esc_html_e( 'WhatsApp number, page chat buttons and the floating icon are configured in the theme settings.', 'neonews' ); ?>
                 </p>
                 <p style="margin-top:1rem;"><strong><?php esc_html_e( 'Where to show', 'neonews' ); ?></strong></p>
                 <label><input type="checkbox" name="neonews_platform_settings[show_header_social]" value="1" <?php checked( ! empty( $settings['show_header_social'] ) ); ?> /> <?php esc_html_e( 'Social icons in header date/time bar', 'neonews' ); ?></label><br />
@@ -834,7 +833,7 @@ function neonews_admin_tab_sidebar( $settings ) {
 }
 
 /**
- * Render Master Control tab — full access to every feature and setting.
+ * Render settings tab — full access to every feature and setting.
  */
 function neonews_admin_tab_access( $settings ) {
     $mem  = wp_parse_args( get_option( 'neonews_membership_settings', array() ), function_exists( 'neonews_membership_default_settings' ) ? neonews_membership_default_settings() : array() );
@@ -842,7 +841,7 @@ function neonews_admin_tab_access( $settings ) {
 
     ?>
     <style>
-    /* ── Master Control page styles ── */
+    /* ── Settings page styles ── */
     .nn-mc-wrap { max-width: 900px; }
     .nn-mc-section { background: #fff; border: 1px solid #c3c4c7; border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
     .nn-mc-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; user-select: none; border-bottom: 1px solid #e0e0e0; }
@@ -878,7 +877,7 @@ function neonews_admin_tab_access( $settings ) {
     .nn-mc-bulk-label { font-size:0.82rem; color:#3c434a; font-weight:600; }
     </style>
 
-    <h2><?php esc_html_e( 'Master Control', 'neonews' ); ?></h2>
+    <h2><?php esc_html_e( 'Theme Settings', 'neonews' ); ?></h2>
     <p class="description"><?php esc_html_e( 'Every feature and setting in one place. Click a section to expand it. Toggle switches are instant on/off. Save Settings applies everything.', 'neonews' ); ?></p>
 
     <div class="nn-mc-toolbar">
@@ -1132,9 +1131,6 @@ function neonews_admin_tab_access( $settings ) {
                 <?php
                 $tog_m( 'enable_paywall',             __( 'Enable paywall / article limit', 'neonews' ),       $mem['enable_paywall'] );
                 $tog_m( 'hide_ads_for_premium',       __( 'Hide ads for premium members', 'neonews' ),         $mem['hide_ads_for_premium'] );
-                $tog_m( 'enable_upgrade_popup',       __( 'Show upgrade popup to non-members', 'neonews' ),    $mem['enable_upgrade_popup'] );
-                $tog_m( 'show_home_premium_section',  __( 'Premium Picks section on homepage', 'neonews' ),    $mem['show_home_premium_section'] );
-                $tog_m( 'show_exclusive_nav_link',    __( 'Exclusive page link in navigation', 'neonews' ),    $mem['show_exclusive_nav_link'] );
                 ?>
             </div>
             <div class="nn-mc-fields">
@@ -1202,7 +1198,6 @@ function neonews_admin_tab_access( $settings ) {
             <div class="nn-mc-grid">
                 <?php
                 $tog( 'auth_allow_registration', __( 'Allow new user registration', 'neonews' ),       $settings['auth_allow_registration'] );
-                $tog( 'auth_auto_username',       __( 'Auto-generate username from email', 'neonews' ), $settings['auth_auto_username'] );
                 $tog( 'captcha_enabled',          __( 'Enable CAPTCHA', 'neonews' ),                   $settings['captcha_enabled'] );
                 $tog( 'captcha_on_login',         __( 'CAPTCHA on login', 'neonews' ),                 $settings['captcha_on_login'] );
                 $tog( 'captcha_on_register',      __( 'CAPTCHA on registration', 'neonews' ),          $settings['captcha_on_register'] );

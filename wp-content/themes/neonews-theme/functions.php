@@ -647,9 +647,7 @@ require_once NEONEWS_THEME_DIR . '/inc/template-functions.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
 require_once NEONEWS_THEME_DIR . '/inc/social-links.php';
 require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';
-require_once NEONEWS_THEME_DIR . '/inc/admin-settings-tabs.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings.php';
-require_once NEONEWS_THEME_DIR . '/inc/admin-performance-panel.php';
 require_once NEONEWS_THEME_DIR . '/inc/legal-pages.php';
 require_once NEONEWS_THEME_DIR . '/inc/company-pages.php';
 require_once NEONEWS_THEME_DIR . '/inc/nav-menus.php';
@@ -694,13 +692,7 @@ function neonews_theme_premium_post_gate( $content ) {
     if ( ! NeoNews_Premium_Content::is_premium_post( get_the_ID() ) ) {
         return $content;
     }
-    // If the plugin's own paywall filter is registered at priority 99, let it
-    // handle the content so we don't double-gate. But if paywall is OFF (no
-    // filter registered), fall through to our theme-level gate below.
-    if ( NeoNews_Membership::get_settings( 'enable_paywall' ) && has_filter( 'the_content', array( NeoNews_Content_Restriction::get_instance(), 'maybe_restrict_content' ) ) ) {
-        return $content;
-    }
-    // Premium post + paywall off + not logged in → show a sign-in gate.
+    // Premium post + not logged in → show a sign-in gate.
     if ( ! is_user_logged_in() ) {
         $excerpt = wp_trim_words( wp_strip_all_tags( $content ), 40, '…' );
         ob_start();

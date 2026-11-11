@@ -183,7 +183,6 @@ class NeoNews_Membership_Admin {
                 $sanitized['popup_interval_hours']   = max( 1, absint( $input['popup_interval_hours'] ?? $previous['popup_interval_hours'] ) );
                 $sanitized['popup_title']            = sanitize_text_field( wp_unslash( $input['popup_title'] ?? $previous['popup_title'] ) );
                 $sanitized['popup_message']          = sanitize_textarea_field( wp_unslash( $input['popup_message'] ?? $previous['popup_message'] ) );
-                $sanitized['show_home_premium_section'] = $bool( 'show_home_premium_section' );
                 $sanitized['home_premium_title']     = sanitize_text_field( wp_unslash( $input['home_premium_title'] ?? $previous['home_premium_title'] ) );
                 $sanitized['home_premium_count']     = max( 1, min( 12, absint( $input['home_premium_count'] ?? $previous['home_premium_count'] ) ) );
                 break;
@@ -581,7 +580,6 @@ class NeoNews_Membership_Admin {
             <tr><th><?php esc_html_e( 'Popup interval (hours)', 'neonews-membership' ); ?></th><td><input type="number" name="neonews_membership_settings[popup_interval_hours]" value="<?php echo esc_attr( $s['popup_interval_hours'] ); ?>" min="1" class="small-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Popup title', 'neonews-membership' ); ?></th><td><input type="text" name="neonews_membership_settings[popup_title]" value="<?php echo esc_attr( $s['popup_title'] ); ?>" class="large-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Popup message', 'neonews-membership' ); ?></th><td><textarea name="neonews_membership_settings[popup_message]" rows="3" class="large-text"><?php echo esc_textarea( $s['popup_message'] ); ?></textarea></td></tr>
-            <tr><th><?php esc_html_e( 'Home premium section', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[show_home_premium_section]" value="1" <?php checked( ! empty( $s['show_home_premium_section'] ) ); ?> /></label></td></tr>
             <tr><th><?php esc_html_e( 'Home premium title', 'neonews-membership' ); ?></th><td><input type="text" name="neonews_membership_settings[home_premium_title]" value="<?php echo esc_attr( $s['home_premium_title'] ); ?>" class="regular-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Home premium count', 'neonews-membership' ); ?></th><td><input type="number" name="neonews_membership_settings[home_premium_count]" value="<?php echo esc_attr( $s['home_premium_count'] ); ?>" min="1" max="12" class="small-text" /></td></tr>
         </table>
