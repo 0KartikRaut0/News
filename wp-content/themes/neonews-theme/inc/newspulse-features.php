@@ -525,7 +525,7 @@ function neonews_comment_member_badge( $author, $comment_id = 0 ) {
 
     $user = get_userdata( $comment->user_id );
     if ( $user && in_array( 'nn_premium_subscriber', (array) $user->roles, true ) ) {
-        if ( ! in_array( '<span class="nn-member-badge nn-badge-premium">', $author ) ) {
+        if ( ! str_contains( $author, 'nn-badge-premium' ) ) {
             $badges[] = '<span class="nn-member-badge nn-badge-member">' . esc_html__( 'Member', 'neonews' ) . '</span>';
         }
     } elseif ( $user && in_array( 'subscriber', (array) $user->roles, true ) && empty( $badges ) ) {
