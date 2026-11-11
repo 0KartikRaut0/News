@@ -351,26 +351,22 @@ function neonews_ajax_login() {
 
     $username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
     $password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore
+    // 'rememberme' is only present in POST when the checkbox is checked (unchecked inputs
+    // are omitted from FormData entirely). Any non-empty value means "remember me".
     $remember = ! empty( $_POST['rememberme'] );
 
-    $user = wp_signon(
-        array(
-            'user_login'    => $username,
-            'user_password' => $password,
-            'remember'      => $remember,
-        ),
-        is_ssl()
-    );
+    // Authenticate the user without setting cookies yet.
+    $user = wp_authenticate( $username, $password );
 
     if ( is_wp_error( $user ) ) {
         wp_send_json_error( array( 'message' => __( 'Invalid username or password.', 'neonews' ) ) );
     }
 
-    // Explicitly re-set the auth cookie to guarantee the remember-me expiry is applied.
-    // wp_signon() should do this internally, but re-setting it here ensures it's not
-    // lost due to any hook or filter interference.
+    // Set the current user and auth cookie explicitly so remember-me expiry
+    // is guaranteed regardless of any filter/hook interference with wp_signon.
     wp_set_current_user( $user->ID );
     wp_set_auth_cookie( $user->ID, $remember, is_ssl() );
+    do_action( 'wp_login', $user->user_login, $user );
 
     wp_send_json_success(
         array(

@@ -694,8 +694,10 @@ function neonews_theme_premium_post_gate( $content ) {
     if ( ! NeoNews_Premium_Content::is_premium_post( get_the_ID() ) ) {
         return $content;
     }
-    // Skip if the plugin's paywall is already active — it will handle this at priority 99.
-    if ( NeoNews_Membership::get_settings( 'enable_paywall' ) ) {
+    // If the plugin's own paywall filter is registered at priority 99, let it
+    // handle the content so we don't double-gate. But if paywall is OFF (no
+    // filter registered), fall through to our theme-level gate below.
+    if ( NeoNews_Membership::get_settings( 'enable_paywall' ) && has_filter( 'the_content', array( NeoNews_Content_Restriction::get_instance(), 'maybe_restrict_content' ) ) ) {
         return $content;
     }
     // Premium post + paywall off + not logged in → show a sign-in gate.

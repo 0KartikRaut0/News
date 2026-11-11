@@ -182,7 +182,7 @@ function neonews_get_default_settings() {
         'category_colors'         => '',
         // CAPTCHA.
         'auth_allow_registration' => true,
-        'auth_auto_username'      => true,
+        'auth_auto_username'      => false,
         'reg_fields'              => array(),
         'reg_custom_fields'       => '',
         'captcha_enabled'         => false,

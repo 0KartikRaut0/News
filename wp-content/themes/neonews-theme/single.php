@@ -171,9 +171,10 @@ get_header();
 
             <?php
             // Gate comments on premium posts: non-logged-in users and non-premium members cannot comment.
-            $nn_is_premium_post = function_exists( 'NeoNews_Premium_Content::is_premium_post' )
+            // NOTE: function_exists() cannot check static methods — use method_exists() / class_exists().
+            $nn_is_premium_post = ( class_exists( 'NeoNews_Premium_Content' ) && method_exists( 'NeoNews_Premium_Content', 'is_premium_post' ) )
                 ? NeoNews_Premium_Content::is_premium_post( get_the_ID() )
-                : ( class_exists( 'NeoNews_Premium_Content' ) && NeoNews_Premium_Content::is_premium_post( get_the_ID() ) );
+                : false;
             $nn_can_comment     = ! $nn_is_premium_post
                 || ( is_user_logged_in() && ( current_user_can( 'edit_posts' ) || ( function_exists( 'neonews_is_user_premium' ) && neonews_is_user_premium() ) ) );
 
