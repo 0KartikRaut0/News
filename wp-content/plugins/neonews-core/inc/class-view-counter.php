@@ -96,18 +96,33 @@ class NeoNews_View_Counter {
     }
 
     /**
-     * Check if view can be counted (rate limiting)
+     * Check if view can be counted.
+     *
+     * Logged-in users  → stored in user meta; counted only once ever per post.
+     * Guest users      → IP-based transient with a 24-hour cooldown.
      */
     private function can_count_view( $post_id ) {
-        $ip_hash = $this->get_ip_hash();
-        $transient_key = 'nn_view_' . $post_id . '_' . $ip_hash;
+        if ( is_user_logged_in() ) {
+            $user_id = get_current_user_id();
+            $viewed  = get_user_meta( $user_id, '_neonews_viewed_posts', true );
+            if ( ! is_array( $viewed ) ) {
+                $viewed = array();
+            }
+            if ( in_array( (int) $post_id, $viewed, true ) ) {
+                return false; // already counted for this user.
+            }
+            $viewed[] = (int) $post_id;
+            update_user_meta( $user_id, '_neonews_viewed_posts', $viewed );
+            return true;
+        }
 
+        // Guest: 24-hour cooldown per IP per post.
+        $ip_hash       = $this->get_ip_hash();
+        $transient_key = 'nn_view_' . $post_id . '_' . $ip_hash;
         if ( get_transient( $transient_key ) ) {
             return false;
         }
-
-        set_transient( $transient_key, true, 60 );
-
+        set_transient( $transient_key, true, DAY_IN_SECONDS );
         return true;
     }
 

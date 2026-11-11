@@ -51,6 +51,13 @@ function neonews_get_builtin_registration_field_defs() {
             'required' => true,
             'enabled'  => true,
         ),
+        'username'   => array(
+            'label'    => __( 'Username', 'neonews' ),
+            'type'     => 'text',
+            'system'   => 'username',
+            'required' => true,
+            'enabled'  => true,
+        ),
         'password'   => array(
             'label'    => __( 'Password', 'neonews' ),
             'type'     => 'password',
@@ -84,8 +91,13 @@ function neonews_get_registration_fields() {
     foreach ( $defs as $key => $def ) {
         $cfg = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
 
-        // System fields (email, password) are always required — never skip them.
+        // System fields (email, password, username) are always required — never skip them.
         $is_system = ! empty( $def['system'] );
+
+        // Username field: only show when auto-username is OFF.
+        if ( 'username' === $key && neonews_is_feature_enabled( 'auth_auto_username' ) ) {
+            continue;
+        }
 
         if ( ! $is_system ) {
             if ( isset( $cfg['enabled'] ) && ! $cfg['enabled'] ) {
@@ -218,6 +230,9 @@ function neonews_render_registration_form_fields() {
             $extra = ' autocomplete="new-password" minlength="8"';
         } elseif ( 'email' === $type ) {
             $extra = ' autocomplete="email"';
+        } elseif ( isset( $field['system'] ) && 'username' === $field['system'] ) {
+            $extra = ' autocomplete="username" pattern="[a-zA-Z0-9_\-\.]{3,60}" title="' . esc_attr__( '3–60 characters: letters, numbers, _ - .', 'neonews' ) . '"';
+            $name  = 'user_login'; // matches what the AJAX register handler reads.
         } else {
             $extra = ' autocomplete="off"';
         }
@@ -351,6 +366,12 @@ function neonews_ajax_login() {
         wp_send_json_error( array( 'message' => __( 'Invalid username or password.', 'neonews' ) ) );
     }
 
+    // Explicitly re-set the auth cookie to guarantee the remember-me expiry is applied.
+    // wp_signon() should do this internally, but re-setting it here ensures it's not
+    // lost due to any hook or filter interference.
+    wp_set_current_user( $user->ID );
+    wp_set_auth_cookie( $user->ID, $remember, is_ssl() );
+
     wp_send_json_success(
         array(
             'redirect' => neonews_get_account_url(),
@@ -422,12 +443,18 @@ function neonews_ajax_register() {
     }
 
     $username = neonews_generate_username_from_email( $email );
-    if ( ! neonews_is_feature_enabled( 'auth_auto_username' ) && ! empty( $_POST['user_login'] ) ) {
+    if ( ! neonews_is_feature_enabled( 'auth_auto_username' ) ) {
+        if ( empty( $_POST['user_login'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Please choose a username.', 'neonews' ) ) );
+        }
         $username = sanitize_user( wp_unslash( $_POST['user_login'] ), true );
+        if ( strlen( $username ) < 3 ) {
+            wp_send_json_error( array( 'message' => __( 'Username must be at least 3 characters.', 'neonews' ) ) );
+        }
     }
 
     if ( username_exists( $username ) ) {
-        wp_send_json_error( array( 'message' => __( 'Could not create account. Please try a different email.', 'neonews' ) ) );
+        wp_send_json_error( array( 'message' => __( 'That username is already taken. Please choose another.', 'neonews' ) ) );
     }
 
     $user_id = wp_create_user( $username, $password, $email );

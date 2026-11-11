@@ -667,3 +667,79 @@ require_once NEONEWS_THEME_DIR . '/inc/newspulse-features.php';
 if ( did_action( 'elementor/loaded' ) ) {
     require_once NEONEWS_THEME_DIR . '/inc/elementor-compat.php';
 }
+
+/**
+ * Fallback premium post gate for non-logged-in users.
+ *
+ * When the membership plugin's paywall is disabled (or the plugin is inactive),
+ * we still need to show a sign-in prompt instead of the full content on premium posts.
+ * Runs at priority 98 — just before the membership plugin's own filter (99).
+ * The membership plugin will override this with its own richer gate when active.
+ */
+add_filter( 'the_content', 'neonews_theme_premium_post_gate', 98 );
+function neonews_theme_premium_post_gate( $content ) {
+    // Skip if not a single post page.
+    if ( ! is_singular( 'post' ) ) {
+        return $content;
+    }
+    // Skip for admins/editors — they should always see full content.
+    if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+        return $content;
+    }
+    // Skip if premium membership plugin isn't available.
+    if ( ! class_exists( 'NeoNews_Premium_Content' ) || ! class_exists( 'NeoNews_Membership' ) ) {
+        return $content;
+    }
+    // Skip if post is not marked as premium.
+    if ( ! NeoNews_Premium_Content::is_premium_post( get_the_ID() ) ) {
+        return $content;
+    }
+    // Skip if the plugin's paywall is already active — it will handle this at priority 99.
+    if ( NeoNews_Membership::get_settings( 'enable_paywall' ) ) {
+        return $content;
+    }
+    // Premium post + paywall off + not logged in → show a sign-in gate.
+    if ( ! is_user_logged_in() ) {
+        $excerpt = wp_trim_words( wp_strip_all_tags( $content ), 40, '…' );
+        ob_start();
+        ?>
+        <div class="nn-content-excerpt"><?php echo wp_kses_post( wpautop( $excerpt ) ); ?></div>
+        <div class="nn-paywall">
+            <div class="nn-paywall-inner">
+                <div class="nn-paywall-icon">🔒</div>
+                <h3><?php esc_html_e( 'Exclusive Premium Story', 'neonews' ); ?></h3>
+                <p><?php esc_html_e( 'Sign in to your account to read the full article, or become a premium member for unlimited access.', 'neonews' ); ?></p>
+                <div class="nn-paywall-actions">
+                    <button type="button" class="nn-btn nn-btn-outline nn-open-login"><?php esc_html_e( 'Sign In', 'neonews' ); ?></button>
+                    <?php if ( class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
+                    <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Become a Member', 'neonews' ); ?></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    // Logged-in non-premium user — show upgrade prompt.
+    if ( function_exists( 'neonews_is_user_premium' ) && ! neonews_is_user_premium() ) {
+        $excerpt = wp_trim_words( wp_strip_all_tags( $content ), 40, '…' );
+        ob_start();
+        ?>
+        <div class="nn-content-excerpt"><?php echo wp_kses_post( wpautop( $excerpt ) ); ?></div>
+        <div class="nn-paywall">
+            <div class="nn-paywall-inner">
+                <div class="nn-paywall-icon">⭐</div>
+                <h3><?php esc_html_e( 'Premium Members Only', 'neonews' ); ?></h3>
+                <p><?php esc_html_e( 'This story is reserved for premium members. Upgrade your account to read the full article.', 'neonews' ); ?></p>
+                <div class="nn-paywall-actions">
+                    <?php if ( class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
+                    <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Upgrade to Premium', 'neonews' ); ?></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    return $content;
+}
