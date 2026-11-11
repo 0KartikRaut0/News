@@ -234,14 +234,8 @@
      */
     function initThemeToggle() {
         var themeToggle = document.querySelector('.nn-theme-toggle');
-
+        
         if (!themeToggle) {
-            return;
-        }
-
-        // If admin disabled the visitor dark-mode toggle, hide it
-        if (typeof neonewsData !== 'undefined' && neonewsData.appearance && neonewsData.appearance.showDarkToggle === false) {
-            themeToggle.style.display = 'none';
             return;
         }
 
@@ -357,8 +351,7 @@
         var currentIndex = 0;
         var slideCount = slides.length;
         var autoplayInterval = null;
-        var autoplayDelay = (typeof neonewsData !== 'undefined' && neonewsData.appearance && neonewsData.appearance.carouselInterval)
-            ? neonewsData.appearance.carouselInterval : 5000;
+        var autoplayDelay = 5000;
 
         function goToSlide(index) {
             if (index < 0) {
@@ -782,69 +775,6 @@
     /**
      * Likes, shares, copy link
      */
-    /* Show a small tooltip + shake animation when a guest clicks like */
-    function nnShowGuestLikePrompt(btn) {
-        // Shake the button
-        btn.classList.add('nn-like-shake');
-        setTimeout(function() { btn.classList.remove('nn-like-shake'); }, 600);
-
-        // Remove any existing tooltip
-        var old = document.getElementById('nn-guest-like-tip');
-        if (old) old.remove();
-
-        var tip = document.createElement('div');
-        tip.id = 'nn-guest-like-tip';
-        tip.className = 'nn-guest-tip';
-        tip.innerHTML = '<span>❤ Sign in to like posts</span>' +
-            '<button type="button" class="nn-btn nn-btn-sm nn-open-login" style="margin-left:10px;">Sign In</button>' +
-            '<button type="button" class="nn-guest-tip-close" aria-label="Close">✕</button>';
-        document.body.appendChild(tip);
-
-        // Position near button
-        var rect = btn.getBoundingClientRect();
-        tip.style.position = 'fixed';
-        tip.style.top  = Math.max(8, rect.top - tip.offsetHeight - 10) + 'px';
-        tip.style.left = Math.max(8, rect.left + rect.width / 2 - 120) + 'px';
-
-        // Re-position after paint (offsetHeight now available)
-        requestAnimationFrame(function() {
-            var tipH = tip.offsetHeight;
-            tip.style.top = Math.max(8, rect.top - tipH - 10) + 'px';
-        });
-
-        tip.querySelector('.nn-guest-tip-close').addEventListener('click', function() { tip.remove(); });
-        setTimeout(function() { if (tip.parentNode) tip.remove(); }, 4000);
-    }
-
-    /* ── Account "View all" activity toggle ── */
-    document.addEventListener('click', function(e) {
-        var btn = e.target.closest('.nn-act-more-btn');
-        if (!btn) return;
-        var targetId = btn.getAttribute('data-target');
-        var total    = parseInt(btn.getAttribute('data-total'), 10);
-        var initial  = parseInt(btn.getAttribute('data-initial'), 10);
-        var container = document.getElementById(targetId);
-        if (!container) return;
-
-        var expanded = btn.classList.contains('nn-act-expanded');
-        if (expanded) {
-            // Collapse back to initial view
-            var items = container.querySelectorAll('.nn-activity-card, .nn-comment-card');
-            items.forEach(function(item, i) {
-                if (i >= initial) item.classList.add('nn-act-hidden');
-            });
-            btn.textContent = 'View all ' + total + ' \u2192';
-            btn.classList.remove('nn-act-expanded');
-        } else {
-            // Show all
-            container.querySelectorAll('.nn-act-hidden').forEach(function(item) {
-                item.classList.remove('nn-act-hidden');
-            });
-            btn.textContent = 'Show less \u2191';
-            btn.classList.add('nn-act-expanded');
-        }
-    });
-
     function initEngagement() {
         if (typeof neonewsData === 'undefined') {
             return;
@@ -889,8 +819,6 @@
                         if (svg) {
                             svg.setAttribute('fill', data.data.liked ? 'currentColor' : 'none');
                         }
-                    } else if (data.data && data.data.code === 'login_required') {
-                        nnShowGuestLikePrompt(likeBtn);
                     }
                 })
                 .catch(function() {});

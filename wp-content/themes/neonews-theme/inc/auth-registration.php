@@ -94,11 +94,9 @@ function neonews_get_registration_fields() {
         // System fields (email, password, username) are always required — never skip them.
         $is_system = ! empty( $def['system'] );
 
-        // Always show username on the signup form so users can choose it directly.
-        // The "auto username" setting is intentionally ignored here to avoid
-        // hidden-field behavior from the removed settings page.
-        if ( 'username' === $key ) {
-            $def['required'] = true;
+        // Username field: only show when auto-username is OFF.
+        if ( 'username' === $key && neonews_is_feature_enabled( 'auth_auto_username' ) ) {
+            continue;
         }
 
         if ( ! $is_system ) {
@@ -353,21 +351,20 @@ function neonews_ajax_login() {
 
     $username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
     $password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore
-    // 'rememberme' is only present in POST when the checkbox is checked.
     $remember = ! empty( $_POST['rememberme'] );
 
-    // Authenticate the user without setting cookies yet.
-    $user = wp_authenticate( $username, $password );
+    $user = wp_signon(
+        array(
+            'user_login'    => $username,
+            'user_password' => $password,
+            'remember'      => $remember,
+        ),
+        is_ssl()
+    );
 
     if ( is_wp_error( $user ) ) {
         wp_send_json_error( array( 'message' => __( 'Invalid username or password.', 'neonews' ) ) );
     }
-
-    // Set the current user and auth cookie explicitly so remember-me expiry
-    // is guaranteed regardless of any filter/hook interference.
-    wp_set_current_user( $user->ID );
-    wp_set_auth_cookie( $user->ID, $remember, is_ssl() );
-    do_action( 'wp_login', $user->user_login, $user );
 
     wp_send_json_success(
         array(
@@ -439,12 +436,15 @@ function neonews_ajax_register() {
         wp_send_json_error( array( 'message' => __( 'That email is already registered. Try signing in or reset your password.', 'neonews' ) ) );
     }
 
-    if ( empty( $_POST['user_login'] ) ) {
-        wp_send_json_error( array( 'message' => __( 'Please choose a username.', 'neonews' ) ) );
-    }
-    $username = sanitize_user( wp_unslash( $_POST['user_login'] ), true );
-    if ( strlen( $username ) < 3 ) {
-        wp_send_json_error( array( 'message' => __( 'Username must be at least 3 characters.', 'neonews' ) ) );
+    $username = neonews_generate_username_from_email( $email );
+    if ( ! neonews_is_feature_enabled( 'auth_auto_username' ) ) {
+        if ( empty( $_POST['user_login'] ) ) {
+            wp_send_json_error( array( 'message' => __( 'Please choose a username.', 'neonews' ) ) );
+        }
+        $username = sanitize_user( wp_unslash( $_POST['user_login'] ), true );
+        if ( strlen( $username ) < 3 ) {
+            wp_send_json_error( array( 'message' => __( 'Username must be at least 3 characters.', 'neonews' ) ) );
+        }
     }
 
     if ( username_exists( $username ) ) {
@@ -556,6 +556,12 @@ function neonews_admin_render_registration_settings( $settings ) {
             <td>
                 <label><input type="checkbox" name="neonews_platform_settings[auth_allow_registration]" value="1" <?php checked( ! empty( $settings['auth_allow_registration'] ) ); ?> /> <?php esc_html_e( 'Show Sign Up tab and registration buttons', 'neonews' ); ?></label>
                 <p class="description"><?php esc_html_e( 'Also updates WordPress Settings → General → Membership.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Username', 'neonews' ); ?></th>
+            <td>
+                <label><input type="checkbox" name="neonews_platform_settings[auth_auto_username]" value="1" <?php checked( ! empty( $settings['auth_auto_username'] ) ); ?> /> <?php esc_html_e( 'Auto-generate username from email (recommended)', 'neonews' ); ?></label>
             </td>
         </tr>
         <tr>

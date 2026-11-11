@@ -33,6 +33,7 @@ class NeoNews_Membership_Frontend {
         add_action( 'wp_footer', array( $this, 'render_upgrade_popup' ) );
         add_action( 'neonews_profile_membership_panel', array( $this, 'render_profile_membership_panel' ) );
         add_action( 'neonews_account_membership_panel', array( $this, 'render_account_membership_panel' ) );
+        add_action( 'neonews_home_after_hero', array( $this, 'render_home_premium_section' ), 15 );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ), 30 );
         add_filter( 'post_class', array( $this, 'premium_post_class' ), 10, 3 );
         add_filter( 'the_posts', array( $this, 'mark_locked_archive_posts' ), 10, 2 );
@@ -346,8 +347,59 @@ class NeoNews_Membership_Frontend {
      * Homepage premium picks section.
      */
     public function render_home_premium_section() {
-        // Homepage premium picks section removed.
-        return;
+        if ( empty( NeoNews_Membership::get_settings( 'show_home_premium_section' ) ) ) {
+            return;
+        }
+
+        $count  = absint( NeoNews_Membership::get_settings( 'home_premium_count' ) );
+        $query  = self::get_premium_posts_query( $count, true );
+        if ( ! $query->have_posts() ) {
+            $query = self::get_premium_posts_query( $count, false );
+        }
+        if ( ! $query->have_posts() ) {
+            return;
+        }
+
+        $settings      = NeoNews_Membership::get_settings();
+        $title         = $settings['home_premium_title'];
+        $is_logged_in  = is_user_logged_in();
+        $is_premium    = NeoNews_Membership_Levels::is_premium();
+        if ( ! $title ) {
+            $title = __( 'Exclusive Content', 'neonews-membership' );
+        }
+        $exclusive_url = self::get_exclusive_page_url();
+        ?>
+        <section class="nn-container nn-home-premium nn-home-exclusive nn-reveal<?php echo $is_premium ? ' nn-home-exclusive-unlocked' : ' nn-home-exclusive-locked'; ?>">
+            <header class="nn-section-head">
+                <h2><span class="nn-nav-star" aria-hidden="true">★</span> <?php echo esc_html( $title ); ?></h2>
+                <?php if ( $exclusive_url ) : ?>
+                    <a href="<?php echo esc_url( $exclusive_url ); ?>" class="nn-section-link"><?php esc_html_e( 'View all exclusive →', 'neonews-membership' ); ?></a>
+                <?php endif; ?>
+            </header>
+            <?php if ( ! $is_logged_in ) : ?>
+                <p class="nn-home-exclusive-notice">
+                    <?php esc_html_e( 'Sign in to preview exclusive stories. Premium members unlock full access.', 'neonews-membership' ); ?>
+                    <button type="button" class="nn-btn nn-btn-sm nn-open-login"><?php esc_html_e( 'Sign In', 'neonews' ); ?></button>
+                </p>
+            <?php elseif ( ! $is_premium ) : ?>
+                <p class="nn-home-exclusive-notice">
+                    <?php esc_html_e( 'You are signed in as a basic member. Upgrade to premium to read exclusive stories without limits.', 'neonews-membership' ); ?>
+                    <a href="<?php echo esc_url( self::get_enroll_url() ); ?>" class="nn-btn nn-btn-sm"><?php esc_html_e( 'Upgrade', 'neonews-membership' ); ?></a>
+                </p>
+            <?php else : ?>
+                <p class="nn-home-exclusive-notice nn-home-exclusive-notice-premium"><?php esc_html_e( 'Your premium picks — full access unlocked.', 'neonews-membership' ); ?></p>
+            <?php endif; ?>
+            <div class="nn-home-premium-grid <?php echo esc_attr( self::get_exclusive_grid_class() ); ?>">
+                <?php
+                while ( $query->have_posts() ) :
+                    $query->the_post();
+                    self::render_premium_card( get_the_ID() );
+                endwhile;
+                wp_reset_postdata();
+                ?>
+            </div>
+        </section>
+        <?php
     }
 
     /**

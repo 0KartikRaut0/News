@@ -170,37 +170,10 @@ get_header();
             <?php endif; ?>
 
             <?php
-            // Gate comments on premium posts: non-logged-in users and non-premium members cannot comment.
-            // NOTE: function_exists() cannot check static methods — use method_exists() / class_exists().
-            $nn_is_premium_post = ( class_exists( 'NeoNews_Premium_Content' ) && method_exists( 'NeoNews_Premium_Content', 'is_premium_post' ) )
-                ? NeoNews_Premium_Content::is_premium_post( get_the_ID() )
-                : false;
-            $nn_can_comment     = ! $nn_is_premium_post
-                || ( is_user_logged_in() && ( current_user_can( 'edit_posts' ) || ( function_exists( 'neonews_is_user_premium' ) && neonews_is_user_premium() ) ) );
-
-            if ( ( comments_open() || get_comments_number() ) && $nn_can_comment ) :
+            if ( comments_open() || get_comments_number() ) :
                 comments_template();
-            elseif ( $nn_is_premium_post && ! is_user_logged_in() ) :
+            endif;
             ?>
-                <div class="nn-comments-gate">
-                    <span class="nn-lock-icon" aria-hidden="true">🔒</span>
-                    <p><?php esc_html_e( 'Sign in as a premium member to join the discussion.', 'neonews' ); ?></p>
-                    <div class="nn-paywall-actions">
-                        <button type="button" class="nn-btn nn-btn-outline nn-open-login"><?php esc_html_e( 'Sign In', 'neonews' ); ?></button>
-                        <?php if ( function_exists( 'NeoNews_Membership_Frontend::get_enroll_url' ) || class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
-                        <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Become a Member', 'neonews' ); ?></a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php elseif ( $nn_is_premium_post && is_user_logged_in() && ! ( function_exists( 'neonews_is_user_premium' ) && neonews_is_user_premium() ) ) : ?>
-                <div class="nn-comments-gate">
-                    <span class="nn-lock-icon" aria-hidden="true">⭐</span>
-                    <p><?php esc_html_e( 'Upgrade to a premium membership to join the discussion.', 'neonews' ); ?></p>
-                    <?php if ( class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
-                    <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Upgrade to Premium', 'neonews' ); ?></a>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
 
         <?php endwhile; ?>
     </div>

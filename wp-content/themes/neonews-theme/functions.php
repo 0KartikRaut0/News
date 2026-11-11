@@ -248,12 +248,6 @@ function neonews_scripts() {
                 'collapsible'   => ! empty( neonews_get_setting( 'mobile_ad_collapsible', true ) ),
                 'collapsedText' => esc_html( neonews_get_setting( 'mobile_ad_collapsed_text', 'Ad' ) ?: 'Ad' ),
             ),
-            'appearance' => array(
-                'darkModeDefault'  => neonews_get_setting( 'dark_mode_default', 'light' ),
-                'showDarkToggle'   => ! empty( neonews_get_setting( 'show_dark_mode_toggle', true ) ),
-                'carouselInterval' => max( 2000, absint( neonews_get_setting( 'carousel_interval', 5000 ) ) ),
-                'breakingSpeed'    => max( 10, absint( neonews_get_setting( 'breaking_scroll_speed', 40 ) ) ),
-            ),
             'i18n'     => array(
                 'loading' => esc_html__( 'Loading...', 'neonews' ),
                 'error'   => esc_html__( 'An error occurred.', 'neonews' ),
@@ -311,7 +305,7 @@ add_filter( 'body_class', 'neonews_body_classes' );
  * Get theme mode (dark/light)
  */
 function neonews_get_theme_mode() {
-    $default_mode = neonews_get_setting( 'dark_mode_default', 'light' );
+    $default_mode = get_theme_mod( 'neonews_default_theme_mode', 'light' );
 
     if ( is_user_logged_in() ) {
         $user_mode = get_user_meta( get_current_user_id(), 'neonews_theme_mode', true );
@@ -571,13 +565,7 @@ function neonews_comment_callback( $comment, $args, $depth ) {
                     <?php echo get_avatar( $comment, 48, '', '', array( 'class' => 'avatar' ) ); ?>
                 </div>
                 <div class="nn-comment-meta">
-                    <span class="nn-comment-author"><?php
-                        echo wp_kses( get_comment_author(), array(
-                            'span' => array( 'class' => array(), 'aria-hidden' => array(), 'aria-label' => array() ),
-                            'svg'  => array( 'width' => array(), 'height' => array(), 'viewbox' => array(), 'fill' => array(), 'aria-hidden' => array() ),
-                            'path' => array( 'd' => array(), 'fill' => array() ),
-                        ) );
-                    ?></span>
+                    <span class="nn-comment-author"><?php echo esc_html( get_comment_author() ); ?></span>
                     <time class="nn-comment-date" datetime="<?php echo esc_attr( get_comment_date( 'c' ) ); ?>">
                         <?php
                         printf(
@@ -647,7 +635,9 @@ require_once NEONEWS_THEME_DIR . '/inc/template-functions.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
 require_once NEONEWS_THEME_DIR . '/inc/social-links.php';
 require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';
+require_once NEONEWS_THEME_DIR . '/inc/admin-settings-tabs.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings.php';
+require_once NEONEWS_THEME_DIR . '/inc/admin-performance-panel.php';
 require_once NEONEWS_THEME_DIR . '/inc/legal-pages.php';
 require_once NEONEWS_THEME_DIR . '/inc/company-pages.php';
 require_once NEONEWS_THEME_DIR . '/inc/nav-menus.php';
@@ -664,76 +654,4 @@ require_once NEONEWS_THEME_DIR . '/inc/newspulse-features.php';
  */
 if ( did_action( 'elementor/loaded' ) ) {
     require_once NEONEWS_THEME_DIR . '/inc/elementor-compat.php';
-}
-
-/**
- * Fallback premium post gate for non-logged-in users.
- *
- * When the membership plugin's paywall is disabled (or the plugin is inactive),
- * we still need to show a sign-in prompt instead of the full content on premium posts.
- * Runs at priority 98 — just before the membership plugin's own filter (99).
- * The membership plugin will override this with its own richer gate when active.
- */
-add_filter( 'the_content', 'neonews_theme_premium_post_gate', 98 );
-function neonews_theme_premium_post_gate( $content ) {
-    // Skip if not a single post page.
-    if ( ! is_singular( 'post' ) ) {
-        return $content;
-    }
-    // Skip for admins/editors — they should always see full content.
-    if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
-        return $content;
-    }
-    // Skip if premium membership plugin isn't available.
-    if ( ! class_exists( 'NeoNews_Premium_Content' ) || ! class_exists( 'NeoNews_Membership' ) ) {
-        return $content;
-    }
-    // Skip if post is not marked as premium.
-    if ( ! NeoNews_Premium_Content::is_premium_post( get_the_ID() ) ) {
-        return $content;
-    }
-    // Premium post + not logged in → show a sign-in gate.
-    if ( ! is_user_logged_in() ) {
-        $excerpt = wp_trim_words( wp_strip_all_tags( $content ), 40, '…' );
-        ob_start();
-        ?>
-        <div class="nn-content-excerpt"><?php echo wp_kses_post( wpautop( $excerpt ) ); ?></div>
-        <div class="nn-paywall">
-            <div class="nn-paywall-inner">
-                <div class="nn-paywall-icon">🔒</div>
-                <h3><?php esc_html_e( 'Exclusive Premium Story', 'neonews' ); ?></h3>
-                <p><?php esc_html_e( 'Sign in to your account to read the full article, or become a premium member for unlimited access.', 'neonews' ); ?></p>
-                <div class="nn-paywall-actions">
-                    <button type="button" class="nn-btn nn-btn-outline nn-open-login"><?php esc_html_e( 'Sign In', 'neonews' ); ?></button>
-                    <?php if ( class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
-                    <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Become a Member', 'neonews' ); ?></a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
-    // Logged-in non-premium user — show upgrade prompt.
-    if ( function_exists( 'neonews_is_user_premium' ) && ! neonews_is_user_premium() ) {
-        $excerpt = wp_trim_words( wp_strip_all_tags( $content ), 40, '…' );
-        ob_start();
-        ?>
-        <div class="nn-content-excerpt"><?php echo wp_kses_post( wpautop( $excerpt ) ); ?></div>
-        <div class="nn-paywall">
-            <div class="nn-paywall-inner">
-                <div class="nn-paywall-icon">⭐</div>
-                <h3><?php esc_html_e( 'Premium Members Only', 'neonews' ); ?></h3>
-                <p><?php esc_html_e( 'This story is reserved for premium members. Upgrade your account to read the full article.', 'neonews' ); ?></p>
-                <div class="nn-paywall-actions">
-                    <?php if ( class_exists( 'NeoNews_Membership_Frontend' ) ) : ?>
-                    <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Upgrade to Premium', 'neonews' ); ?></a>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
-    return $content;
 }

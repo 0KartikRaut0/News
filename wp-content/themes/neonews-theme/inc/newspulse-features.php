@@ -228,7 +228,7 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
     // Include pending comments in the count so it updates immediately on submit,
     // before the admin approves. Spam and trash are always excluded.
     $_cc      = wp_count_comments( $post_id );
-    $comments = (int) ( $_cc->approved ?? 0 ) + (int) ( $_cc->awaiting_moderation ?? 0 );
+    $comments = (int) $_cc->approved + (int) $_cc->awaiting_moderation;
     $likes    = (int) get_post_meta( $post_id, '_neonews_likes', true );
     $liked    = is_user_logged_in() && neonews_user_liked_post( $post_id );
     ?>
@@ -451,44 +451,6 @@ function neonews_ajax_toggle_like() {
 add_action( 'wp_ajax_neonews_toggle_like', 'neonews_ajax_toggle_like' );
 
 /**
- * Guest (non-logged-in) like attempt — record it and return a login prompt.
- */
-function neonews_ajax_guest_like() {
-    check_ajax_referer( 'neonews_nonce', 'nonce' );
-
-    $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-    if ( ! $post_id || 'post' !== get_post_type( $post_id ) ) {
-        wp_send_json_error();
-    }
-
-    // Record the attempt: store last 50 guest like attempts in post meta.
-    $ip       = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? '' ) );
-    $attempts = get_post_meta( $post_id, '_neonews_guest_likes', true );
-    if ( ! is_array( $attempts ) ) {
-        $attempts = array();
-    }
-    $attempts[] = array(
-        'ip'   => $ip,
-        'time' => current_time( 'timestamp' ),
-    );
-    // Keep only the last 50.
-    if ( count( $attempts ) > 50 ) {
-        $attempts = array_slice( $attempts, -50 );
-    }
-    update_post_meta( $post_id, '_neonews_guest_likes', $attempts );
-
-    // Also bump a simple counter for quick display.
-    $count = (int) get_post_meta( $post_id, '_neonews_guest_like_count', true );
-    update_post_meta( $post_id, '_neonews_guest_like_count', $count + 1 );
-
-    wp_send_json_error( array(
-        'code'    => 'login_required',
-        'message' => __( 'Please sign in to like posts.', 'neonews' ),
-    ) );
-}
-add_action( 'wp_ajax_nopriv_neonews_toggle_like', 'neonews_ajax_guest_like' );
-
-/**
  * Track share click.
  */
 function neonews_ajax_track_share() {
@@ -541,12 +503,8 @@ add_action( 'wp_ajax_nopriv_neonews_track_share', 'neonews_ajax_track_share' );
  */
 function neonews_comment_member_badge( $author, $comment_id = 0 ) {
     $comment = get_comment( $comment_id );
-    if ( ! $comment ) {
+    if ( ! $comment || ! $comment->user_id ) {
         return $author;
-    }
-    // Guest comment — no WordPress user attached.
-    if ( ! $comment->user_id ) {
-        return $author . ' <span class="nn-member-badge nn-badge-guest">' . esc_html__( 'Guest', 'neonews' ) . '</span>';
     }
 
     $badges = array();
@@ -567,7 +525,7 @@ function neonews_comment_member_badge( $author, $comment_id = 0 ) {
 
     $user = get_userdata( $comment->user_id );
     if ( $user && in_array( 'nn_premium_subscriber', (array) $user->roles, true ) ) {
-        if ( ! str_contains( $author, 'nn-badge-premium' ) ) {
+        if ( ! in_array( '<span class="nn-member-badge nn-badge-premium">', $author ) ) {
             $badges[] = '<span class="nn-member-badge nn-badge-member">' . esc_html__( 'Member', 'neonews' ) . '</span>';
         }
     } elseif ( $user && in_array( 'subscriber', (array) $user->roles, true ) && empty( $badges ) ) {
@@ -604,10 +562,10 @@ function neonews_account_shortcode() {
     }
 
     $user_id = get_current_user_id();
-    $read    = class_exists( 'NeoNews_Activity_Tracker' ) ? NeoNews_Activity_Tracker::get_posts_read( $user_id, 500 ) : array();
+    $read    = class_exists( 'NeoNews_Activity_Tracker' ) ? NeoNews_Activity_Tracker::get_posts_read( $user_id, 10 ) : array();
     $liked   = get_user_meta( $user_id, '_neonews_liked_posts', true );
     $shared  = get_user_meta( $user_id, '_neonews_shared_posts', true );
-    $comments = get_comments( array( 'user_id' => $user_id, 'number' => 500, 'status' => 'approve' ) );
+    $comments = get_comments( array( 'user_id' => $user_id, 'number' => 10, 'status' => 'approve' ) );
 
     if ( ! is_array( $liked ) ) {
         $liked = array();
@@ -684,19 +642,17 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                 <span class="nn-activity-empty-icon">📭</span>
                 <p><?php esc_html_e( 'Nothing here yet — start exploring!', 'neonews' ); ?></p>
             </div>
-        <?php else :
-            $initial = 6;
-            $total   = count( $post_ids );
-            $uid     = 'nn-act-' . $type . '-' . get_current_user_id();
-        ?>
-            <div class="nn-activity-cards" id="<?php echo esc_attr( $uid ); ?>">
-                <?php foreach ( $post_ids as $i => $pid ) :
+        <?php else : ?>
+            <div class="nn-activity-cards">
+                <?php
+                foreach ( array_slice( $post_ids, 0, 6 ) as $pid ) {
                     $post = get_post( $pid );
-                    if ( ! $post ) { continue; }
+                    if ( ! $post ) {
+                        continue;
+                    }
                     $thumb = get_the_post_thumbnail_url( $pid, 'neonews-card' );
-                    $hidden = $i >= $initial ? ' nn-act-hidden' : '';
                     ?>
-                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" class="nn-activity-card<?php echo esc_attr( $hidden ); ?>">
+                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" class="nn-activity-card">
                         <span class="nn-activity-card-thumb">
                             <?php if ( $thumb ) : ?>
                                 <img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy" />
@@ -707,22 +663,15 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                         <span class="nn-activity-card-body">
                             <span class="nn-activity-card-title"><?php echo esc_html( get_the_title( $pid ) ); ?></span>
                             <span class="nn-activity-card-meta">
-                                <?php echo esc_html( get_the_date( '', $pid ) ); ?>
-                                <?php if ( neonews_is_feature_enabled( 'show_post_views' ) ) : ?>
-                                · <?php echo esc_html( neonews_format_views( neonews_get_post_views( $pid ) ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>
-                                <?php endif; ?>
+                                <?php echo esc_html( get_the_date( '', $pid ) ); ?> ·
+                                <?php echo esc_html( neonews_format_views( neonews_get_post_views( $pid ) ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>
                             </span>
                         </span>
                     </a>
-                <?php endforeach; ?>
+                    <?php
+                }
+                ?>
             </div>
-            <?php if ( $total > $initial ) : ?>
-            <div class="nn-act-more-wrap">
-                <button type="button" class="nn-act-more-btn" data-target="<?php echo esc_attr( $uid ); ?>" data-total="<?php echo esc_attr( $total ); ?>" data-initial="<?php echo esc_attr( $initial ); ?>">
-                    <?php printf( esc_html__( 'View all %d →', 'neonews' ), $total ); ?>
-                </button>
-            </div>
-            <?php endif; ?>
         <?php endif; ?>
     </section>
     <?php
@@ -734,9 +683,6 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
  * @param array $comments Comment objects.
  */
 function neonews_account_comments_section( $comments ) {
-    $initial_c = 6;
-    $total_c   = count( $comments );
-    $uid_c     = 'nn-act-comments-' . get_current_user_id();
     ?>
     <section class="nn-activity-block nn-activity-comments nn-page-card">
         <header class="nn-activity-head">
@@ -746,24 +692,15 @@ function neonews_account_comments_section( $comments ) {
         <?php if ( empty( $comments ) ) : ?>
             <div class="nn-activity-empty"><p><?php esc_html_e( 'No comments yet.', 'neonews' ); ?></p></div>
         <?php else : ?>
-            <div class="nn-comment-cards" id="<?php echo esc_attr( $uid_c ); ?>">
-                <?php foreach ( $comments as $ci => $c ) :
-                    $hidden_c = $ci >= $initial_c ? ' nn-act-hidden' : '';
-                ?>
-                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>" class="nn-comment-card<?php echo esc_attr( $hidden_c ); ?>">
+            <div class="nn-comment-cards">
+                <?php foreach ( $comments as $c ) : ?>
+                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>" class="nn-comment-card">
                         <span class="nn-comment-quote">“</span>
                         <span class="nn-comment-text"><?php echo esc_html( wp_trim_words( $c->comment_content, 18 ) ); ?></span>
                         <span class="nn-comment-meta"><?php echo esc_html( get_the_title( $c->comment_post_ID ) ); ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
-            <?php if ( $total_c > $initial_c ) : ?>
-            <div class="nn-act-more-wrap">
-                <button type="button" class="nn-act-more-btn" data-target="<?php echo esc_attr( $uid_c ); ?>" data-total="<?php echo esc_attr( $total_c ); ?>" data-initial="<?php echo esc_attr( $initial_c ); ?>">
-                    <?php printf( esc_html__( 'View all %d →', 'neonews' ), $total_c ); ?>
-                </button>
-            </div>
-            <?php endif; ?>
         <?php endif; ?>
     </section>
     <?php
@@ -924,128 +861,3 @@ function neonews_save_youtube_meta( $post_id ) {
     }
 }
 add_action( 'save_post', 'neonews_save_youtube_meta' );
-
-/* ============================================================
-   GUEST ACTIVITY — admin columns + dashboard widget
-   ============================================================ */
-
-/**
- * Add "Guest Likes" column to posts list table.
- */
-function neonews_guest_like_column( $columns ) {
-    $columns['guest_likes'] = '<span title="' . esc_attr__( 'Guest Like Attempts', 'neonews' ) . '">👁 ' . esc_html__( 'Guest Likes', 'neonews' ) . '</span>';
-    return $columns;
-}
-add_filter( 'manage_posts_columns', 'neonews_guest_like_column' );
-
-function neonews_guest_like_column_value( $column, $post_id ) {
-    if ( 'guest_likes' !== $column ) {
-        return;
-    }
-    $count = (int) get_post_meta( $post_id, '_neonews_guest_like_count', true );
-    if ( $count > 0 ) {
-        printf( '<strong style="color:#d63638;">%d</strong>', $count );
-    } else {
-        echo '<span style="color:#999;">0</span>';
-    }
-}
-add_action( 'manage_posts_custom_column', 'neonews_guest_like_column_value', 10, 2 );
-
-function neonews_guest_like_column_sortable( $columns ) {
-    $columns['guest_likes'] = 'guest_likes';
-    return $columns;
-}
-add_filter( 'manage_edit-post_sortable_columns', 'neonews_guest_like_column_sortable' );
-
-function neonews_guest_like_column_orderby( $query ) {
-    if ( ! is_admin() || ! $query->is_main_query() ) {
-        return;
-    }
-    if ( 'guest_likes' === $query->get( 'orderby' ) ) {
-        $query->set( 'meta_key', '_neonews_guest_like_count' );
-        $query->set( 'orderby', 'meta_value_num' );
-    }
-}
-add_action( 'pre_get_posts', 'neonews_guest_like_column_orderby' );
-
-/**
- * Dashboard widget — recent guest like attempts.
- */
-function neonews_register_guest_activity_widget() {
-    wp_add_dashboard_widget(
-        'neonews_guest_activity',
-        __( '👥 Guest Activity (Likes & Comments)', 'neonews' ),
-        'neonews_render_guest_activity_widget'
-    );
-}
-add_action( 'wp_dashboard_setup', 'neonews_register_guest_activity_widget' );
-
-function neonews_render_guest_activity_widget() {
-    // ── Guest likes ──────────────────────────────────────────
-    $like_posts = get_posts( array(
-        'post_type'      => 'post',
-        'posts_per_page' => 10,
-        'meta_key'       => '_neonews_guest_like_count',
-        'orderby'        => 'meta_value_num',
-        'order'          => 'DESC',
-        'meta_query'     => array( array(
-            'key'     => '_neonews_guest_like_count',
-            'value'   => 0,
-            'compare' => '>',
-            'type'    => 'NUMERIC',
-        ) ),
-    ) );
-
-    echo '<h4 style="margin:0 0 8px;">' . esc_html__( 'Posts with Guest Like Attempts', 'neonews' ) . '</h4>';
-    if ( $like_posts ) {
-        echo '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">';
-        echo '<tr style="border-bottom:1px solid #eee;"><th style="text-align:left;padding:4px 6px;">' . esc_html__( 'Post', 'neonews' ) . '</th><th style="text-align:center;padding:4px 6px;">' . esc_html__( 'Attempts', 'neonews' ) . '</th><th style="text-align:left;padding:4px 6px;">' . esc_html__( 'Last IP', 'neonews' ) . '</th></tr>';
-        foreach ( $like_posts as $p ) {
-            $count    = (int) get_post_meta( $p->ID, '_neonews_guest_like_count', true );
-            $attempts = get_post_meta( $p->ID, '_neonews_guest_likes', true );
-            $last_ip  = '';
-            if ( is_array( $attempts ) && ! empty( $attempts ) ) {
-                $last     = end( $attempts );
-                $last_ip  = esc_html( $last['ip'] ?? '' );
-            }
-            printf(
-                '<tr style="border-bottom:1px solid #f5f5f5;"><td style="padding:4px 6px;"><a href="%s">%s</a></td><td style="text-align:center;padding:4px 6px;"><strong style="color:#d63638;">%d</strong></td><td style="padding:4px 6px;color:#888;">%s</td></tr>',
-                esc_url( get_edit_post_link( $p->ID ) ),
-                esc_html( get_the_title( $p->ID ) ),
-                $count,
-                $last_ip
-            );
-        }
-        echo '</table>';
-    } else {
-        echo '<p style="color:#888;font-size:0.82rem;">' . esc_html__( 'No guest like attempts yet.', 'neonews' ) . '</p>';
-    }
-
-    // ── Guest comments ───────────────────────────────────────
-    $guest_comments = get_comments( array(
-        'user_id'  => 0,
-        'status'   => 'approve',
-        'number'   => 8,
-        'orderby'  => 'comment_date',
-        'order'    => 'DESC',
-    ) );
-
-    echo '<hr style="margin:14px 0;"><h4 style="margin:0 0 8px;">' . esc_html__( 'Recent Guest Comments', 'neonews' ) . '</h4>';
-    if ( $guest_comments ) {
-        echo '<table style="width:100%;border-collapse:collapse;font-size:0.82rem;">';
-        echo '<tr style="border-bottom:1px solid #eee;"><th style="text-align:left;padding:4px 6px;">' . esc_html__( 'Name', 'neonews' ) . '</th><th style="text-align:left;padding:4px 6px;">' . esc_html__( 'Post', 'neonews' ) . '</th><th style="text-align:left;padding:4px 6px;">' . esc_html__( 'Date', 'neonews' ) . '</th></tr>';
-        foreach ( $guest_comments as $c ) {
-            printf(
-                '<tr style="border-bottom:1px solid #f5f5f5;"><td style="padding:4px 6px;">%s <span style="color:#888;font-size:0.75rem;">(%s)</span></td><td style="padding:4px 6px;"><a href="%s">%s</a></td><td style="padding:4px 6px;color:#888;">%s</td></tr>',
-                esc_html( $c->comment_author ),
-                esc_html( $c->comment_author_email ?: __( 'no email', 'neonews' ) ),
-                esc_url( get_edit_post_link( $c->comment_post_ID ) ),
-                esc_html( get_the_title( $c->comment_post_ID ) ),
-                esc_html( mysql2date( get_option( 'date_format' ), $c->comment_date ) )
-            );
-        }
-        echo '</table>';
-    } else {
-        echo '<p style="color:#888;font-size:0.82rem;">' . esc_html__( 'No guest comments yet.', 'neonews' ) . '</p>';
-    }
-}
