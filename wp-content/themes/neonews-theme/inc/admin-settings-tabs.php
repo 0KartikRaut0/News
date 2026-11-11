@@ -282,8 +282,13 @@ function neonews_admin_tab_homepage( $settings ) {
     $all_keys   = array_keys( $section_labels );
     $order_keys = array_merge( $order_keys, array_diff( $all_keys, $order_keys ) );
     ?>
-    <h3><?php esc_html_e( 'Section order', 'neonews' ); ?></h3>
-    <p class="description"><?php esc_html_e( 'Drag rows up or down to change the order sections appear on the homepage.', 'neonews' ); ?></p>
+    <h3 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <?php esc_html_e( 'Section order', 'neonews' ); ?>
+        <button type="button" id="nn-restore-order" class="button button-small" style="font-size:0.8rem;" title="<?php esc_attr_e( 'Reset to the default homepage section sequence', 'neonews' ); ?>">
+            ↺ <?php esc_html_e( 'Restore default order', 'neonews' ); ?>
+        </button>
+    </h3>
+    <p class="description"><?php esc_html_e( 'Drag rows up or down to change the order sections appear on the homepage. Click "Restore default order" to reset to the original sequence, then save.', 'neonews' ); ?></p>
     <input type="hidden" name="neonews_platform_settings[home_section_order]" id="nn-section-order-input" value="<?php echo esc_attr( implode( ',', $order_keys ) ); ?>" />
     <ul id="nn-section-sortable" style="max-width:520px;margin:0.75rem 0 1.5rem;padding:0;list-style:none;border:1px solid #c3c4c7;border-radius:6px;overflow:hidden;">
         <?php foreach ( $order_keys as $k ) :
@@ -294,10 +299,6 @@ function neonews_admin_tab_homepage( $settings ) {
             </li>
         <?php endforeach; ?>
     </ul>
-    <p style="margin:-0.5rem 0 1.25rem;">
-        <button type="button" class="button" id="nn-reset-home-order"><?php esc_html_e( 'Restore default order', 'neonews' ); ?></button>
-        <span class="description" style="margin-left:0.75rem;"><?php esc_html_e( 'Returns homepage sections to the original NewsPulse layout.', 'neonews' ); ?></span>
-    </p>
     <script id="nn-custom-section-data">
     var nnCustomSections = <?php echo wp_json_encode( array_values( (array) ( $settings['home_custom_sections'] ?? array() ) ) ); ?>;
     </script>
@@ -305,9 +306,7 @@ function neonews_admin_tab_homepage( $settings ) {
     (function(){
         var list = document.getElementById('nn-section-sortable');
         var input = document.getElementById('nn-section-order-input');
-        var resetBtn = document.getElementById('nn-reset-home-order');
         if (!list || !input) return;
-        var defaultOrder = <?php echo wp_json_encode( array_keys( $section_labels ) ); ?>;
 
         var dragging = null;
 
@@ -372,27 +371,45 @@ function neonews_admin_tab_homepage( $settings ) {
             input.value = keys.join(',');
         }
 
-        function restoreDefaultOrder() {
-            var customRows = Array.prototype.slice.call(list.querySelectorAll('.nn-sort-row[data-key^="custom_"]'));
-            defaultOrder.forEach(function(key){
-                var row = list.querySelector('.nn-sort-row[data-key="' + key + '"]');
-                if (row) {
-                    list.appendChild(row);
-                }
-            });
-            customRows.forEach(function(row){
-                list.appendChild(row);
-            });
-            saveOrder();
-        }
+        // ── Restore default order ─────────────────────────────────────────
+        var defaultOrder = <?php echo wp_json_encode( array( 'hero_text', 'carousel', 'ad_hero', 'categories', 'videos', 'tipline', 'latest', 'ad_footer' ) ); ?>;
+        var sectionLabels = <?php echo wp_json_encode( $section_labels ); ?>;
 
-        if (resetBtn) {
-            resetBtn.addEventListener('click', function() {
-                if (window.confirm(<?php echo wp_json_encode( __( 'Restore the default homepage order?', 'neonews' ) ); ?>)) {
-                    restoreDefaultOrder();
-                }
+        document.getElementById('nn-restore-order').addEventListener('click', function(){
+            if ( ! confirm(<?php echo wp_json_encode( __( 'Reset homepage section order to the default sequence? Custom sections will stay at the bottom. You still need to click Save to apply.', 'neonews' ) ); ?>) ) return;
+
+            // Collect any custom rows so we can re-append them after defaults.
+            var customRows = [];
+            list.querySelectorAll('.nn-sort-row.nn-sort-custom').forEach(function(r){ customRows.push(r); });
+
+            // Clear the list.
+            list.innerHTML = '';
+
+            // Re-build default rows.
+            defaultOrder.forEach(function(key){
+                var label = sectionLabels[key];
+                if (!label) return;
+                var li = document.createElement('li');
+                li.setAttribute('data-key', key);
+                li.className = 'nn-sort-row';
+                li.setAttribute('draggable', 'true');
+                li.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid #c3c4c7;cursor:grab;user-select:none;';
+                li.innerHTML = '<span style="color:#aaa;font-size:1.1rem;line-height:1;">⣿</span><span>' + label + '</span>';
+                attachDragToRow(li);
+                list.appendChild(li);
             });
-        }
+
+            // Re-append custom rows at the end.
+            customRows.forEach(function(r){ attachDragToRow(r); list.appendChild(r); });
+
+            saveOrder();
+
+            // Brief visual feedback.
+            var btn = document.getElementById('nn-restore-order');
+            btn.textContent = '✓ <?php echo esc_js( __( 'Order restored — save to apply', 'neonews' ) ); ?>';
+            btn.style.color = '#00a32a';
+            setTimeout(function(){ btn.innerHTML = '↺ <?php echo esc_js( __( 'Restore default order', 'neonews' ) ); ?>'; btn.style.color=''; }, 3000);
+        });
 
         // ── Custom section rows in sort list ──────────────────────────────
         function addCustomSortRow(cs) {
