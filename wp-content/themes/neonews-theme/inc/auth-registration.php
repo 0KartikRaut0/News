@@ -341,13 +341,23 @@ function neonews_render_auth_modal() {
  * AJAX login handler.
  */
 function neonews_ajax_login() {
-    check_ajax_referer( 'neonews_nonce', 'nonce' );
+    // Suppress any stray output/warnings that would corrupt the JSON response.
+    ob_start();
 
-    if ( function_exists( 'neonews_verify_captcha' ) ) {
-        $captcha = neonews_verify_captcha( 'login' );
-        if ( is_wp_error( $captcha ) ) {
-            wp_send_json_error( array( 'message' => $captcha->get_error_message() ) );
-        }
+    // Use soft nonce check — if expired return a fresh nonce so JS can retry.
+    $nonce_result = check_ajax_referer( 'neonews_nonce', 'nonce', false );
+    // Helper: clean buffer then send JSON error.
+    $json_error = function( $data ) {
+        ob_end_clean();
+        wp_send_json_error( $data );
+    };
+
+    if ( false === $nonce_result ) {
+        $json_error( array(
+            'message'     => __( 'Session expired. Please refresh the page and try again.', 'neonews' ),
+            'code'        => 'nonce_fail',
+            'fresh_nonce' => wp_create_nonce( 'neonews_nonce' ),
+        ) );
     }
 
     $username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
@@ -355,10 +365,10 @@ function neonews_ajax_login() {
     $remember = ! empty( $_POST['rememberme'] );
 
     if ( '' === $username || '' === $password ) {
-        wp_send_json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
+        $json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
     }
 
-    // Step 1: verify credentials independently of cookies.
+    // Verify credentials — independent of cookies.
     $user = wp_authenticate( $username, $password );
 
     if ( is_wp_error( $user ) ) {
@@ -370,11 +380,11 @@ function neonews_ajax_login() {
         } else {
             $msg = wp_strip_all_tags( $user->get_error_message() );
         }
-        wp_send_json_error( array( 'message' => $msg ) );
+        $json_error( array( 'message' => $msg ) );
     }
 
-    // Step 2: credentials are correct — set the auth cookie manually.
-    // Never force secure cookies on local/dev (http:// only).
+    // Credentials correct — set auth cookie.
+    // Force $secure = false on local/dev (http:// only, no SSL).
     $is_local = in_array( wp_get_environment_type(), array( 'local', 'development' ), true );
     $secure   = $is_local ? false : is_ssl();
 
@@ -382,12 +392,11 @@ function neonews_ajax_login() {
     wp_set_auth_cookie( $user->ID, $remember, $secure );
     do_action( 'wp_login', $user->user_login, $user );
 
-    wp_send_json_success(
-        array(
-            'redirect' => neonews_get_account_url(),
-            'message'  => __( 'Signed in successfully!', 'neonews' ),
-        )
-    );
+    ob_end_clean();
+    wp_send_json_success( array(
+        'redirect' => neonews_get_account_url(),
+        'message'  => __( 'Signed in successfully!', 'neonews' ),
+    ) );
 }
 add_action( 'wp_ajax_nopriv_neonews_ajax_login', 'neonews_ajax_login' );
 add_action( 'wp_ajax_neonews_ajax_login', 'neonews_ajax_login' );

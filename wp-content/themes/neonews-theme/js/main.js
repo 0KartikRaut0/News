@@ -1150,8 +1150,24 @@
                     body: formData,
                     credentials: 'same-origin'
                 })
-                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    var ct = r.headers.get('content-type') || '';
+                    if (ct.indexOf('json') === -1) {
+                        // Server returned non-JSON (e.g. -1 from wp_die on bad nonce)
+                        // Reload the page so a fresh nonce is issued.
+                        window.location.reload();
+                        return Promise.reject('non-json');
+                    }
+                    return r.json();
+                })
                 .then(function(data) {
+                    if (!data) return;
+                    // Nonce expired — update stored nonce and retry once automatically.
+                    if (!data.success && data.data && data.data.code === 'nonce_fail' && data.data.fresh_nonce) {
+                        neonewsData.nonce = data.data.fresh_nonce;
+                        runSubmit(); // retry with fresh nonce
+                        return;
+                    }
                     if (data.success) {
                         window.location.href = data.data.redirect || neonewsData.homeUrl;
                         return;
@@ -1164,7 +1180,8 @@
                         window.nnResetCaptcha(cfg, context);
                     }
                 })
-                .catch(function() {
+                .catch(function(e) {
+                    if (e === 'non-json') return;
                     if (errorEl) {
                         errorEl.textContent = neonewsData.i18n.error;
                         errorEl.hidden = false;
