@@ -501,12 +501,16 @@ add_action( 'wp_ajax_neonews_track_share', 'neonews_ajax_track_share' );
 add_action( 'wp_ajax_nopriv_neonews_track_share', 'neonews_ajax_track_share' );
 
 /**
- * Premium / member badge on comments.
+ * Return badge HTML for a comment's author (does NOT filter the author string).
+ * Called directly in the comment template so the badge is output as real HTML,
+ * not mixed into the plain-text author name where esc_html() would break it.
+ *
+ * @param WP_Comment $comment
+ * @return string  Safe HTML badge(s), or empty string.
  */
-function neonews_comment_member_badge( $author, $comment_id = 0 ) {
-    $comment = get_comment( $comment_id );
+function neonews_get_comment_badge_html( $comment ) {
     if ( ! $comment || ! $comment->user_id ) {
-        return $author;
+        return '';
     }
 
     $badges = array();
@@ -525,22 +529,17 @@ function neonews_comment_member_badge( $author, $comment_id = 0 ) {
         $badges[] = ob_get_clean();
     }
 
-    $user = get_userdata( $comment->user_id );
-    if ( $user && in_array( 'nn_premium_subscriber', (array) $user->roles, true ) ) {
-        if ( ! in_array( '<span class="nn-member-badge nn-badge-premium">', $author ) ) {
-            $badges[] = '<span class="nn-member-badge nn-badge-member">' . esc_html__( 'Member', 'neonews' ) . '</span>';
-        }
-    } elseif ( $user && in_array( 'subscriber', (array) $user->roles, true ) && empty( $badges ) ) {
-        $badges[] = '<span class="nn-member-badge nn-badge-subscriber">' . esc_html__( 'Subscriber', 'neonews' ) . '</span>';
-    }
-
     if ( empty( $badges ) ) {
-        return $author;
+        $user = get_userdata( $comment->user_id );
+        if ( $user && in_array( 'nn_premium_subscriber', (array) $user->roles, true ) ) {
+            $badges[] = '<span class="nn-member-badge nn-badge-member">' . esc_html__( 'Member', 'neonews' ) . '</span>';
+        } elseif ( $user && in_array( 'subscriber', (array) $user->roles, true ) ) {
+            $badges[] = '<span class="nn-member-badge nn-badge-subscriber">' . esc_html__( 'Subscriber', 'neonews' ) . '</span>';
+        }
     }
 
-    return $author . ' ' . implode( ' ', $badges );
+    return implode( ' ', $badges );
 }
-add_filter( 'get_comment_author', 'neonews_comment_member_badge', 10, 2 );
 
 /**
  * Account dashboard shortcode.

@@ -565,13 +565,11 @@ function neonews_comment_callback( $comment, $args, $depth ) {
                     <?php echo get_avatar( $comment, 48, '', '', array( 'class' => 'avatar' ) ); ?>
                 </div>
                 <div class="nn-comment-meta">
-                    <span class="nn-comment-author"><?php
-                        // get_comment_author() is filtered to append badge HTML — use wp_kses, not esc_html.
-                        echo wp_kses( get_comment_author(), array(
-                            'span' => array( 'class' => true, 'aria-hidden' => true ),
-                            'svg'  => array( 'width' => true, 'height' => true, 'viewBox' => true, 'fill' => true, 'aria-hidden' => true ),
-                            'path' => array( 'd' => true ),
-                        ) );
+                    <span class="nn-comment-author"><?php echo esc_html( get_comment_author() ); ?><?php
+                        if ( function_exists( 'neonews_get_comment_badge_html' ) ) {
+                            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                            echo ' ' . neonews_get_comment_badge_html( $comment );
+                        }
                     ?></span>
                     <time class="nn-comment-date" datetime="<?php echo esc_attr( get_comment_date( 'c' ) ); ?>">
                         <?php
