@@ -1,10 +1,10 @@
 /**
- * NeoNews Role Manager — bulk toggles + unsaved-changes warning.
+ * NeoNews Role Manager — bulk toggles (backup if inline script is stripped).
  */
 (function () {
     'use strict';
 
-    function onReady(fn) {
+    function ready(fn) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', fn);
         } else {
@@ -12,37 +12,28 @@
         }
     }
 
-    onReady(function () {
+    ready(function () {
         var form = document.getElementById('nn-roles-form');
-        if (!form) {
+        if (!form || form.dataset.nnRolesBound === '1') {
             return;
         }
+        form.dataset.nnRolesBound = '1';
 
         var table = form.querySelector('.nn-roles-table');
         if (!table) {
             return;
         }
 
-        function syncToggleVisual(input) {
-            var wrap = input.closest('.nn-toggle');
-            if (wrap) {
-                wrap.classList.toggle('nn-toggle-on', input.checked);
-            }
-        }
-
-        function setColumnChecked(colIndex, checked) {
+        function setColumn(col, on) {
             table.querySelectorAll('tr.nn-roles-data-row').forEach(function (row) {
-                var cell = row.cells[colIndex];
+                var cell = row.cells[col];
                 if (!cell) {
                     return;
                 }
-                var input = cell.querySelector('input[type="checkbox"]:not(:disabled)');
-                if (!input) {
-                    return;
+                var input = cell.querySelector('input.nn-role-check:not(:disabled)');
+                if (input) {
+                    input.checked = !!on;
                 }
-                input.checked = !!checked;
-                syncToggleVisual(input);
-                input.dispatchEvent(new Event('change', { bubbles: true }));
             });
         }
 
@@ -53,30 +44,8 @@
                 if (isNaN(col)) {
                     return;
                 }
-                var action = btn.getAttribute('data-action');
-                setColumnChecked(col, action === 'all');
+                setColumn(col, btn.getAttribute('data-action') === 'all');
             });
-        });
-
-        var changed = false;
-        form.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(function (cb) {
-            syncToggleVisual(cb);
-            cb.addEventListener('change', function () {
-                changed = true;
-                syncToggleVisual(cb);
-            });
-        });
-
-        window.addEventListener('beforeunload', function (e) {
-            if (!changed) {
-                return;
-            }
-            e.preventDefault();
-            e.returnValue = '';
-        });
-
-        form.addEventListener('submit', function () {
-            changed = false;
         });
     });
 })();

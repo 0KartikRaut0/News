@@ -43,6 +43,7 @@ class NeoNews_Roles_Manager {
             'neonews-smart'          => array( 'label' => 'Smart Tools',           'group' => 'NeoNews' ),
             'neonews-pwa'            => array( 'label' => 'PWA Settings',          'group' => 'NeoNews' ),
             'neonews-subscribers'    => array( 'label' => 'Newsletter Subscribers','group' => 'NeoNews' ),
+            'neonews-analytics'      => array( 'label' => 'Analytics Dashboard',   'group' => 'NeoNews' ),
             'neonews-roles'          => array( 'label' => 'Role Manager',          'group' => 'NeoNews' ),
             // ── WordPress core areas ──────────────────────────────────────
             'edit-posts'             => array( 'label' => 'Posts',                 'group' => 'WordPress' ),
@@ -115,15 +116,34 @@ class NeoNews_Roles_Manager {
      */
     public static function get_permissions() {
         $saved    = get_option( self::OPTION, array() );
+        if ( ! is_array( $saved ) ) {
+            $saved = array();
+        }
         $defaults = self::get_defaults();
+        $pages    = array_keys( self::get_pages() );
 
-        foreach ( $defaults as $role => $pages ) {
-            if ( ! isset( $saved[ $role ] ) ) {
-                $saved[ $role ] = $pages;
+        foreach ( self::get_editable_roles() as $role => $label ) {
+            if ( ! isset( $saved[ $role ] ) || ! is_array( $saved[ $role ] ) ) {
+                $saved[ $role ] = isset( $defaults[ $role ] ) ? $defaults[ $role ] : array();
+            }
+            foreach ( $pages as $page ) {
+                if ( ! array_key_exists( $page, $saved[ $role ] ) ) {
+                    $saved[ $role ][ $page ] = ! empty( $defaults[ $role ][ $page ] );
+                }
             }
         }
 
         return $saved;
+    }
+
+    /**
+     * True when the current user has the administrator role.
+     *
+     * @return bool
+     */
+    public static function current_user_is_administrator() {
+        $user = wp_get_current_user();
+        return $user && $user->exists() && in_array( 'administrator', (array) $user->roles, true );
     }
 
     /**
@@ -179,7 +199,7 @@ class NeoNews_Roles_Manager {
      * @return bool
      */
     public static function current_user_can_page( $page ) {
-        if ( current_user_can( 'administrator' ) ) {
+        if ( self::current_user_is_administrator() ) {
             return true;
         }
         foreach ( self::current_user_roles() as $role ) {

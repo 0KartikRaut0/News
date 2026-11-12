@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class NeoNews_Roles_Admin {
 
     public static function init() {
-        add_action( 'admin_menu',            array( __CLASS__, 'add_menu' ) );
+        add_action( 'admin_menu',            array( __CLASS__, 'add_menu' ), 30 );
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
         add_action( 'admin_post_nn_save_roles', array( __CLASS__, 'handle_save' ) );
     }
@@ -32,10 +32,20 @@ class NeoNews_Roles_Admin {
     }
 
     /**
-     * Enqueue styles.
+     * Whether the Role Manager screen is loading.
+     *
+     * @param string $hook Admin hook suffix.
+     * @return bool
      */
+    private static function is_roles_screen( $hook ) {
+        if ( 'neonews_page_neonews-roles' === $hook ) {
+            return true;
+        }
+        return is_admin() && isset( $_GET['page'] ) && 'neonews-roles' === sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+    }
+
     public static function enqueue( $hook ) {
-        if ( 'neonews_page_neonews-roles' !== $hook ) {
+        if ( ! self::is_roles_screen( $hook ) ) {
             return;
         }
 
@@ -108,40 +118,16 @@ class NeoNews_Roles_Admin {
                 border-top: 2px solid #ccd0d4;
             }
 
-            /* Toggle switch */
-            .nn-toggle { position: relative; display: inline-block; width: 38px; height: 22px; cursor: pointer; vertical-align: middle; }
-            .nn-toggle input {
-                position: absolute;
-                opacity: 0;
-                inset: 0;
-                width: 100%;
-                height: 100%;
+            /* Permission checkbox (native + switch look) */
+            .nn-role-check {
+                width: 20px;
+                height: 20px;
                 margin: 0;
                 cursor: pointer;
-                z-index: 2;
+                accent-color: #2d6a4f;
+                vertical-align: middle;
             }
-            .nn-toggle-slider {
-                position: absolute; cursor: pointer;
-                inset: 0;
-                background: #ccc;
-                border-radius: 22px;
-                transition: background .2s;
-            }
-            .nn-toggle-slider:before {
-                content: "";
-                position: absolute;
-                width: 16px; height: 16px;
-                left: 3px; bottom: 3px;
-                background: #fff;
-                border-radius: 50%;
-                transition: transform .2s;
-                box-shadow: 0 1px 3px rgba(0,0,0,.2);
-            }
-            .nn-toggle input:checked + .nn-toggle-slider,
-            .nn-toggle.nn-toggle-on .nn-toggle-slider { background: #2d6a4f; }
-            .nn-toggle input:checked + .nn-toggle-slider:before,
-            .nn-toggle.nn-toggle-on .nn-toggle-slider:before { transform: translateX(16px); }
-            .nn-toggle input:disabled + .nn-toggle-slider { opacity: .5; cursor: not-allowed; }
+            .nn-role-check:disabled { cursor: not-allowed; opacity: 0.6; }
 
             /* Admin badge */
             .nn-admin-badge {
@@ -217,11 +203,11 @@ class NeoNews_Roles_Admin {
             }
         }
 
-        NeoNews_Roles_Manager::save( $clean );
+        $saved = NeoNews_Roles_Manager::save( $clean );
 
         wp_safe_redirect( add_query_arg( array(
             'page'    => 'neonews-roles',
-            'updated' => '1',
+            'updated' => $saved ? '1' : '0',
         ), admin_url( 'admin.php' ) ) );
         exit;
     }
@@ -245,11 +231,18 @@ class NeoNews_Roles_Admin {
             <h1><?php esc_html_e( 'Role Manager', 'neonews-roles' ); ?></h1>
             <p class="description" style="margin-bottom:4px;">
                 <?php esc_html_e( 'Control which roles can access each admin page. Administrators always have full access and cannot be restricted.', 'neonews-roles' ); ?>
+                <span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#f0f4f8;border-radius:4px;font-size:11px;font-weight:600;color:#1d3557;">
+                    <?php echo esc_html( sprintf( /* translators: %s: plugin version */ __( 'Plugin v%s', 'neonews-roles' ), NN_ROLES_VERSION ) ); ?>
+                </span>
             </p>
 
-            <?php if ( isset( $_GET['updated'] ) ) : ?>
+            <?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : ?>
             <div class="nn-roles-notice">
                 ✅ <?php esc_html_e( 'Permissions saved successfully.', 'neonews-roles' ); ?>
+            </div>
+            <?php elseif ( isset( $_GET['updated'] ) && '0' === $_GET['updated'] ) : ?>
+            <div class="notice notice-warning" style="margin:12px 0;">
+                <p><?php esc_html_e( 'Save did not update storage (values may be unchanged). Toggles should still work — try changing one permission and save again.', 'neonews-roles' ); ?></p>
             </div>
             <?php endif; ?>
 
@@ -313,24 +306,19 @@ class NeoNews_Roles_Admin {
 
                         <!-- Administrator always ON, disabled -->
                         <td>
-                            <label class="nn-toggle" title="<?php esc_attr_e( 'Administrators always have access', 'neonews-roles' ); ?>">
-                                <input type="checkbox" checked disabled>
-                                <span class="nn-toggle-slider"></span>
-                            </label>
+                            <input type="checkbox" class="nn-role-check" checked disabled title="<?php esc_attr_e( 'Administrators always have access', 'neonews-roles' ); ?>">
                         </td>
 
                         <?php foreach ( $role_slugs as $role ) :
                             $checked = ! empty( $permissions[ $role ][ $page_slug ] );
                         ?>
                         <td>
-                            <label class="nn-toggle">
-                                <input type="checkbox"
-                                    name="nn_roles[<?php echo esc_attr( $role ); ?>][<?php echo esc_attr( $page_slug ); ?>]"
-                                    value="1"
-                                    <?php checked( $checked ); ?>
-                                >
-                                <span class="nn-toggle-slider"></span>
-                            </label>
+                            <input type="checkbox"
+                                class="nn-role-check"
+                                name="nn_roles[<?php echo esc_attr( $role ); ?>][<?php echo esc_attr( $page_slug ); ?>]"
+                                value="1"
+                                <?php checked( $checked ); ?>
+                            >
                         </td>
                         <?php endforeach; ?>
                     </tr>
@@ -364,6 +352,44 @@ class NeoNews_Roles_Admin {
             </div>
 
         </div><!-- .wrap -->
+        <?php
+        self::print_roles_page_script();
+    }
+
+    /**
+     * Inline script so Role Manager works even if external JS fails to load.
+     */
+    private static function print_roles_page_script() {
+        ?>
+        <script>
+        (function(){
+            var form = document.getElementById('nn-roles-form');
+            if (!form) return;
+            var table = form.querySelector('.nn-roles-table');
+            if (!table) return;
+
+            function setColumn(col, on) {
+                table.querySelectorAll('tr.nn-roles-data-row').forEach(function(row) {
+                    var cell = row.cells[col];
+                    if (!cell) return;
+                    var input = cell.querySelector('input.nn-role-check:not(:disabled)');
+                    if (!input) return;
+                    input.checked = !!on;
+                });
+            }
+
+            table.querySelectorAll('.nn-bulk-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var col = parseInt(btn.getAttribute('data-col'), 10);
+                    if (isNaN(col)) return;
+                    setColumn(col, btn.getAttribute('data-action') === 'all');
+                });
+            });
+
+        })();
+        </script>
         <?php
     }
 }

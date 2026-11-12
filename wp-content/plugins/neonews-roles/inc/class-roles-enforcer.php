@@ -24,7 +24,7 @@ class NeoNews_Roles_Enforcer {
      * Administrators are never affected.
      */
     public static function filter_admin_menu() {
-        if ( current_user_can( 'administrator' ) ) {
+        if ( NeoNews_Roles_Manager::current_user_is_administrator() ) {
             return;
         }
 
@@ -50,7 +50,7 @@ class NeoNews_Roles_Enforcer {
      * Block direct URL access even if someone types the URL manually.
      */
     public static function block_direct_access() {
-        if ( current_user_can( 'administrator' ) ) {
+        if ( NeoNews_Roles_Manager::current_user_is_administrator() ) {
             return;
         }
 
