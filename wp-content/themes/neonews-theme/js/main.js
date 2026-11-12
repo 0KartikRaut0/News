@@ -788,18 +788,15 @@
             if (old) { old.remove(); }
             if (_guestToastTimer) { clearTimeout(_guestToastTimer); }
 
-            var loginUrl = (typeof neonewsData !== 'undefined' && neonewsData.loginUrl)
-                ? neonewsData.loginUrl
-                : (neonewsData.homeUrl ? neonewsData.homeUrl + '/login/' : '/login/');
-
             var toast = document.createElement('div');
             toast.id = 'nn-guest-like-toast';
             toast.className = 'nn-guest-toast';
             toast.setAttribute('role', 'status');
+            // Use .nn-open-login so the existing auth modal opens — no redirect to wp-login.php.
             toast.innerHTML =
                 '<span class="nn-gt-icon">❤️</span>' +
                 '<span class="nn-gt-msg">Sign in to like this post</span>' +
-                '<a href="' + loginUrl + '" class="nn-gt-cta">Sign in</a>' +
+                '<button type="button" class="nn-gt-cta nn-open-login">Sign in</button>' +
                 '<button type="button" class="nn-gt-close" aria-label="Close">×</button>';
 
             // Position near the button.
@@ -1121,6 +1118,9 @@
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            // Dismiss guest like toast if open.
+            var gt = document.getElementById('nn-guest-like-toast');
+            if (gt) { gt.remove(); }
             ensureCaptchaAssets().finally(function() {
                 switchTab(tab || 'login');
             });
