@@ -341,20 +341,10 @@ function neonews_render_auth_modal() {
  * AJAX login handler.
  */
 function neonews_ajax_login() {
-    // Suppress any stray output/warnings that would corrupt the JSON response.
-    ob_start();
-
-    // Use soft nonce check — if expired return a fresh nonce so JS can retry.
-    $nonce_result = check_ajax_referer( 'neonews_nonce', 'nonce', false );
-    // Helper: clean buffer then send JSON error.
-    $json_error = function( $data ) {
-        ob_end_clean();
-        wp_send_json_error( $data );
-    };
-
-    if ( false === $nonce_result ) {
-        $json_error( array(
-            'message'     => __( 'Session expired. Please refresh the page and try again.', 'neonews' ),
+    // Soft nonce check — return fresh nonce if expired so JS can auto-retry.
+    if ( ! check_ajax_referer( 'neonews_nonce', 'nonce', false ) ) {
+        wp_send_json_error( array(
+            'message'     => __( 'Session expired — please try again.', 'neonews' ),
             'code'        => 'nonce_fail',
             'fresh_nonce' => wp_create_nonce( 'neonews_nonce' ),
         ) );
@@ -365,10 +355,10 @@ function neonews_ajax_login() {
     $remember = ! empty( $_POST['rememberme'] );
 
     if ( '' === $username || '' === $password ) {
-        $json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
+        wp_send_json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
     }
 
-    // Verify credentials — independent of cookies.
+    // Authenticate — does NOT touch cookies, just checks DB credentials.
     $user = wp_authenticate( $username, $password );
 
     if ( is_wp_error( $user ) ) {
@@ -380,19 +370,19 @@ function neonews_ajax_login() {
         } else {
             $msg = wp_strip_all_tags( $user->get_error_message() );
         }
-        $json_error( array( 'message' => $msg ) );
+        wp_send_json_error( array( 'message' => $msg ) );
     }
 
-    // Credentials correct — set auth cookie.
-    // Force $secure = false on local/dev (http:// only, no SSL).
-    $is_local = in_array( wp_get_environment_type(), array( 'local', 'development' ), true );
-    $secure   = $is_local ? false : is_ssl();
+    // Credentials OK — set the session cookie.
+    // On http:// (Local WP) $secure MUST be false or the cookie is never sent.
+    $secure = in_array( wp_get_environment_type(), array( 'local', 'development' ), true )
+        ? false
+        : is_ssl();
 
     wp_set_current_user( $user->ID );
     wp_set_auth_cookie( $user->ID, $remember, $secure );
     do_action( 'wp_login', $user->user_login, $user );
 
-    ob_end_clean();
     wp_send_json_success( array(
         'redirect' => neonews_get_account_url(),
         'message'  => __( 'Signed in successfully!', 'neonews' ),
