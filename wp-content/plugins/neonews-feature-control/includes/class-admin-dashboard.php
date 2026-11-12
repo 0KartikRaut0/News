@@ -246,15 +246,19 @@ class NeoNews_FC_Admin_Dashboard {
 
 		$result = NeoNews_FC_Feature_Store::set_enabled( $feature, $enabled );
 		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			wp_send_json_error(
+				array(
+					'message' => $result->get_error_message(),
+					'id'      => $id,
+					'enabled' => NeoNews_FC_Feature_Store::is_enabled( $feature ),
+				)
+			);
 		}
-
-		$confirmed = NeoNews_FC_Feature_Store::is_enabled( $feature );
 
 		wp_send_json_success(
 			array(
 				'id'      => $id,
-				'enabled' => $confirmed,
+				'enabled' => NeoNews_FC_Feature_Store::is_enabled( $feature ),
 			)
 		);
 	}

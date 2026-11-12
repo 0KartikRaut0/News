@@ -17,6 +17,22 @@ class NeoNews_FC_Feature_Store {
 	 */
 	public static function is_enabled( array $feature ) {
 		$source = $feature['source'] ?? 'platform';
+		$id     = $feature['id'] ?? '';
+
+		if ( 'compound' === $source ) {
+			$ov = NeoNews_FC_Feature_Overrides::get( 'compound', $id );
+			if ( null !== $ov ) {
+				return $ov;
+			}
+			return self::compound_get( $feature );
+		}
+
+		if ( isset( $feature['key'] ) ) {
+			$ov = NeoNews_FC_Feature_Overrides::get( $source, $feature['key'] );
+			if ( null !== $ov ) {
+				return $ov;
+			}
+		}
 
 		switch ( $source ) {
 			case 'platform':
@@ -44,9 +60,6 @@ class NeoNews_FC_Feature_Store {
 				$pwa = neonews_pwa()->get_settings();
 				return isset( $pwa[ $feature['key'] ] ) ? self::to_bool( $pwa[ $feature['key'] ] ) : false;
 
-			case 'compound':
-				return self::compound_get( $feature );
-
 			default:
 				return false;
 		}
@@ -63,7 +76,11 @@ class NeoNews_FC_Feature_Store {
 		}
 
 		$enabled = (bool) $enabled;
-		$source  = $feature['source'] ?? 'platform';
+
+		// Overrides are the source of truth for UI + filtered option reads.
+		NeoNews_FC_Feature_Overrides::sync_feature( $feature, $enabled );
+
+		$source = $feature['source'] ?? 'platform';
 
 		switch ( $source ) {
 			case 'platform':
@@ -120,13 +137,13 @@ class NeoNews_FC_Feature_Store {
 
 		self::after_save( $feature );
 
-		/**
-		 * Fires after a feature toggle is saved.
-		 *
-		 * @param string $id      Feature id.
-		 * @param bool   $enabled New state.
-		 * @param array  $feature Full registry row.
-		 */
+		if ( self::is_enabled( $feature ) !== $enabled ) {
+			return new WP_Error(
+				'save_verify_failed',
+				__( 'Could not verify the saved state. Please reload the page and try again.', 'neonews-feature-control' )
+			);
+		}
+
 		do_action( 'neonews_feature_control_updated', $feature['id'], $enabled, $feature );
 
 		return true;
@@ -145,11 +162,7 @@ class NeoNews_FC_Feature_Store {
 		}
 
 		$saved = get_option( 'neonews_platform_settings', array() );
-		if ( ! is_array( $saved ) ) {
-			$saved = array();
-		}
-
-		if ( array_key_exists( $key, $saved ) ) {
+		if ( is_array( $saved ) && array_key_exists( $key, $saved ) ) {
 			return self::to_bool( $saved[ $key ] );
 		}
 
@@ -164,8 +177,6 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
-	 * Read a boolean from a plugin settings getter that returns merged defaults when called with no key.
-	 *
 	 * @param callable $getter Class::get_settings.
 	 * @param string   $key    Setting key.
 	 * @return bool
@@ -179,6 +190,14 @@ class NeoNews_FC_Feature_Store {
 			return false;
 		}
 		return self::to_bool( $all[ $key ] );
+	}
+
+	/**
+	 * @param mixed $value Raw stored value.
+	 * @return bool
+	 */
+	public static function public_to_bool( $value ) {
+		return self::to_bool( $value );
 	}
 
 	/**
@@ -209,7 +228,11 @@ class NeoNews_FC_Feature_Store {
 	 * @param bool   $enabled Value.
 	 */
 	private static function platform_set( $key, $enabled ) {
-		$settings = get_option( 'neonews_platform_settings', array() );
+		if ( function_exists( 'neonews_get_settings' ) ) {
+			$settings = neonews_get_settings();
+		} else {
+			$settings = get_option( 'neonews_platform_settings', array() );
+		}
 		if ( ! is_array( $settings ) ) {
 			$settings = array();
 		}
@@ -219,8 +242,6 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
-	 * Clear option caches so the next read matches what we saved.
-	 *
 	 * @param string $option Option name.
 	 */
 	public static function bust_option_cache( $option ) {
@@ -229,8 +250,6 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
-	 * Side effects for platform keys.
-	 *
 	 * @param string $key     Key.
 	 * @param bool   $enabled State.
 	 */
@@ -247,14 +266,10 @@ class NeoNews_FC_Feature_Store {
 	private static function compound_get( array $feature ) {
 		$type = $feature['compound'] ?? '';
 		if ( 'breaking_ticker' === $type ) {
-			$platform = self::platform_get( 'show_breaking_news' );
-			$customizer = self::to_bool( get_theme_mod( 'neonews_show_breaking_news', 1 ) );
-			return $platform && $customizer;
+			return self::platform_get( 'show_breaking_news' ) && self::to_bool( get_theme_mod( 'neonews_show_breaking_news', 1 ) );
 		}
 		if ( 'featured_carousel' === $type ) {
-			$platform = self::platform_get( 'show_home_carousel' );
-			$customizer = self::to_bool( get_theme_mod( 'neonews_show_featured_carousel', 1 ) );
-			return $platform && $customizer;
+			return self::platform_get( 'show_home_carousel' ) && self::to_bool( get_theme_mod( 'neonews_show_featured_carousel', 1 ) );
 		}
 		return false;
 	}
@@ -318,8 +333,6 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
-	 * Post-save hooks per source (cache flush, etc.).
-	 *
 	 * @param array $feature Registry row.
 	 */
 	private static function after_save( array $feature ) {
@@ -333,8 +346,6 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
-	 * Set every registered feature on or off.
-	 *
 	 * @param bool $enabled Target state.
 	 * @return array<int, array{id:string, enabled:bool}>
 	 */

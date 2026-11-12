@@ -55,22 +55,32 @@
         }
         btn.disabled = true;
 
-        post('nn_fc_toggle', { id: id, enabled: next ? '1' : '0' })
-            .then(function (json) {
-                if (!json || !json.success) {
-                    throw new Error((json && json.data && json.data.message) || 'error');
-                }
-                setCardState(card, json.data.enabled);
-            })
-            .catch(function () {
-                setCardState(card, wasOn);
-                if (card && cfg.i18n) {
-                    var st = card.querySelector('.nn-fc-card-status');
-                    if (st) {
-                        st.textContent = cfg.i18n.error;
-                    }
-                }
-            })
+                post('nn_fc_toggle', { id: id, enabled: next ? '1' : '0' })
+                    .then(function (json) {
+                        if (!json || !json.success) {
+                            var errEnabled = json && json.data && typeof json.data.enabled === 'boolean'
+                                ? json.data.enabled
+                                : wasOn;
+                            setCardState(card, errEnabled);
+                            if (card && cfg.i18n) {
+                                var st = card.querySelector('.nn-fc-card-status');
+                                if (st) {
+                                    st.textContent = (json && json.data && json.data.message) || cfg.i18n.error;
+                                }
+                            }
+                            return;
+                        }
+                        setCardState(card, json.data.enabled);
+                    })
+                    .catch(function () {
+                        setCardState(card, wasOn);
+                        if (card && cfg.i18n) {
+                            var st = card.querySelector('.nn-fc-card-status');
+                            if (st) {
+                                st.textContent = cfg.i18n.error;
+                            }
+                        }
+                    })
             .finally(function () {
                 btn.disabled = false;
             });
