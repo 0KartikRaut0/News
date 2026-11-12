@@ -24,23 +24,25 @@ class NeoNews_FC_Feature_Store {
 
 			case 'core':
 				return class_exists( 'NeoNews_Core' )
-					? (bool) NeoNews_Core::get_settings( $feature['key'] )
+					? self::merged_option_get( array( 'NeoNews_Core', 'get_settings' ), $feature['key'] )
 					: false;
 
 			case 'smart':
 				return class_exists( 'NeoNews_Smart' )
-					? (bool) NeoNews_Smart::get_settings( $feature['key'] )
+					? self::merged_option_get( array( 'NeoNews_Smart', 'get_settings' ), $feature['key'] )
 					: false;
 
 			case 'membership':
 				return class_exists( 'NeoNews_Membership' )
-					? (bool) NeoNews_Membership::get_settings( $feature['key'] )
+					? self::merged_option_get( array( 'NeoNews_Membership', 'get_settings' ), $feature['key'] )
 					: false;
 
 			case 'pwa':
-				return function_exists( 'neonews_pwa' )
-					? (bool) neonews_pwa()->get_settings( $feature['key'] )
-					: false;
+				if ( ! function_exists( 'neonews_pwa' ) ) {
+					return false;
+				}
+				$pwa = neonews_pwa()->get_settings();
+				return isset( $pwa[ $feature['key'] ] ) ? self::to_bool( $pwa[ $feature['key'] ] ) : false;
 
 			case 'compound':
 				return self::compound_get( $feature );
@@ -135,6 +137,13 @@ class NeoNews_FC_Feature_Store {
 	 * @return bool
 	 */
 	private static function platform_get( $key ) {
+		if ( function_exists( 'neonews_get_settings' ) ) {
+			$all = neonews_get_settings();
+			if ( is_array( $all ) && array_key_exists( $key, $all ) ) {
+				return self::to_bool( $all[ $key ] );
+			}
+		}
+
 		$saved = get_option( 'neonews_platform_settings', array() );
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
@@ -155,11 +164,44 @@ class NeoNews_FC_Feature_Store {
 	}
 
 	/**
+	 * Read a boolean from a plugin settings getter that returns merged defaults when called with no key.
+	 *
+	 * @param callable $getter Class::get_settings.
+	 * @param string   $key    Setting key.
+	 * @return bool
+	 */
+	private static function merged_option_get( $getter, $key ) {
+		if ( ! is_callable( $getter ) ) {
+			return false;
+		}
+		$all = call_user_func( $getter );
+		if ( ! is_array( $all ) || ! array_key_exists( $key, $all ) ) {
+			return false;
+		}
+		return self::to_bool( $all[ $key ] );
+	}
+
+	/**
 	 * @param mixed $value Raw stored value.
 	 * @return bool
 	 */
 	private static function to_bool( $value ) {
-		return filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? ! empty( $value );
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+		if ( is_numeric( $value ) ) {
+			return (int) $value !== 0;
+		}
+		if ( is_string( $value ) ) {
+			$v = strtolower( trim( $value ) );
+			if ( in_array( $v, array( '0', 'false', 'off', 'no', '' ), true ) ) {
+				return false;
+			}
+			if ( in_array( $v, array( '1', 'true', 'on', 'yes' ), true ) ) {
+				return true;
+			}
+		}
+		return ! empty( $value );
 	}
 
 	/**
@@ -205,10 +247,14 @@ class NeoNews_FC_Feature_Store {
 	private static function compound_get( array $feature ) {
 		$type = $feature['compound'] ?? '';
 		if ( 'breaking_ticker' === $type ) {
-			return function_exists( 'neonews_show_breaking_ticker' ) && neonews_show_breaking_ticker();
+			$platform = self::platform_get( 'show_breaking_news' );
+			$customizer = self::to_bool( get_theme_mod( 'neonews_show_breaking_news', 1 ) );
+			return $platform && $customizer;
 		}
 		if ( 'featured_carousel' === $type ) {
-			return function_exists( 'neonews_show_featured_carousel' ) && neonews_show_featured_carousel();
+			$platform = self::platform_get( 'show_home_carousel' );
+			$customizer = self::to_bool( get_theme_mod( 'neonews_show_featured_carousel', 1 ) );
+			return $platform && $customizer;
 		}
 		return false;
 	}
@@ -281,5 +327,35 @@ class NeoNews_FC_Feature_Store {
 		if ( 'pwa' === $source ) {
 			self::bust_option_cache( 'neonews_pwa_settings' );
 		}
+		if ( 'smart' === $source && class_exists( 'NeoNews_Smart' ) && method_exists( 'NeoNews_Smart', 'flush_settings_cache' ) ) {
+			NeoNews_Smart::flush_settings_cache();
+		}
+	}
+
+	/**
+	 * Set every registered feature on or off.
+	 *
+	 * @param bool $enabled Target state.
+	 * @return array<int, array{id:string, enabled:bool}>
+	 */
+	public static function set_all( $enabled ) {
+		$results = array();
+		foreach ( NeoNews_FC_Feature_Registry::get_features() as $feature ) {
+			if ( ! NeoNews_FC_Feature_Registry::is_available( $feature ) ) {
+				continue;
+			}
+			$set = self::set_enabled( $feature, $enabled );
+			if ( is_wp_error( $set ) ) {
+				continue;
+			}
+			$results[] = array(
+				'id'      => $feature['id'],
+				'enabled' => self::is_enabled( $feature ),
+			);
+		}
+		if ( class_exists( 'NeoNews_Smart' ) && method_exists( 'NeoNews_Smart', 'flush_settings_cache' ) ) {
+			NeoNews_Smart::flush_settings_cache();
+		}
+		return $results;
 	}
 }

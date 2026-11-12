@@ -26,6 +26,7 @@ class NeoNews_FC_Admin_Dashboard {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_nn_fc_toggle', array( $this, 'ajax_toggle' ) );
 		add_action( 'wp_ajax_nn_fc_bulk_group', array( $this, 'ajax_bulk_group' ) );
+		add_action( 'wp_ajax_nn_fc_bulk_all', array( $this, 'ajax_bulk_all' ) );
 	}
 
 	public function register_menu() {
@@ -95,6 +96,10 @@ class NeoNews_FC_Admin_Dashboard {
 					'search'   => __( 'Search features…', 'neonews-feature-control' ),
 					'allOn'    => __( 'Turn all on', 'neonews-feature-control' ),
 					'allOff'   => __( 'Turn all off', 'neonews-feature-control' ),
+					'allOnGlobal'  => __( 'Enable all features', 'neonews-feature-control' ),
+					'allOffGlobal' => __( 'Disable all features', 'neonews-feature-control' ),
+					'confirmAllOn'  => __( 'Turn ON every available feature on this site?', 'neonews-feature-control' ),
+					'confirmAllOff' => __( 'Turn OFF every available feature? The site may look empty until you turn features back on.', 'neonews-feature-control' ),
 					'unavail'  => __( 'Plugin inactive', 'neonews-feature-control' ),
 				),
 			)
@@ -144,6 +149,11 @@ class NeoNews_FC_Admin_Dashboard {
 					<a class="nn-fc-link" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'View site', 'neonews-feature-control' ); ?> ↗</a>
 				</div>
 			</header>
+
+			<div class="nn-fc-global-actions">
+				<button type="button" class="nn-fc-global-btn nn-fc-global-on" data-bulk-all="on"><?php esc_html_e( 'Enable all features', 'neonews-feature-control' ); ?></button>
+				<button type="button" class="nn-fc-global-btn nn-fc-global-off" data-bulk-all="off"><?php esc_html_e( 'Disable all features', 'neonews-feature-control' ); ?></button>
+			</div>
 
 			<div class="nn-fc-toolbar">
 				<label class="nn-fc-search-wrap">
@@ -244,7 +254,7 @@ class NeoNews_FC_Admin_Dashboard {
 		wp_send_json_success(
 			array(
 				'id'      => $id,
-				'enabled' => $confirmed === (bool) $enabled ? $confirmed : (bool) $enabled,
+				'enabled' => $confirmed,
 			)
 		);
 	}
@@ -270,7 +280,7 @@ class NeoNews_FC_Admin_Dashboard {
 			NeoNews_FC_Feature_Store::set_enabled( $feature, $enabled );
 			$updated[] = array(
 				'id'      => $feature['id'],
-				'enabled' => (bool) $enabled,
+				'enabled' => NeoNews_FC_Feature_Store::is_enabled( $feature ),
 			);
 		}
 
@@ -279,6 +289,19 @@ class NeoNews_FC_Admin_Dashboard {
 		}
 
 		wp_send_json_success( array( 'items' => $updated ) );
+	}
+
+	public function ajax_bulk_all() {
+		check_ajax_referer( 'nn_fc_toggle', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Forbidden', 'neonews-feature-control' ) ), 403 );
+		}
+
+		$enabled = ! empty( $_POST['enabled'] );
+		$items   = NeoNews_FC_Feature_Store::set_all( $enabled );
+
+		wp_send_json_success( array( 'items' => $items ) );
 	}
 
 	/**

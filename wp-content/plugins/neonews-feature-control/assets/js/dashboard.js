@@ -97,6 +97,16 @@
         });
     }
 
+    function applyBulkItems(root, items) {
+        if (!items || !items.length) {
+            return;
+        }
+        items.forEach(function (item) {
+            var card = root.querySelector('.nn-fc-card[data-feature-id="' + item.id + '"]');
+            setCardState(card, item.enabled);
+        });
+    }
+
     function bindBulk(root) {
         root.querySelectorAll('.nn-fc-bulk').forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -108,10 +118,30 @@
                         if (!json || !json.success || !json.data.items) {
                             throw new Error('bulk failed');
                         }
-                        json.data.items.forEach(function (item) {
-                            var card = root.querySelector('.nn-fc-card[data-feature-id="' + item.id + '"]');
-                            setCardState(card, item.enabled);
-                        });
+                        applyBulkItems(root, json.data.items);
+                    })
+                    .finally(function () {
+                        btn.disabled = false;
+                    });
+            });
+        });
+
+        root.querySelectorAll('[data-bulk-all]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var on = btn.dataset.bulkAll === 'on';
+                var msg = on
+                    ? (cfg.i18n && cfg.i18n.confirmAllOn) || 'Enable all?'
+                    : (cfg.i18n && cfg.i18n.confirmAllOff) || 'Disable all?';
+                if (!window.confirm(msg)) {
+                    return;
+                }
+                btn.disabled = true;
+                post('nn_fc_bulk_all', { enabled: on ? '1' : '0' })
+                    .then(function (json) {
+                        if (!json || !json.success || !json.data.items) {
+                            throw new Error('bulk all failed');
+                        }
+                        applyBulkItems(root, json.data.items);
                     })
                     .finally(function () {
                         btn.disabled = false;
