@@ -1,0 +1,413 @@
+/**
+ * NewsPulse settings — dashboard UI (analytics-inspired).
+ */
+
+#nn-settings-dashboard.nn-settings-dash-wrap {
+	max-width: 1480px;
+	margin: 8px 12px 32px 0;
+	padding: 8px 20px 40px;
+	background: linear-gradient(165deg, #e9eef5 0%, #f3f5f8 45%, #fafbfc 100%);
+	border-radius: 12px;
+	min-height: calc(100vh - 70px);
+	box-sizing: border-box;
+}
+
+#nn-settings-dashboard .wrap {
+	margin: 0;
+	max-width: none;
+}
+
+/* Header */
+.nn-settings-dash-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 20px;
+	background: linear-gradient(125deg, #1d3557 0%, #264653 42%, #e63946 140%);
+	color: #fff;
+	padding: 24px 28px;
+	border-radius: 16px;
+	margin-bottom: 20px;
+	box-shadow: 0 12px 40px rgba(29, 53, 87, 0.22);
+	position: relative;
+	overflow: hidden;
+}
+
+.nn-settings-dash-header::after {
+	content: "";
+	position: absolute;
+	right: -60px;
+	top: -60px;
+	width: 200px;
+	height: 200px;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.06);
+	pointer-events: none;
+}
+
+.nn-settings-dash-title {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	position: relative;
+	z-index: 1;
+}
+
+.nn-settings-dash-logo {
+	font-size: 32px;
+	width: 56px;
+	height: 56px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 14px;
+}
+
+.nn-settings-dash-title h1 {
+	margin: 0;
+	padding: 0;
+	color: #fff !important;
+	font-size: 1.65rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+
+.nn-settings-dash-subtitle {
+	margin: 4px 0 0;
+	opacity: 0.88;
+	font-size: 13px;
+}
+
+.nn-settings-dash-tab-hint {
+	margin: 8px 0 0;
+	font-size: 12px;
+	opacity: 0.75;
+	font-weight: 600;
+}
+
+.nn-settings-dash-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	position: relative;
+	z-index: 1;
+}
+
+.nn-settings-quick-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 14px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.15);
+	border: 1.5px solid rgba(255, 255, 255, 0.35);
+	color: #fff !important;
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+	transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.nn-settings-quick-btn:hover,
+.nn-settings-quick-btn:focus {
+	background: #e63946;
+	border-color: #e63946;
+	color: #fff !important;
+	transform: translateY(-1px);
+}
+
+.nn-settings-quick-btn-ghost {
+	background: transparent;
+}
+
+.nn-settings-build {
+	font-size: 11px;
+	font-weight: 600;
+	opacity: 0.85;
+	background: rgba(255, 255, 255, 0.12);
+	padding: 6px 12px;
+	border-radius: 20px;
+}
+
+/* Stat cards */
+.nn-settings-stat-cards {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 14px;
+	margin-bottom: 20px;
+}
+
+@media (max-width: 1100px) {
+	.nn-settings-stat-cards {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.nn-settings-stat-card {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	padding: 16px 18px;
+	box-shadow: 0 8px 28px rgba(29, 53, 87, 0.07);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nn-settings-stat-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 14px 36px rgba(29, 53, 87, 0.12);
+}
+
+.nn-settings-stat-card-link {
+	text-decoration: none;
+	color: inherit;
+}
+
+.nn-settings-stat-icon {
+	font-size: 22px;
+	line-height: 1;
+}
+
+.nn-settings-stat-value {
+	font-size: 1.5rem;
+	font-weight: 800;
+	color: #1d3557;
+	letter-spacing: -0.02em;
+}
+
+.nn-settings-stat-value small {
+	font-size: 0.65em;
+	font-weight: 700;
+	opacity: 0.7;
+}
+
+.nn-settings-stat-label {
+	font-size: 11px;
+	color: #64748b;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-weight: 700;
+}
+
+/* Tab cards */
+.nn-settings-tabs {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 10px;
+	margin-bottom: 16px;
+}
+
+.nn-settings-tab-card {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 14px 12px;
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid rgba(29, 53, 87, 0.08);
+	text-decoration: none;
+	color: #1d3557;
+	box-shadow: 0 4px 16px rgba(29, 53, 87, 0.05);
+	transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nn-settings-tab-card:hover {
+	transform: translateY(-2px);
+	border-color: #e63946;
+	box-shadow: 0 10px 28px rgba(230, 57, 70, 0.12);
+	color: #1d3557;
+}
+
+.nn-settings-tab-card.is-active {
+	border-color: #e63946;
+	background: linear-gradient(180deg, #fff 0%, #fff5f3 100%);
+	box-shadow: 0 8px 24px rgba(230, 57, 70, 0.15);
+}
+
+.nn-settings-tab-icon {
+	font-size: 22px;
+	line-height: 1;
+}
+
+.nn-settings-tab-label {
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.nn-settings-tab-hint {
+	font-size: 11px;
+	color: #64748b;
+	line-height: 1.35;
+}
+
+/* Toolbar */
+.nn-settings-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.nn-settings-search-wrap {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1 1 280px;
+	max-width: 420px;
+	background: #fff;
+	border: 1px solid rgba(29, 53, 87, 0.1);
+	border-radius: 999px;
+	padding: 8px 14px;
+	box-shadow: 0 4px 14px rgba(29, 53, 87, 0.06);
+}
+
+.nn-settings-search-wrap:focus-within {
+	border-color: #e63946;
+	box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+}
+
+.nn-settings-search {
+	border: none;
+	flex: 1;
+	min-width: 0;
+	font-size: 13px;
+	box-shadow: none !important;
+	background: transparent !important;
+}
+
+.nn-settings-search:focus {
+	outline: none;
+}
+
+.nn-settings-toolbar-note {
+	margin: 0;
+	font-size: 12px;
+	color: #64748b;
+}
+
+/* Main panel */
+.nn-settings-panel {
+	background: #fff;
+	border-radius: 16px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	box-shadow: 0 8px 32px rgba(29, 53, 87, 0.06);
+	padding: 20px 24px 8px;
+}
+
+.nn-settings-panel .form-table th {
+	width: 220px;
+	font-weight: 600;
+	color: #334155;
+}
+
+.nn-settings-panel h2 {
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: #1d3557;
+	margin-top: 1.5rem;
+	padding-bottom: 0.35rem;
+	border-bottom: 1px solid #e2e8f0;
+}
+
+.nn-settings-panel h2:first-child {
+	margin-top: 0;
+}
+
+.nn-settings-panel h3 {
+	font-size: 0.95rem;
+	color: #475569;
+}
+
+.nn-settings-panel tr.nn-settings-search-hidden {
+	display: none !important;
+}
+
+.nn-settings-no-results {
+	display: none;
+	padding: 2rem;
+	text-align: center;
+	color: #64748b;
+	font-size: 14px;
+}
+
+.nn-settings-no-results.is-visible {
+	display: block;
+}
+
+/* Sticky save */
+.nn-settings-save-bar {
+	position: sticky;
+	bottom: 0;
+	z-index: 10;
+	margin: 20px -24px 0;
+	padding: 14px 24px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, #fff 40%);
+	border-top: 1px solid #e2e8f0;
+	border-radius: 0 0 16px 16px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	backdrop-filter: blur(6px);
+}
+
+.nn-settings-save-bar .button-primary {
+	background: #e63946 !important;
+	border-color: #c1121f !important;
+	padding: 6px 24px !important;
+	height: auto !important;
+	font-weight: 600 !important;
+	border-radius: 8px !important;
+	box-shadow: 0 6px 20px rgba(230, 57, 70, 0.25);
+}
+
+.nn-settings-save-bar .button-primary:hover {
+	background: #c1121f !important;
+}
+
+.nn-settings-save-hint {
+	font-size: 12px;
+	color: #64748b;
+	margin: 0;
+}
+
+/* Tools below form (platform) */
+.nn-settings-tools {
+	margin-top: 16px;
+	display: grid;
+	gap: 14px;
+}
+
+.nn-settings-tools-card {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	padding: 18px 22px;
+	box-shadow: 0 6px 24px rgba(29, 53, 87, 0.05);
+}
+
+.nn-settings-tools-card h2 {
+	margin-top: 0;
+	font-size: 1rem;
+	border: none;
+	padding: 0;
+}
+
+/* Performance panel inside dashboard */
+.nn-settings-dash-wrap .nn-perf-panel {
+	max-width: none;
+	border: 1px solid rgba(29, 53, 87, 0.08);
+	border-radius: 14px;
+	box-shadow: 0 8px 28px rgba(29, 53, 87, 0.06);
+}
+
+.nn-settings-dash-wrap .nav-tab-wrapper {
+	display: none;
+}

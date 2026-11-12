@@ -116,7 +116,7 @@ function neonews_render_performance_panel() {
         'neonews_apply_perf_recommendations'
     );
     ?>
-    <div class="nn-perf-panel">
+    <div class="nn-perf-panel" id="nn-perf-panel">
         <div class="nn-perf-panel-header">
             <div class="nn-perf-score-ring" style="--nn-score: <?php echo esc_attr( $score ); ?>;">
                 <svg viewBox="0 0 120 120" aria-hidden="true">

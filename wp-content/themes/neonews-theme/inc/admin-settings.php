@@ -674,15 +674,7 @@ function neonews_render_settings_page() {
 
     $settings = neonews_get_settings();
     $tab      = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'platform';
-    $tabs     = array(
-        'platform'  => __( 'Ads & Integrations', 'neonews' ),
-        'homepage'  => __( 'Homepage', 'neonews' ),
-        'header'    => __( 'Header', 'neonews' ),
-        'footer'    => __( 'Footer', 'neonews' ),
-        'whatsapp'  => __( 'WhatsApp', 'neonews' ),
-        'sidebar'   => __( 'Sidebar', 'neonews' ),
-        'features'  => __( 'Features & Colors', 'neonews' ),
-    );
+    $tabs     = neonews_settings_tabs_meta();
     if ( ! isset( $tabs[ $tab ] ) ) {
         $tab = 'platform';
     }
@@ -703,24 +695,15 @@ function neonews_render_settings_page() {
         'ad-sidebar'      => __( 'Sidebar — all pages with sidebar', 'neonews' ),
     );
     ?>
-    <div class="wrap">
-        <h1><?php esc_html_e( 'NewsPulse Settings', 'neonews' ); ?></h1>
-        <p class="description">
-            <?php esc_html_e( 'Control every feature from here. For fonts, colors, and live preview go to', 'neonews' ); ?>
-            <a href="<?php echo esc_url( admin_url( 'customize.php' ) ); ?>"><?php esc_html_e( 'Appearance → Customize → NewsPulse Design', 'neonews' ); ?></a>.
-            <?php esc_html_e( 'Categories: Posts → Categories. Pages: Pages → Add New. Menus: Appearance → Menus.', 'neonews' ); ?>
-        </p>
+    <div class="wrap nn-settings-dash-wrap" id="nn-settings-dashboard">
+        <?php neonews_render_settings_dashboard_header( $tab ); ?>
+        <?php neonews_render_settings_tab_nav( $tab ); ?>
 
-        <nav class="nav-tab-wrapper">
-            <?php foreach ( $tabs as $slug => $label ) : ?>
-                <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-settings&tab=' . $slug ) ); ?>" class="nav-tab<?php echo $tab === $slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
-            <?php endforeach; ?>
-        </nav>
-
-        <form method="post" action="options.php" style="margin-top:1rem;">
+        <form method="post" action="options.php" class="nn-settings-form">
             <?php settings_fields( 'neonews_settings_group' ); ?>
             <input type="hidden" name="neonews_platform_settings[_active_tab]" value="<?php echo esc_attr( $tab ); ?>" />
 
+            <div class="nn-settings-panel">
             <?php if ( 'platform' === $tab ) : ?>
             <?php neonews_render_performance_panel(); ?>
             <h2><?php esc_html_e( 'Advertisements', 'neonews' ); ?></h2>
@@ -1101,11 +1084,16 @@ function neonews_render_settings_page() {
                 <?php neonews_admin_tab_features( $settings ); ?>
             <?php endif; ?>
 
-            <?php submit_button(); ?>
+            <div class="nn-settings-save-bar">
+                <p class="nn-settings-save-hint"><?php esc_html_e( 'Changes apply after you save this tab.', 'neonews' ); ?></p>
+                <?php submit_button( __( 'Save settings', 'neonews' ), 'primary', 'submit', false ); ?>
+            </div>
+            </div>
         </form>
 
         <?php if ( 'platform' === $tab ) : ?>
-        <hr />
+        <div class="nn-settings-tools">
+        <div class="nn-settings-tools-card">
         <h2><?php esc_html_e( 'Author photos', 'neonews' ); ?></h2>
         <p><?php esc_html_e( 'Upload a display photo for each author (e.g. Alex Rivera) from the WordPress user profile.', 'neonews' ); ?></p>
         <p><a href="<?php echo esc_url( admin_url( 'users.php' ) ); ?>" class="button button-secondary"><?php esc_html_e( 'Manage Users', 'neonews' ); ?></a></p>
@@ -1115,8 +1103,9 @@ function neonews_render_settings_page() {
             <li><?php esc_html_e( 'Scroll to “Author Photo” and upload or select an image', 'neonews' ); ?></li>
             <li><?php esc_html_e( 'Click Update User — the photo shows on all posts by that author', 'neonews' ); ?></li>
         </ol>
+        </div>
 
-        <hr />
+        <div class="nn-settings-tools-card">
         <h2><?php esc_html_e( 'About Us page', 'neonews' ); ?></h2>
         <p><?php esc_html_e( 'Creates or updates the About Us page with the fancy layout template, default story content, and stats hero.', 'neonews' ); ?></p>
         <form method="post">
@@ -1133,8 +1122,9 @@ function neonews_render_settings_page() {
                 <a href="<?php echo esc_url( get_edit_post_link( $about_page->ID, 'raw' ) ); ?>"><?php esc_html_e( 'Edit page', 'neonews' ); ?></a>
             <?php endif; ?>
         </p>
+        </div>
 
-        <hr />
+        <div class="nn-settings-tools-card">
         <h2><?php esc_html_e( 'Legal pages', 'neonews' ); ?></h2>
         <p><?php esc_html_e( 'Creates or updates dedicated pages for Privacy, Terms of Service, Cookies Policy, and Cache & Storage.', 'neonews' ); ?></p>
         <form method="post">
@@ -1146,6 +1136,8 @@ function neonews_render_settings_page() {
                 <li><a href="<?php echo esc_url( neonews_get_legal_page_url( $slug ) ); ?>" target="_blank"><?php echo esc_html( $label ); ?></a></li>
             <?php endforeach; ?>
         </ul>
+        </div>
+        </div>
         <?php endif; ?>
     </div>
     <?php
