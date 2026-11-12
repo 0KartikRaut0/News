@@ -56,6 +56,13 @@ function neonews_dynamic_styles() {
     $css .= '@media (max-width: 991px) { .nn-post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }';
     $css .= '@media (max-width: 575px) { .nn-post-grid { grid-template-columns: 1fr; } }';
 
+    $article_back_color   = sanitize_hex_color( neonews_get_setting( 'article_back_color', '#ff7a18' ) ) ?: '#ff7a18';
+    $article_back_opacity = max( 5, min( 100, (int) neonews_get_setting( 'article_back_opacity', 52 ) ) ) / 100;
+    $css                 .= ':root { --nn-article-back-color: ' . esc_attr( $article_back_color ) . ';';
+    $css                 .= '--nn-article-back-opacity: ' . esc_attr( (string) $article_back_opacity ) . ';';
+    $css                 .= '--nn-article-back-glow: 0 4px 18px ' . esc_attr( neonews_hex_to_rgba( $article_back_color, 0.35 ) ) . ';';
+    $css                 .= '}';
+
     wp_add_inline_style( 'neonews-main', $css );
 }
 add_action( 'wp_enqueue_scripts', 'neonews_dynamic_styles', 25 );

@@ -92,16 +92,34 @@ class NeoNews_Smart_Related {
             return;
         }
 
-        $query = new WP_Query(
-            array(
-                'post_type'      => 'post',
-                'post_status'    => 'publish',
-                'posts_per_page' => 4,
-                'meta_key'       => '_neonews_post_views',
-                'orderby'        => 'meta_value_num',
-                'order'          => 'DESC',
-            )
-        );
+        if ( function_exists( 'neonews_get_trending_posts' ) ) {
+            $query = neonews_get_trending_posts( 4, 30 );
+        } else {
+            $query = new WP_Query(
+                array(
+                    'post_type'      => 'post',
+                    'post_status'    => 'publish',
+                    'posts_per_page' => 4,
+                    'meta_key'       => '_neonews_post_views',
+                    'orderby'        => 'meta_value_num',
+                    'order'          => 'DESC',
+                    'no_found_rows'  => true,
+                )
+            );
+        }
+
+        if ( ! $query->have_posts() ) {
+            $query = new WP_Query(
+                array(
+                    'post_type'      => 'post',
+                    'post_status'    => 'publish',
+                    'posts_per_page' => 4,
+                    'orderby'        => 'date',
+                    'order'          => 'DESC',
+                    'no_found_rows'  => true,
+                )
+            );
+        }
 
         if ( ! $query->have_posts() ) {
             return;

@@ -446,7 +446,7 @@ function neonews_home_tipline() {
 }
 
 /**
- * Render a custom homepage section (tag, page, or html).
+ * Render a custom homepage section (template, posts feed, page, or legacy tag/html).
  *
  * @param array $cs Custom section config.
  */
@@ -455,7 +455,21 @@ function neonews_render_custom_home_section( $cs ) {
         return;
     }
 
-    $type  = $cs['type'];
+    $type = $cs['type'];
+
+    if ( 'template' === $type ) {
+        neonews_render_home_custom_template( $cs );
+        return;
+    }
+
+    if ( 'posts' === $type || 'tag' === $type ) {
+        if ( 'tag' === $type && empty( $cs['source'] ) ) {
+            $cs['source'] = 'tag';
+        }
+        neonews_render_custom_home_posts_feed( $cs );
+        return;
+    }
+
     $title = ! empty( $cs['title'] ) ? $cs['title'] : '';
 
     if ( 'html' === $type ) {
@@ -490,36 +504,5 @@ function neonews_render_custom_home_section( $cs ) {
         echo '<div class="nn-custom-page-body nn-content-body">';
         echo apply_filters( 'the_content', $page->post_content ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
         echo '</div></section>';
-        return;
-    }
-
-    if ( 'tag' === $type ) {
-        $slug  = sanitize_title( $cs['slug'] ?? '' );
-        $count = max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) );
-        if ( ! $slug ) {
-            return;
-        }
-        $tag = get_term_by( 'slug', $slug, 'post_tag' );
-        if ( ! $tag ) {
-            return;
-        }
-        $query = new WP_Query( array(
-            'tag_id'         => $tag->term_id,
-            'posts_per_page' => $count,
-            'no_found_rows'  => true,
-        ) );
-        if ( ! $query->have_posts() ) {
-            wp_reset_postdata();
-            return;
-        }
-        $see_all = ! empty( $cs['see_all_url'] ) ? $cs['see_all_url'] : get_tag_link( $tag->term_id );
-        echo '<section class="nn-custom-section nn-custom-section-tag nn-reveal">';
-        echo '<header class="nn-section-header">';
-        echo '<h2 class="nn-section-title">' . esc_html( $title ?: $tag->name ) . '</h2>';
-        echo '<a href="' . esc_url( $see_all ) . '" class="nn-section-link">' . esc_html__( 'See all', 'neonews' ) . ' →</a>';
-        echo '</header>';
-        $layout = ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], 'cards' ) : neonews_sanitize_home_layout( 'latest', neonews_get_setting( 'home_latest_layout', 'cards' ), 'cards' );
-        neonews_render_home_posts_layout( $query, $layout );
-        echo '</section>';
     }
 }

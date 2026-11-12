@@ -648,6 +648,7 @@ require_once NEONEWS_THEME_DIR . '/inc/dynamic-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-tags.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-functions.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
+require_once NEONEWS_THEME_DIR . '/inc/home-custom-templates.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-layout-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/social-links.php';
 require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';

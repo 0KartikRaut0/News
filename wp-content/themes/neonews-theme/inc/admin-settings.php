@@ -35,6 +35,7 @@ function neonews_get_default_settings() {
         'home_category_layout'=> 'featured-list',
         'home_latest_layout'  => 'cards',
         'home_video_layout'   => 'grid',
+        'home_hover_effect'   => 'lift',
         'ad_zones'            => array(
             'ad-header'       => true,
             'ad-content'      => true,
@@ -163,6 +164,8 @@ function neonews_get_default_settings() {
         'excerpt_length'          => 25,
         'reading_wpm'             => 200,
         'category_colors'         => '',
+        'article_back_color'      => '#ff7a18',
+        'article_back_opacity'    => 52,
         // CAPTCHA.
         'auth_allow_registration' => true,
         'auth_auto_username'      => true,
@@ -452,18 +455,50 @@ function neonews_sanitize_settings( $input ) {
                     if ( empty( $cs['id'] ) || empty( $cs['type'] ) ) {
                         continue;
                     }
+                    $raw_type = sanitize_key( (string) $cs['type'] );
+                    if ( 'tag' === $raw_type ) {
+                        $raw_type = 'posts';
+                        if ( empty( $cs['source'] ) ) {
+                            $cs['source'] = 'tag';
+                        }
+                    }
+                    if ( ! in_array( $raw_type, array( 'template', 'posts', 'page', 'html' ), true ) ) {
+                        $raw_type = 'template';
+                    }
+
                     $entry = array(
-                        'id'    => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
-                        'type'  => in_array( $cs['type'], array( 'tag', 'page', 'html' ), true ) ? $cs['type'] : 'tag',
-                        'title' => sanitize_text_field( $cs['title'] ?? '' ),
-                        'count' => max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) ),
-                        'slug'  => sanitize_text_field( $cs['slug'] ?? '' ),
-                        'page_id' => absint( $cs['page_id'] ?? 0 ),
-                        'html'  => wp_kses_post( $cs['html'] ?? '' ),
-                        'show_title' => ! empty( $cs['show_title'] ),
+                        'id'          => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
+                        'type'        => $raw_type,
+                        'title'       => sanitize_text_field( $cs['title'] ?? '' ),
+                        'show_title'  => ! isset( $cs['show_title'] ) || ! empty( $cs['show_title'] ),
                         'see_all_url' => esc_url_raw( $cs['see_all_url'] ?? '' ),
-                        'layout'      => ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], '' ) : '',
                     );
+
+                    if ( 'template' === $raw_type ) {
+                        $templates = neonews_home_custom_templates();
+                        $tid       = sanitize_key( (string) ( $cs['template'] ?? 'newsletter_cta' ) );
+                        if ( ! isset( $templates[ $tid ] ) ) {
+                            $tid = 'newsletter_cta';
+                        }
+                        $entry['template'] = $tid;
+                        $entry['config']   = neonews_sanitize_custom_template_config( $tid, is_array( $cs['config'] ?? null ) ? $cs['config'] : array() );
+                    }
+
+                    if ( 'posts' === $raw_type ) {
+                        $entry['source'] = in_array( $cs['source'] ?? '', array( 'tag', 'category' ), true ) ? $cs['source'] : 'tag';
+                        $entry['slug']   = sanitize_title( (string) ( $cs['slug'] ?? '' ) );
+                        $entry['count']  = max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) );
+                        $entry['layout'] = ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], '' ) : '';
+                    }
+
+                    if ( 'page' === $raw_type ) {
+                        $entry['page_id'] = absint( $cs['page_id'] ?? 0 );
+                    }
+
+                    if ( 'html' === $raw_type ) {
+                        $entry['html'] = wp_kses_post( $cs['html'] ?? '' );
+                    }
+
                     if ( $entry['id'] ) {
                         $custom_sections[] = $entry;
                     }
@@ -532,6 +567,7 @@ function neonews_sanitize_settings( $input ) {
         $output['home_category_layout']   = neonews_sanitize_home_layout( 'posts', $input['home_category_layout'] ?? '', 'featured-list' );
         $output['home_latest_layout']     = neonews_sanitize_home_layout( 'latest', $input['home_latest_layout'] ?? '', 'cards' );
         $output['home_video_layout']      = neonews_sanitize_home_layout( 'video', $input['home_video_layout'] ?? '', 'grid' );
+        $output['home_hover_effect']      = neonews_sanitize_home_hover( $input['home_hover_effect'] ?? '' );
     }
 
     if ( 'header' === $active ) {
@@ -603,6 +639,9 @@ function neonews_sanitize_settings( $input ) {
         $output['excerpt_length']     = max( 5, min( 80, absint( $input['excerpt_length'] ?? $previous['excerpt_length'] ) ) );
         $output['reading_wpm']        = max( 100, min( 400, absint( $input['reading_wpm'] ?? $previous['reading_wpm'] ) ) );
         $output['category_colors']    = isset( $input['category_colors'] ) ? sanitize_textarea_field( wp_unslash( $input['category_colors'] ) ) : $previous['category_colors'];
+        $back_color                   = sanitize_hex_color( $input['article_back_color'] ?? '' );
+        $output['article_back_color'] = $back_color ? $back_color : $defaults['article_back_color'];
+        $output['article_back_opacity'] = max( 5, min( 100, absint( $input['article_back_opacity'] ?? $previous['article_back_opacity'] ) ) );
     }
 
     return wp_parse_args( $output, $defaults );

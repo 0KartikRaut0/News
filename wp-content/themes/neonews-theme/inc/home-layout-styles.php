@@ -27,6 +27,8 @@ function neonews_home_layout_choices( $group ) {
             'kenburns'  => __( 'Ken Burns — slow zoom on image', 'neonews' ),
             'spotlight' => __( 'Spotlight — soft radial vignette', 'neonews' ),
             'elevated'  => __( 'Elevated — shadow & hover lift', 'neonews' ),
+            'shine'     => __( 'Shine — light sweep on hover', 'neonews' ),
+            'interactive' => __( 'Interactive — cursor glow on hover', 'neonews' ),
         ),
         'carousel' => array(
             'overlay'   => __( 'Overlay — text on image (default)', 'neonews' ),
@@ -36,6 +38,7 @@ function neonews_home_layout_choices( $group ) {
             'magazine'  => __( 'Magazine — tall hero, bold titles', 'neonews' ),
             'cards'     => __( 'Cards — spaced slides with shadow', 'neonews' ),
             'edge'      => __( 'Edge — wide cinematic slides', 'neonews' ),
+            'hover-lift' => __( 'Hover lift — slides rise on mouse-over', 'neonews' ),
         ),
         'posts'    => array(
             'featured-list' => __( 'Featured + list (default)', 'neonews' ),
@@ -46,6 +49,8 @@ function neonews_home_layout_choices( $group ) {
             'magazine'      => __( 'Magazine — lead story + grid', 'neonews' ),
             'bento'         => __( 'Bento — mixed-size tiles', 'neonews' ),
             'editorial'     => __( 'Editorial — dense headline stack', 'neonews' ),
+            'overlay-cards' => __( 'Overlay — title on image', 'neonews' ),
+            'polaroid'      => __( 'Polaroid — framed print style', 'neonews' ),
         ),
         'video'    => array(
             'grid'       => __( 'Grid', 'neonews' ),
@@ -61,10 +66,41 @@ function neonews_home_layout_choices( $group ) {
             'magazine'      => __( 'Magazine — lead story + grid', 'neonews' ),
             'bento'         => __( 'Bento — mixed-size tiles', 'neonews' ),
             'editorial'     => __( 'Editorial — dense headline stack', 'neonews' ),
+            'overlay-cards' => __( 'Overlay — title on image', 'neonews' ),
+            'polaroid'      => __( 'Polaroid — framed print style', 'neonews' ),
         ),
     );
 
     return $choices[ $group ] ?? array();
+}
+
+/**
+ * Homepage hover / mouse effect choices.
+ *
+ * @return array<string, string>
+ */
+function neonews_home_hover_choices() {
+    return array(
+        'lift'       => __( 'Lift — cards & slides rise (default)', 'neonews' ),
+        'glow'       => __( 'Glow — brand-colored shadow', 'neonews' ),
+        'zoom'       => __( 'Zoom — image zoom on hover', 'neonews' ),
+        'tilt'       => __( '3D tilt — follows mouse on cards', 'neonews' ),
+        'spotlight'  => __( 'Spotlight — cursor light on banner & cards', 'neonews' ),
+        'none'       => __( 'None — static (no extra motion)', 'neonews' ),
+    );
+}
+
+/**
+ * @param string $value Raw.
+ * @return string
+ */
+function neonews_sanitize_home_hover( $value ) {
+    $choices = neonews_home_hover_choices();
+    $value   = sanitize_key( (string) $value );
+    if ( isset( $choices[ $value ] ) ) {
+        return $value;
+    }
+    return 'lift';
 }
 
 /**
@@ -204,6 +240,28 @@ function neonews_render_home_posts_layout( $query, $layout, $args = array() ) {
         while ( $query->have_posts() ) {
             $query->the_post();
             get_template_part( 'template-parts/home', 'list-item' );
+        }
+        echo '</div>';
+        wp_reset_postdata();
+        return;
+    }
+
+    if ( 'overlay-cards' === $layout ) {
+        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-post-grid nn-overlay-cards-grid">';
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            get_template_part( 'template-parts/content', 'card' );
+        }
+        echo '</div>';
+        wp_reset_postdata();
+        return;
+    }
+
+    if ( 'polaroid' === $layout ) {
+        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-post-grid nn-polaroid-grid">';
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            get_template_part( 'template-parts/content', 'card' );
         }
         echo '</div>';
         wp_reset_postdata();

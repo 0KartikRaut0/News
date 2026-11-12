@@ -54,6 +54,17 @@ function neonews_admin_tab_homepage( $settings ) {
             </td>
         </tr>
         <tr>
+            <th><?php esc_html_e( 'Hover & mouse effects', 'neonews' ); ?></th>
+            <td>
+                <select name="neonews_platform_settings[home_hover_effect]">
+                    <?php foreach ( neonews_home_hover_choices() as $key => $label ) : ?>
+                        <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_hover_effect'] ?? 'lift', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php esc_html_e( 'Applies to post cards, list rows, video tiles, carousel slides, and the homepage banner (where supported). Respects “Reduce motion” and touch devices.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
             <th><?php esc_html_e( 'Default category layout', 'neonews' ); ?></th>
             <td>
                 <select name="neonews_platform_settings[home_category_layout]">
@@ -469,7 +480,7 @@ function neonews_admin_tab_homepage( $settings ) {
         function addCustomSortRow(cs) {
             var existing = list.querySelector('[data-key="custom_' + cs.id + '"]');
             if (existing) { return; }
-            var icons = { tag: '🏷', page: '📄', html: '🖊' };
+            var icons = { template: '✨', posts: '📰', page: '📄', tag: '📰' };
             var li = document.createElement('li');
             li.setAttribute('data-key', 'custom_' + cs.id);
             li.className = 'nn-sort-row nn-sort-custom';
@@ -505,7 +516,7 @@ function neonews_admin_tab_homepage( $settings ) {
     ?>
 
     <h3><?php esc_html_e( 'Custom sections', 'neonews' ); ?></h3>
-    <p class="description"><?php esc_html_e( 'Add extra sections — posts from a tag, a page\'s content, or any custom HTML block. Each one appears in the order list above.', 'neonews' ); ?></p>
+    <p class="description"><?php esc_html_e( 'Add designed blocks or post feeds — no HTML needed. Pick a ready-made template (newsletter, promo, stats, video, etc.), a posts feed, or embed a WordPress page. Drag each section in the order list above.', 'neonews' ); ?></p>
 
     <input type="hidden" name="neonews_platform_settings[home_custom_sections]" id="nn-custom-sections-json" value="<?php echo esc_attr( wp_json_encode( array_values( (array) ( $settings['home_custom_sections'] ?? array() ) ) ) ); ?>" />
 
@@ -514,13 +525,16 @@ function neonews_admin_tab_homepage( $settings ) {
     <button type="button" id="nn-add-custom-section" class="button" style="margin-top:0.5rem;">+ <?php esc_html_e( 'Add section', 'neonews' ); ?></button>
 
     <style>
-    .nn-cs-row{background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:14px 16px;margin-bottom:10px;}
-    .nn-cs-row h4{margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-size:0.9rem;}
+    .nn-cs-row{background:#fff;border:1px solid #c3c4c7;border-radius:8px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+    .nn-cs-row h4{margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;font-size:0.95rem;}
+    .nn-cs-desc{font-size:0.8rem;color:#646970;margin:0 0 12px;line-height:1.45;}
     .nn-cs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
     .nn-cs-grid label{display:flex;flex-direction:column;gap:3px;font-size:0.82rem;font-weight:600;color:#50575e;}
     .nn-cs-grid input,.nn-cs-grid select,.nn-cs-grid textarea{padding:5px 8px;border:1px solid #c3c4c7;border-radius:4px;font-size:0.85rem;width:100%;box-sizing:border-box;}
-    .nn-cs-row .nn-cs-html-wrap{grid-column:1/-1;}
-    .nn-cs-row .nn-cs-page-wrap,.nn-cs-row .nn-cs-slug-wrap{grid-column:1/-1;}
+    .nn-cs-template-fields{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:4px;padding-top:10px;border-top:1px dashed #dcdcde;}
+    .nn-cs-template-fields label textarea{min-height:56px;}
+    .nn-cs-row .nn-cs-feed-wrap,.nn-cs-row .nn-cs-page-wrap,.nn-cs-row .nn-cs-template-pick{grid-column:1/-1;}
+    .nn-cs-feed-wrap{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;}
     </style>
 
     <script>
@@ -531,6 +545,18 @@ function neonews_admin_tab_homepage( $settings ) {
         var sections = (typeof nnCustomSections !== 'undefined') ? JSON.parse(JSON.stringify(nnCustomSections)) : [];
         var pages = <?php echo wp_json_encode( array_map( function( $p ) { return array( 'id' => $p->ID, 'title' => $p->post_title ); }, $all_pages ) ); ?>;
         var postLayouts = <?php echo wp_json_encode( neonews_home_layout_choices( 'posts' ) ); ?>;
+        var templateRegistry = <?php
+        $tpl_js = array();
+        foreach ( neonews_home_custom_templates() as $tid => $def ) {
+            $tpl_js[ $tid ] = array(
+                'label'       => $def['label'],
+                'description' => $def['description'],
+                'icon'        => $def['icon'],
+                'fields'      => $def['fields'],
+            );
+        }
+        echo wp_json_encode( $tpl_js );
+        ?>;
 
         function uid() {
             return 'cs' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
@@ -546,24 +572,77 @@ function neonews_admin_tab_homepage( $settings ) {
             return out;
         }
 
+        function normalizeSection(cs) {
+            if (cs.type === 'tag') {
+                cs.type = 'posts';
+                cs.source = cs.source || 'tag';
+            }
+            if (!cs.type) { cs.type = 'template'; }
+            if (cs.type === 'template' && !cs.template) { cs.template = 'newsletter_cta'; }
+            if (!cs.config) { cs.config = {}; }
+            return cs;
+        }
+
+        function templateOptions(selected) {
+            var out = '';
+            Object.keys(templateRegistry).forEach(function(id) {
+                var t = templateRegistry[id];
+                out += '<option value="'+id+'"'+(id===selected?' selected':'')+'>'+(t.icon||'')+' '+t.label+'</option>';
+            });
+            return out;
+        }
+
+        function buildTemplateFields(cs, container) {
+            container.innerHTML = '';
+            var tid = cs.template || 'newsletter_cta';
+            var def = templateRegistry[tid];
+            if (!def || !def.fields) { return; }
+            Object.keys(def.fields).forEach(function(fkey) {
+                var f = def.fields[fkey];
+                var val = (cs.config && cs.config[fkey] !== undefined) ? cs.config[fkey] : (f.default || '');
+                var lab = document.createElement('label');
+                lab.style.gridColumn = f.type === 'textarea' ? '1 / -1' : '';
+                var input;
+                if (f.type === 'textarea') {
+                    input = '<textarea class="nn-cs-cfg" data-key="'+fkey+'" rows="3">'+escHtml(val)+'</textarea>';
+                } else {
+                    var itype = f.type === 'number' ? 'number' : (f.type === 'url' ? 'url' : 'text');
+                    input = '<input type="'+itype+'" class="nn-cs-cfg" data-key="'+fkey+'" value="'+escHtml(val)+'" />';
+                }
+                lab.innerHTML = f.label + input;
+                container.appendChild(lab);
+            });
+        }
+
         function buildRow(cs, idx) {
+            cs = normalizeSection(cs);
             var row = document.createElement('div');
             row.className = 'nn-cs-row';
+            var type = cs.type;
             row.innerHTML =
                 '<h4><span>'+( cs.title || ('Section '+(idx+1)) )+'</span>'
                 +'<button type="button" class="button-link-delete nn-cs-delete" style="color:#b32d2e;">✕ '+<?php echo wp_json_encode( __( 'Remove', 'neonews' ) ); ?>+'</button></h4>'
+                +'<p class="nn-cs-desc nn-cs-desc-dynamic"></p>'
                 +'<div class="nn-cs-grid">'
-                +'<label>'+<?php echo wp_json_encode( __( 'Type', 'neonews' ) ); ?>+'<select class="nn-cs-type"><option value="tag"'+(cs.type==='tag'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Posts by Tag', 'neonews' ) ); ?>+'</option><option value="page"'+(cs.type==='page'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Page content', 'neonews' ) ); ?>+'</option><option value="html"'+(cs.type==='html'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Free HTML / Embed', 'neonews' ) ); ?>+'</option></select></label>'
-                +'<label>'+<?php echo wp_json_encode( __( 'Section title', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-title" value="'+escHtml(cs.title||'')+'" placeholder="'+<?php echo wp_json_encode( __( 'e.g. From our readers', 'neonews' ) ); ?>+'" /></label>'
-                +'<div class="nn-cs-slug-wrap"><label>'+<?php echo wp_json_encode( __( 'Tag slug', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-slug" value="'+escHtml(cs.slug||'')+'" placeholder="featured-interviews" /></label></div>'
+                +'<label>'+<?php echo wp_json_encode( __( 'Section kind', 'neonews' ) ); ?>+'<select class="nn-cs-type">'
+                +'<option value="template"'+(type==='template'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Designed template', 'neonews' ) ); ?>+'</option>'
+                +'<option value="posts"'+(type==='posts'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Posts feed', 'neonews' ) ); ?>+'</option>'
+                +'<option value="page"'+(type==='page'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'WordPress page', 'neonews' ) ); ?>+'</option>'
+                +'</select></label>'
+                +'<label>'+<?php echo wp_json_encode( __( 'Section title (optional)', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-title" value="'+escHtml(cs.title||'')+'" placeholder="'+<?php echo wp_json_encode( __( 'Shown above the block', 'neonews' ) ); ?>+'" /></label>'
+                +'<div class="nn-cs-template-pick"><label>'+<?php echo wp_json_encode( __( 'Template', 'neonews' ) ); ?>+'<select class="nn-cs-template">'+templateOptions(cs.template||'newsletter_cta')+'</select></label></div>'
+                +'<div class="nn-cs-template-fields"></div>'
+                +'<div class="nn-cs-feed-wrap"><label>'+<?php echo wp_json_encode( __( 'Source', 'neonews' ) ); ?>+'<select class="nn-cs-source"><option value="tag"'+(cs.source==='tag'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Tag', 'neonews' ) ); ?>+'</option><option value="category"'+(cs.source==='category'?' selected':'')+'>'+<?php echo wp_json_encode( __( 'Category', 'neonews' ) ); ?>+'</option></select></label>'
+                +'<label>'+<?php echo wp_json_encode( __( 'Slug', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-slug" value="'+escHtml(cs.slug||'')+'" placeholder="featured OR technology" /></label>'
                 +'<label>'+<?php echo wp_json_encode( __( 'Post count', 'neonews' ) ); ?>+'<input type="number" class="nn-cs-count" min="1" max="20" value="'+(cs.count||4)+'" /></label>'
                 +'<label class="nn-cs-layout-wrap">'+<?php echo wp_json_encode( __( 'Posts layout', 'neonews' ) ); ?>+'<select class="nn-cs-layout">'+postLayoutOptions(cs.layout||'')+'</select></label>'
+                +'<label>'+<?php echo wp_json_encode( __( '"See all" link (optional)', 'neonews' ) ); ?>+'<input type="url" class="nn-cs-seeall" value="'+escHtml(cs.see_all_url||'')+'" placeholder="https://…" /></label></div>'
                 +'<div class="nn-cs-page-wrap"><label>'+<?php echo wp_json_encode( __( 'Page', 'neonews' ) ); ?>+'<select class="nn-cs-page">'+pageOptions(cs.page_id)+'</select></label></div>'
-                +'<label>'+<?php echo wp_json_encode( __( '"See all" link', 'neonews' ) ); ?>+'<input type="url" class="nn-cs-seeall" value="'+escHtml(cs.see_all_url||'')+'" placeholder="https://…" /></label>'
-                +'<div class="nn-cs-html-wrap"><label>'+<?php echo wp_json_encode( __( 'HTML / embed code', 'neonews' ) ); ?>+'<textarea class="nn-cs-html" rows="3">'+escHtml(cs.html||'')+'</textarea></label></div>'
                 +'</div>';
 
-            updateVisibility(row, cs.type || 'tag');
+            var tplFields = row.querySelector('.nn-cs-template-fields');
+            buildTemplateFields(cs, tplFields);
+            updateVisibility(row, cs.type || 'template', cs.template);
 
             row.querySelector('.nn-cs-delete').addEventListener('click', function(){
                 var i = sections.findIndex(function(s){ return s.id === cs.id; });
@@ -573,44 +652,81 @@ function neonews_admin_tab_homepage( $settings ) {
                 saveAll();
             });
 
+            function syncConfigFromDom() {
+                cs.config = cs.config || {};
+                row.querySelectorAll('.nn-cs-cfg').forEach(function(el) {
+                    var key = el.getAttribute('data-key');
+                    if (key) { cs.config[key] = el.value; }
+                });
+            }
+
             function update() {
                 var type = row.querySelector('.nn-cs-type').value;
-                cs.type       = type;
-                cs.title      = row.querySelector('.nn-cs-title').value;
-                cs.slug       = row.querySelector('.nn-cs-slug').value;
-                cs.count      = parseInt(row.querySelector('.nn-cs-count').value) || 4;
-                cs.page_id    = parseInt(row.querySelector('.nn-cs-page').value) || 0;
-                cs.html       = row.querySelector('.nn-cs-html').value;
+                cs.type = type;
+                cs.title = row.querySelector('.nn-cs-title').value;
+                cs.template = row.querySelector('.nn-cs-template').value;
+                cs.source = row.querySelector('.nn-cs-source').value;
+                cs.slug = row.querySelector('.nn-cs-slug').value;
+                cs.count = parseInt(row.querySelector('.nn-cs-count').value, 10) || 4;
+                cs.page_id = parseInt(row.querySelector('.nn-cs-page').value, 10) || 0;
                 cs.see_all_url = row.querySelector('.nn-cs-seeall').value;
-                cs.layout      = row.querySelector('.nn-cs-layout') ? row.querySelector('.nn-cs-layout').value : '';
-                row.querySelector('h4 span').textContent = cs.title || ('Section '+(sections.indexOf(cs)+1));
-                updateVisibility(row, type);
+                cs.layout = row.querySelector('.nn-cs-layout') ? row.querySelector('.nn-cs-layout').value : '';
+                syncConfigFromDom();
+                row.querySelector('h4 span').textContent = cs.title || sortLabel(cs);
+                updateVisibility(row, type, cs.template);
                 saveAll();
-                if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
-                // update label in sort list
                 var sortRow = document.querySelector('[data-key="custom_'+cs.id+'"]');
                 if (sortRow) {
-                    var icons = {tag:'🏷',page:'📄',html:'🖊'};
-                    sortRow.querySelectorAll('span')[1].textContent = (icons[type]||'📦')+'  '+(cs.title||cs.id);
+                    sortRow.querySelectorAll('span')[1].textContent = sortLabel(cs);
                 }
             }
 
-            row.querySelectorAll('input,select,textarea').forEach(function(el){
-                el.addEventListener('change', update);
-                el.addEventListener('input', update);
+            row.querySelector('.nn-cs-template').addEventListener('change', function() {
+                cs.template = this.value;
+                if (!cs.config) { cs.config = {}; }
+                buildTemplateFields(cs, tplFields);
+                update();
+            });
+
+            row.addEventListener('change', function(e) {
+                if (e.target.classList.contains('nn-cs-cfg') || e.target.closest('.nn-cs-grid')) {
+                    update();
+                }
+            });
+            row.addEventListener('input', function(e) {
+                if (e.target.classList.contains('nn-cs-title') || e.target.classList.contains('nn-cs-slug') || e.target.classList.contains('nn-cs-cfg')) {
+                    update();
+                }
             });
 
             return row;
         }
 
-        function updateVisibility(row, type) {
-            row.querySelector('.nn-cs-slug-wrap').style.display   = type === 'tag'  ? '' : 'none';
-            row.querySelector('.nn-cs-page-wrap').style.display   = type === 'page' ? '' : 'none';
-            row.querySelector('.nn-cs-html-wrap').style.display   = type === 'html' ? '' : 'none';
-            var layoutWrap = row.querySelector('.nn-cs-layout-wrap');
-            if (layoutWrap) { layoutWrap.style.display = type === 'tag' ? '' : 'none'; }
-            row.querySelectorAll('.nn-cs-grid > label')[2].style.display = type !== 'html' ? '' : 'none'; // see-all
-            row.querySelectorAll('.nn-cs-grid > label')[1].style.display = type !== 'html' ? '' : 'none'; // count
+        function sortLabel(cs) {
+            var icons = { template: '✨', posts: '📰', page: '📄' };
+            var name = cs.title || cs.id;
+            if (cs.type === 'template' && cs.template && templateRegistry[cs.template]) {
+                name = cs.title || templateRegistry[cs.template].label;
+            }
+            return (icons[cs.type] || '📦') + '  ' + name;
+        }
+
+        function updateVisibility(row, type, templateId) {
+            row.querySelector('.nn-cs-template-pick').style.display = type === 'template' ? '' : 'none';
+            row.querySelector('.nn-cs-template-fields').style.display = type === 'template' ? '' : 'none';
+            row.querySelector('.nn-cs-feed-wrap').style.display = type === 'posts' ? '' : 'none';
+            row.querySelector('.nn-cs-page-wrap').style.display = type === 'page' ? '' : 'none';
+            var desc = row.querySelector('.nn-cs-desc-dynamic');
+            if (type === 'template' && templateRegistry[templateId]) {
+                desc.textContent = templateRegistry[templateId].description;
+                desc.style.display = '';
+            } else if (type === 'posts') {
+                desc.textContent = <?php echo wp_json_encode( __( 'Pulls live posts from a tag or category using your chosen card layout.', 'neonews' ) ); ?>;
+                desc.style.display = '';
+            } else {
+                desc.textContent = <?php echo wp_json_encode( __( 'Embeds a published page (About, Advertise, etc.).', 'neonews' ) ); ?>;
+                desc.style.display = '';
+            }
         }
 
         function escHtml(s) {
@@ -627,22 +743,48 @@ function neonews_admin_tab_homepage( $settings ) {
             return out;
         }
 
+        function defaultConfig(templateId) {
+            var cfg = {};
+            var def = templateRegistry[templateId];
+            if (!def || !def.fields) { return cfg; }
+            Object.keys(def.fields).forEach(function(k) {
+                cfg[k] = def.fields[k].default || '';
+            });
+            return cfg;
+        }
+
         function render() {
             wrap.innerHTML = '';
-            sections.forEach(function(cs, i){ wrap.appendChild(buildRow(cs, i)); });
+            sections.forEach(function(cs, i) {
+                normalizeSection(cs);
+                wrap.appendChild(buildRow(cs, i));
+            });
         }
 
         addBtn.addEventListener('click', function(){
-            var cs = { id: uid(), type: 'tag', title: '', slug: '', count: 4, page_id: 0, html: '', show_title: true, see_all_url: '', layout: '' };
+            var cs = {
+                id: uid(),
+                type: 'template',
+                template: 'newsletter_cta',
+                config: defaultConfig('newsletter_cta'),
+                title: '',
+                source: 'tag',
+                slug: '',
+                count: 4,
+                page_id: 0,
+                show_title: true,
+                see_all_url: '',
+                layout: ''
+            };
             sections.push(cs);
-            wrap.appendChild(buildRow(cs, sections.length-1));
+            wrap.appendChild(buildRow(cs, sections.length - 1));
             if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
             saveAll();
         });
 
+        sections.forEach(normalizeSection);
         render();
-        // register existing custom sections in sort list (in case they aren't there yet)
-        sections.forEach(function(cs){
+        sections.forEach(function(cs) {
             if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
         });
     })();
@@ -951,6 +1093,48 @@ function neonews_admin_tab_features( $settings ) {
             <td><input type="number" name="neonews_platform_settings[reading_wpm]" value="<?php echo esc_attr( $settings['reading_wpm'] ); ?>" min="100" max="400" class="small-text" /> <?php esc_html_e( 'words per minute', 'neonews' ); ?></td>
         </tr>
     </table>
+
+    <h2><?php esc_html_e( 'Article back button', 'neonews' ); ?></h2>
+    <table class="form-table">
+        <tr>
+            <th><label for="neonews-article-back-color"><?php esc_html_e( 'Button color', 'neonews' ); ?></label></th>
+            <td>
+                <?php
+                $back_color = $settings['article_back_color'] ?? '#ff7a18';
+                ?>
+                <input type="color" id="neonews-article-back-color-picker" value="<?php echo esc_attr( $back_color ); ?>" />
+                <input type="text" name="neonews_platform_settings[article_back_color]" id="neonews-article-back-color" value="<?php echo esc_attr( $back_color ); ?>" class="regular-text" pattern="#[0-9a-fA-F]{6}" style="max-width:8rem;margin-left:0.5rem;" />
+                <p class="description"><?php esc_html_e( 'Default matches the orange “back to top” arrow. Used on the floating back control at the bottom of single posts.', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="neonews-article-back-opacity"><?php esc_html_e( 'Idle opacity', 'neonews' ); ?></label></th>
+            <td>
+                <input type="range" id="neonews-article-back-opacity-range" min="5" max="100" step="1" value="<?php echo esc_attr( (int) ( $settings['article_back_opacity'] ?? 52 ) ); ?>" style="vertical-align:middle;width:220px;" />
+                <input type="number" name="neonews_platform_settings[article_back_opacity]" id="neonews-article-back-opacity" value="<?php echo esc_attr( (int) ( $settings['article_back_opacity'] ?? 52 ) ); ?>" min="5" max="100" step="1" class="small-text" style="margin-left:0.5rem;" />
+                <span>%</span>
+                <p class="description"><?php esc_html_e( 'How see-through the button is while reading (hover/focus goes to full opacity).', 'neonews' ); ?></p>
+            </td>
+        </tr>
+    </table>
+    <script>
+    (function() {
+        var picker = document.getElementById('neonews-article-back-color-picker');
+        var hex = document.getElementById('neonews-article-back-color');
+        if (picker && hex) {
+            picker.addEventListener('input', function() { hex.value = picker.value; });
+            hex.addEventListener('input', function() {
+                if (/^#[0-9a-fA-F]{6}$/.test(hex.value)) { picker.value = hex.value; }
+            });
+        }
+        var range = document.getElementById('neonews-article-back-opacity-range');
+        var num = document.getElementById('neonews-article-back-opacity');
+        if (range && num) {
+            range.addEventListener('input', function() { num.value = range.value; });
+            num.addEventListener('input', function() { range.value = num.value; });
+        }
+    })();
+    </script>
 
     <h2><?php esc_html_e( 'Category accent colors', 'neonews' ); ?></h2>
     <table class="form-table">

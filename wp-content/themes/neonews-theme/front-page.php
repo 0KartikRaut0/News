@@ -23,7 +23,12 @@ $featured_query = neonews_show_featured_carousel() ? neonews_get_featured_posts(
 $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get_video_posts( $video_count ) : null;
 ?>
 
-<div class="nn-home nn-home-pulse">
+<?php
+$home_hover = function_exists( 'neonews_sanitize_home_hover' )
+    ? neonews_sanitize_home_hover( $settings['home_hover_effect'] ?? 'lift' )
+    : 'lift';
+?>
+<div class="nn-home nn-home-pulse nn-home-hover-<?php echo esc_attr( $home_hover ); ?>">
     <?php neonews_render_home_banner(); ?>
 
     <?php
@@ -71,6 +76,8 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
             $grid_ordered[] = $s;
         }
     }
+
+    $smart_home_hook_fired = false;
 
     // Render outside sections first
     foreach ( $outside_ordered as $section ) :
@@ -127,14 +134,22 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
                 </section>
                 <?php wp_reset_postdata();
             endif;
-            do_action( 'neonews_home_after_hero' );
+            if ( ! $smart_home_hook_fired ) {
+                do_action( 'neonews_home_after_hero' );
+                $smart_home_hook_fired = true;
+            }
 
         elseif ( 'ad_hero' === $section ) : ?>
             <div class="nn-container nn-ad-row nn-reveal">
                 <?php neonews_ad_zone( 'ad-home-hero', __( '728×90 — Premium homepage placement', 'neonews' ) ); ?>
             </div>
         <?php endif;
-    endforeach; ?>
+    endforeach;
+
+    if ( ! $smart_home_hook_fired ) {
+        do_action( 'neonews_home_after_hero' );
+    }
+    ?>
 
     <div class="nn-container nn-home-layout nn-reveal">
         <div class="nn-home-main">
