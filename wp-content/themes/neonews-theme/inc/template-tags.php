@@ -248,3 +248,64 @@ function neonews_social_share() {
     
     echo '</div>';
 }
+
+/**
+ * Text label for when a WordPress user registered (empty for invalid ID).
+ *
+ * @param int $user_id User ID.
+ * @return string
+ */
+function neonews_get_member_since_text( $user_id ) {
+    $user_id = (int) $user_id;
+    if ( $user_id <= 0 ) {
+        return '';
+    }
+
+    $user = get_userdata( $user_id );
+    if ( ! $user || empty( $user->user_registered ) ) {
+        return '';
+    }
+
+    $timestamp = strtotime( $user->user_registered );
+    if ( ! $timestamp ) {
+        return '';
+    }
+
+    return sprintf(
+        /* translators: %s: site-formatted registration date */
+        __( 'Member since %s', 'neonews' ),
+        date_i18n( get_option( 'date_format' ), $timestamp )
+    );
+}
+
+/**
+ * HTML wrapper for member-since label.
+ *
+ * @param int $user_id User ID.
+ * @return string Safe HTML or empty.
+ */
+function neonews_get_member_since_html( $user_id ) {
+    $text = neonews_get_member_since_text( $user_id );
+    if ( ! $text ) {
+        return '';
+    }
+
+    $user     = get_userdata( (int) $user_id );
+    $datetime = ( $user && ! empty( $user->user_registered ) ) ? $user->user_registered : '';
+
+    return '<span class="nn-member-since"><time datetime="' . esc_attr( $datetime ) . '">' . esc_html( $text ) . '</time></span>';
+}
+
+/**
+ * Member since for a comment author (registered commenters only).
+ *
+ * @param WP_Comment $comment Comment object.
+ * @return string Safe HTML or empty.
+ */
+function neonews_get_comment_member_since_html( $comment ) {
+    if ( ! $comment || empty( $comment->user_id ) ) {
+        return '';
+    }
+
+    return neonews_get_member_since_html( (int) $comment->user_id );
+}

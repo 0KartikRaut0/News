@@ -76,6 +76,13 @@ get_header();
             <h1><?php echo esc_html( $user->display_name ); ?></h1>
             <p><?php echo esc_html( $user->user_email ); ?></p>
             <?php
+            if ( function_exists( 'neonews_get_member_since_html' ) ) {
+                $member_since = neonews_get_member_since_html( $user_id );
+                if ( $member_since ) {
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    echo $member_since;
+                }
+            }
             if ( function_exists( 'neonews_membership_render_plan_tag' ) ) {
                 neonews_membership_render_plan_tag( 'profile', $user_id );
             } elseif ( function_exists( 'neonews_is_user_premium' ) && neonews_is_user_premium() ) {
@@ -114,6 +121,14 @@ get_header();
                 <label><?php esc_html_e( 'Email address', 'neonews' ); ?></label>
                 <input type="email" class="nn-form-input" value="<?php echo esc_attr( $user->user_email ); ?>" disabled />
                 <p class="nn-field-note"><?php esc_html_e( 'Email changes require administrator approval. Contact the site admin to update your email.', 'neonews' ); ?></p>
+
+                <?php
+                $reg_ts = ! empty( $user->user_registered ) ? strtotime( $user->user_registered ) : false;
+                if ( $reg_ts ) :
+                    ?>
+                    <label><?php esc_html_e( 'Member since', 'neonews' ); ?></label>
+                    <input type="text" class="nn-form-input" value="<?php echo esc_attr( date_i18n( get_option( 'date_format' ), $reg_ts ) ); ?>" disabled />
+                <?php endif; ?>
 
                 <label><?php esc_html_e( 'Phone number', 'neonews' ); ?></label>
                 <input type="tel" name="neonews_phone" class="nn-form-input" value="<?php echo esc_attr( get_user_meta( $user_id, '_neonews_phone', true ) ); ?>" placeholder="+1 555 000 0000" />

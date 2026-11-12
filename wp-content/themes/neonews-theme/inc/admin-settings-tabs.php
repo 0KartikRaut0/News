@@ -44,6 +44,27 @@ function neonews_admin_tab_homepage( $settings ) {
             <td><input type="number" name="neonews_platform_settings[home_carousel_count]" value="<?php echo esc_attr( $settings['home_carousel_count'] ); ?>" min="1" max="12" class="small-text" /></td>
         </tr>
         <tr>
+            <th><?php esc_html_e( 'Carousel style', 'neonews' ); ?></th>
+            <td>
+                <select name="neonews_platform_settings[home_carousel_style]">
+                    <?php foreach ( neonews_home_layout_choices( 'carousel' ) as $key => $label ) : ?>
+                        <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_carousel_style'] ?? 'overlay', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Default category layout', 'neonews' ); ?></th>
+            <td>
+                <select name="neonews_platform_settings[home_category_layout]">
+                    <?php foreach ( neonews_home_layout_choices( 'posts' ) as $key => $label ) : ?>
+                        <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_category_layout'] ?? 'featured-list', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <p class="description"><?php esc_html_e( 'Default for category blocks (override per block in the table below).', 'neonews' ); ?></p>
+            </td>
+        </tr>
+        <tr>
             <th><?php esc_html_e( 'Category blocks', 'neonews' ); ?></th>
             <td><label><input type="checkbox" name="neonews_platform_settings[show_home_categories]" value="1" <?php checked( ! empty( $settings['show_home_categories'] ) ); ?> /> <?php esc_html_e( 'Show category grid sections', 'neonews' ); ?></label></td>
         </tr>
@@ -86,6 +107,7 @@ function neonews_admin_tab_homepage( $settings ) {
                         <th><?php esc_html_e( 'Posts', 'neonews' ); ?></th>
                         <th><?php esc_html_e( 'Color', 'neonews' ); ?></th>
                         <th><?php esc_html_e( '"See all" URL', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Layout', 'neonews' ); ?></th>
                         <th></th>
                     </tr></thead>
                     <tbody id="nn-catblk-body"></tbody>
@@ -100,6 +122,16 @@ function neonews_admin_tab_homepage( $settings ) {
                     jsonIn = document.getElementById('nn-cat-blocks-json');
                     var blocks = <?php echo wp_json_encode( array_values( $saved_blocks ) ); ?>;
                     var cats   = <?php echo wp_json_encode( array_map( function( $c ) { return array( 'slug' => $c->slug, 'name' => $c->name ); }, $all_wp_cats ) ); ?>;
+                    var layoutOpts = <?php echo wp_json_encode( neonews_home_layout_choices( 'posts' ) ); ?>;
+                    var layoutDefaultOpt = <?php echo wp_json_encode( __( '— site default —', 'neonews' ) ); ?>;
+
+                    function layoutSelectHtml(selected) {
+                        var out = '<option value="">' + layoutDefaultOpt + '</option>';
+                        Object.keys(layoutOpts).forEach(function(k){
+                            out += '<option value="'+esc(k)+'"'+(k===selected?' selected':'')+'>'+esc(layoutOpts[k])+'</option>';
+                        });
+                        return out;
+                    }
 
                     function catOptions(selected) {
                         var out = '<option value="">— choose —</option>';
@@ -127,6 +159,7 @@ function neonews_admin_tab_homepage( $settings ) {
                            +'<td><input type="number" class="nn-cb-count" min="1" max="20" value="'+(blk.count||3)+'" /></td>'
                            +'<td><input type="color" class="nn-cb-color" value="'+(blk.color||'#ff7a18')+'" /></td>'
                            +'<td><input type="url" class="nn-cb-seeall" value="'+esc(blk.see_all_url||'')+'" placeholder="https://…" /></td>'
+                           +'<td><select class="nn-cb-layout">'+layoutSelectHtml(blk.layout||'')+'</select></td>'
                            +'<td><button type="button" class="nn-cb-del" title="Remove">✕</button></td>';
 
                         function update(){
@@ -135,6 +168,7 @@ function neonews_admin_tab_homepage( $settings ) {
                             blk.count       = parseInt(tr.querySelector('.nn-cb-count').value)||3;
                             blk.color       = tr.querySelector('.nn-cb-color').value;
                             blk.see_all_url = tr.querySelector('.nn-cb-seeall').value;
+                            blk.layout      = tr.querySelector('.nn-cb-layout').value;
                             blk.enabled     = tr.querySelector('.nn-cb-enabled').checked;
                             tr.className    = blk.enabled ? '' : 'nn-cb-disabled';
                             save();
@@ -175,7 +209,7 @@ function neonews_admin_tab_homepage( $settings ) {
                     }
 
                     addBtn.addEventListener('click',function(){
-                        var blk={slug:'',label:'',color:'#ff7a18',count:3,see_all_url:'',enabled:true};
+                        var blk={slug:'',label:'',color:'#ff7a18',count:3,see_all_url:'',layout:'',enabled:true};
                         blocks.push(blk);
                         tbody.appendChild(makeRow(blk,blocks.length-1));
                         save();
@@ -258,6 +292,26 @@ function neonews_admin_tab_homepage( $settings ) {
         <tr>
             <th><?php esc_html_e( 'Latest post count', 'neonews' ); ?></th>
             <td><input type="number" name="neonews_platform_settings[home_latest_count]" value="<?php echo esc_attr( $settings['home_latest_count'] ); ?>" min="1" max="24" class="small-text" /></td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Latest section layout', 'neonews' ); ?></th>
+            <td>
+                <select name="neonews_platform_settings[home_latest_layout]">
+                    <?php foreach ( neonews_home_layout_choices( 'latest' ) as $key => $label ) : ?>
+                        <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_latest_layout'] ?? 'cards', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Videos layout', 'neonews' ); ?></th>
+            <td>
+                <select name="neonews_platform_settings[home_video_layout]">
+                    <?php foreach ( neonews_home_layout_choices( 'video' ) as $key => $label ) : ?>
+                        <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_video_layout'] ?? 'grid', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
         </tr>
         <tr>
             <th><?php esc_html_e( 'Sidebar newsletter', 'neonews' ); ?></th>
@@ -476,6 +530,7 @@ function neonews_admin_tab_homepage( $settings ) {
         var addBtn  = document.getElementById('nn-add-custom-section');
         var sections = (typeof nnCustomSections !== 'undefined') ? JSON.parse(JSON.stringify(nnCustomSections)) : [];
         var pages = <?php echo wp_json_encode( array_map( function( $p ) { return array( 'id' => $p->ID, 'title' => $p->post_title ); }, $all_pages ) ); ?>;
+        var postLayouts = <?php echo wp_json_encode( neonews_home_layout_choices( 'posts' ) ); ?>;
 
         function uid() {
             return 'cs' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
@@ -502,6 +557,7 @@ function neonews_admin_tab_homepage( $settings ) {
                 +'<label>'+<?php echo wp_json_encode( __( 'Section title', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-title" value="'+escHtml(cs.title||'')+'" placeholder="'+<?php echo wp_json_encode( __( 'e.g. From our readers', 'neonews' ) ); ?>+'" /></label>'
                 +'<div class="nn-cs-slug-wrap"><label>'+<?php echo wp_json_encode( __( 'Tag slug', 'neonews' ) ); ?>+'<input type="text" class="nn-cs-slug" value="'+escHtml(cs.slug||'')+'" placeholder="featured-interviews" /></label></div>'
                 +'<label>'+<?php echo wp_json_encode( __( 'Post count', 'neonews' ) ); ?>+'<input type="number" class="nn-cs-count" min="1" max="20" value="'+(cs.count||4)+'" /></label>'
+                +'<label class="nn-cs-layout-wrap">'+<?php echo wp_json_encode( __( 'Posts layout', 'neonews' ) ); ?>+'<select class="nn-cs-layout">'+postLayoutOptions(cs.layout||'')+'</select></label>'
                 +'<div class="nn-cs-page-wrap"><label>'+<?php echo wp_json_encode( __( 'Page', 'neonews' ) ); ?>+'<select class="nn-cs-page">'+pageOptions(cs.page_id)+'</select></label></div>'
                 +'<label>'+<?php echo wp_json_encode( __( '"See all" link', 'neonews' ) ); ?>+'<input type="url" class="nn-cs-seeall" value="'+escHtml(cs.see_all_url||'')+'" placeholder="https://…" /></label>'
                 +'<div class="nn-cs-html-wrap"><label>'+<?php echo wp_json_encode( __( 'HTML / embed code', 'neonews' ) ); ?>+'<textarea class="nn-cs-html" rows="3">'+escHtml(cs.html||'')+'</textarea></label></div>'
@@ -526,6 +582,7 @@ function neonews_admin_tab_homepage( $settings ) {
                 cs.page_id    = parseInt(row.querySelector('.nn-cs-page').value) || 0;
                 cs.html       = row.querySelector('.nn-cs-html').value;
                 cs.see_all_url = row.querySelector('.nn-cs-seeall').value;
+                cs.layout      = row.querySelector('.nn-cs-layout') ? row.querySelector('.nn-cs-layout').value : '';
                 row.querySelector('h4 span').textContent = cs.title || ('Section '+(sections.indexOf(cs)+1));
                 updateVisibility(row, type);
                 saveAll();
@@ -550,6 +607,8 @@ function neonews_admin_tab_homepage( $settings ) {
             row.querySelector('.nn-cs-slug-wrap').style.display   = type === 'tag'  ? '' : 'none';
             row.querySelector('.nn-cs-page-wrap').style.display   = type === 'page' ? '' : 'none';
             row.querySelector('.nn-cs-html-wrap').style.display   = type === 'html' ? '' : 'none';
+            var layoutWrap = row.querySelector('.nn-cs-layout-wrap');
+            if (layoutWrap) { layoutWrap.style.display = type === 'tag' ? '' : 'none'; }
             row.querySelectorAll('.nn-cs-grid > label')[2].style.display = type !== 'html' ? '' : 'none'; // see-all
             row.querySelectorAll('.nn-cs-grid > label')[1].style.display = type !== 'html' ? '' : 'none'; // count
         }
@@ -560,13 +619,21 @@ function neonews_admin_tab_homepage( $settings ) {
             });
         }
 
+        function postLayoutOptions(selected) {
+            var out = '<option value="">' + <?php echo wp_json_encode( __( '— use latest default —', 'neonews' ) ); ?> + '</option>';
+            Object.keys(postLayouts).forEach(function(k){
+                out += '<option value="'+k+'"'+(k===selected?' selected':'')+'>'+postLayouts[k]+'</option>';
+            });
+            return out;
+        }
+
         function render() {
             wrap.innerHTML = '';
             sections.forEach(function(cs, i){ wrap.appendChild(buildRow(cs, i)); });
         }
 
         addBtn.addEventListener('click', function(){
-            var cs = { id: uid(), type: 'tag', title: '', slug: '', count: 4, page_id: 0, html: '', show_title: true, see_all_url: '' };
+            var cs = { id: uid(), type: 'tag', title: '', slug: '', count: 4, page_id: 0, html: '', show_title: true, see_all_url: '', layout: '' };
             sections.push(cs);
             wrap.appendChild(buildRow(cs, sections.length-1));
             if (window.nnAddCustomSortRow) { window.nnAddCustomSortRow(cs); }
@@ -862,6 +929,10 @@ function neonews_admin_tab_features( $settings ) {
         <tr>
             <th><?php esc_html_e( 'Post likes', 'neonews' ); ?></th>
             <td><label><input type="checkbox" name="neonews_platform_settings[show_post_likes]" value="1" <?php checked( ! empty( $settings['show_post_likes'] ) ); ?> /> <?php esc_html_e( 'Enable like button', 'neonews' ); ?></label></td>
+        </tr>
+        <tr>
+            <th><?php esc_html_e( 'Save / favorites', 'neonews' ); ?></th>
+            <td><label><input type="checkbox" name="neonews_platform_settings[show_post_favorites]" value="1" <?php checked( ! empty( $settings['show_post_favorites'] ) ); ?> /> <?php esc_html_e( 'Enable bookmark button (saved only for the signed-in user)', 'neonews' ); ?></label></td>
         </tr>
         <tr>
             <th><?php esc_html_e( 'Post shares', 'neonews' ); ?></th>

@@ -582,6 +582,15 @@ function neonews_comment_callback( $comment, $args, $depth ) {
                         );
                         ?>
                     </time>
+                    <?php
+                    if ( function_exists( 'neonews_get_comment_member_since_html' ) ) {
+                        $member_since = neonews_get_comment_member_since_html( $comment );
+                        if ( $member_since ) {
+                            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                            echo $member_since;
+                        }
+                    }
+                    ?>
                 </div>
             </header>
 
@@ -639,6 +648,7 @@ require_once NEONEWS_THEME_DIR . '/inc/dynamic-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-tags.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-functions.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
+require_once NEONEWS_THEME_DIR . '/inc/home-layout-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/social-links.php';
 require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings-tabs.php';
@@ -654,6 +664,7 @@ require_once NEONEWS_THEME_DIR . '/inc/user-avatar.php';
 require_once NEONEWS_THEME_DIR . '/inc/author-photo.php';
 require_once NEONEWS_THEME_DIR . '/inc/theme-activation.php';
 require_once NEONEWS_THEME_DIR . '/inc/newspulse-features.php';
+require_once NEONEWS_THEME_DIR . '/inc/navigation-helpers.php';
 
 
 /**

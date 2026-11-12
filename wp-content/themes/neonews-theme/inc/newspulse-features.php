@@ -221,14 +221,16 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
     }
 
     $show_share = $show_share && neonews_post_allows_social_share( $post_id );
-    $show_likes = neonews_is_feature_enabled( 'show_post_likes' );
-    $show_views = neonews_is_feature_enabled( 'show_post_views' );
+    $show_likes      = neonews_is_feature_enabled( 'show_post_likes' );
+    $show_favorites  = neonews_is_feature_enabled( 'show_post_favorites' );
+    $show_views      = neonews_is_feature_enabled( 'show_post_views' );
 
     $views    = function_exists( 'neonews_get_post_views' ) ? neonews_get_post_views( $post_id ) : 0;
     // Includes approved + pending so guest comments update the count immediately.
     $comments = function_exists( 'neonews_get_comment_count' ) ? neonews_get_comment_count( $post_id ) : get_comments_number( $post_id );
     $likes    = (int) get_post_meta( $post_id, '_neonews_likes', true );
     $liked    = is_user_logged_in() && neonews_user_liked_post( $post_id );
+    $faved    = is_user_logged_in() && neonews_user_favorited_post( $post_id );
     ?>
     <div class="nn-engage-bar">
         <?php if ( $show_views ) : ?>
@@ -251,6 +253,19 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
             <button type="button" class="nn-engage-item nn-like-btn nn-like-btn-guest" data-post-id="<?php echo esc_attr( $post_id ); ?>" aria-label="<?php esc_attr_e( 'Sign in to like', 'neonews' ); ?>">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 <span class="nn-like-count"><?php echo esc_html( number_format_i18n( $likes ) ); ?></span>
+            </button>
+        <?php endif; ?>
+        <?php endif; ?>
+        <?php if ( $show_favorites ) : ?>
+        <?php if ( is_user_logged_in() ) : ?>
+            <button type="button" class="nn-engage-item nn-fav-btn<?php echo $faved ? ' favorited' : ''; ?>" data-post-id="<?php echo esc_attr( $post_id ); ?>" aria-pressed="<?php echo $faved ? 'true' : 'false'; ?>" aria-label="<?php echo $faved ? esc_attr__( 'Remove from favorites', 'neonews' ) : esc_attr__( 'Save to favorites', 'neonews' ); ?>" title="<?php echo $faved ? esc_attr__( 'Saved', 'neonews' ) : esc_attr__( 'Save', 'neonews' ); ?>">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="<?php echo $faved ? 'currentColor' : 'none'; ?>" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                <span class="nn-fav-label"><?php echo $faved ? esc_html__( 'Saved', 'neonews' ) : esc_html__( 'Save', 'neonews' ); ?></span>
+            </button>
+        <?php else : ?>
+            <button type="button" class="nn-engage-item nn-fav-btn nn-fav-btn-guest" data-post-id="<?php echo esc_attr( $post_id ); ?>" aria-label="<?php esc_attr_e( 'Sign in to save', 'neonews' ); ?>">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                <span class="nn-fav-label"><?php esc_html_e( 'Save', 'neonews' ); ?></span>
             </button>
         <?php endif; ?>
         <?php endif; ?>
@@ -449,6 +464,77 @@ function neonews_ajax_toggle_like() {
 add_action( 'wp_ajax_neonews_toggle_like', 'neonews_ajax_toggle_like' );
 
 /**
+ * Check if user saved post as favorite.
+ *
+ * @param int      $post_id Post ID.
+ * @param int|null $user_id User ID.
+ * @return bool
+ */
+function neonews_user_favorited_post( $post_id, $user_id = null ) {
+    if ( ! is_user_logged_in() && ! $user_id ) {
+        return false;
+    }
+    $user_id   = $user_id ? (int) $user_id : get_current_user_id();
+    $favorites = get_user_meta( $user_id, '_neonews_favorite_posts', true );
+    return is_array( $favorites ) && in_array( (int) $post_id, array_map( 'intval', $favorites ), true );
+}
+
+/**
+ * AJAX toggle favorite (private bookmark — not a public counter).
+ */
+function neonews_ajax_toggle_favorite() {
+    check_ajax_referer( 'neonews_nonce', 'nonce' );
+
+    if ( ! is_user_logged_in() ) {
+        wp_send_json_error( array( 'message' => __( 'Please sign in to save posts.', 'neonews' ) ) );
+    }
+
+    $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+    if ( ! $post_id || 'post' !== get_post_type( $post_id ) ) {
+        wp_send_json_error();
+    }
+
+    $user_id   = get_current_user_id();
+    $favorites = get_user_meta( $user_id, '_neonews_favorite_posts', true );
+    if ( ! is_array( $favorites ) ) {
+        $favorites = array();
+    }
+    $favorites = array_map( 'intval', $favorites );
+
+    $is_faved = in_array( $post_id, $favorites, true );
+
+    if ( $is_faved ) {
+        $favorites = array_values( array_diff( $favorites, array( $post_id ) ) );
+    } else {
+        $favorites[] = $post_id;
+    }
+
+    update_user_meta( $user_id, '_neonews_favorite_posts', $favorites );
+
+    if ( ! $is_faved && function_exists( 'neonews_log_user_activity' ) ) {
+        neonews_log_user_activity(
+            'post_favorite',
+            sprintf(
+                /* translators: %s: post title */
+                __( 'Saved: %s', 'neonews' ),
+                get_the_title( $post_id )
+            ),
+            $post_id,
+            array(),
+            $user_id
+        );
+    }
+
+    wp_send_json_success(
+        array(
+            'favorited' => ! $is_faved,
+            'total'     => count( $favorites ),
+        )
+    );
+}
+add_action( 'wp_ajax_neonews_toggle_favorite', 'neonews_ajax_toggle_favorite' );
+
+/**
  * AJAX: guest (non-logged-in) liked a post — record interest for admin review.
  */
 function neonews_ajax_guest_like() {
@@ -618,11 +704,15 @@ function neonews_account_shortcode() {
     $user_id  = get_current_user_id();
     $read     = class_exists( 'NeoNews_Activity_Tracker' ) ? NeoNews_Activity_Tracker::get_posts_read( $user_id, 500 ) : array();
     $liked    = get_user_meta( $user_id, '_neonews_liked_posts', true );
+    $favorites = get_user_meta( $user_id, '_neonews_favorite_posts', true );
     $shared   = get_user_meta( $user_id, '_neonews_shared_posts', true );
     $comments = get_comments( array( 'user_id' => $user_id, 'number' => 500, 'status' => 'approve' ) );
 
     if ( ! is_array( $liked ) ) {
         $liked = array();
+    }
+    if ( ! is_array( $favorites ) ) {
+        $favorites = array();
     }
     if ( ! is_array( $shared ) ) {
         $shared = array();
@@ -644,6 +734,13 @@ function neonews_account_shortcode() {
                 <h2><?php echo esc_html( wp_get_current_user()->display_name ); ?></h2>
                 <p><?php esc_html_e( 'Your reading activity', 'neonews' ); ?></p>
                 <?php
+                if ( function_exists( 'neonews_get_member_since_html' ) ) {
+                    $member_since = neonews_get_member_since_html( $user_id );
+                    if ( $member_since ) {
+                        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                        echo $member_since;
+                    }
+                }
                 if ( function_exists( 'neonews_membership_render_plan_tag' ) ) {
                     neonews_membership_render_plan_tag( 'account', $user_id );
                 } elseif ( function_exists( 'neonews_is_user_premium' ) && neonews_is_user_premium() ) {
@@ -662,6 +759,7 @@ function neonews_account_shortcode() {
             <div class="nn-account-grid nn-account-visual">
                 <?php neonews_account_visual_section( __( 'Recently Read', 'neonews' ), $read, 'read' ); ?>
                 <?php neonews_account_visual_section( __( 'Liked Posts', 'neonews' ), array_reverse( $liked ), 'like' ); ?>
+                <?php neonews_account_visual_section( __( 'Saved / Favorites', 'neonews' ), array_reverse( $favorites ), 'favorite' ); ?>
                 <?php neonews_account_visual_section( __( 'Shared Posts', 'neonews' ), array_reverse( $shared ), 'share' ); ?>
                 <?php neonews_account_comments_section( $comments ); ?>
             </div>
@@ -677,13 +775,14 @@ add_shortcode( 'neonews_account', 'neonews_account_shortcode' );
  *
  * @param string $title    Section title.
  * @param array  $post_ids Post IDs.
- * @param string $type     read|like|share.
+ * @param string $type     read|like|favorite|share.
  */
 function neonews_account_visual_section( $title, $post_ids, $type ) {
     $icons = array(
         'read'  => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
         'like'  => '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
-        'share' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>',
+        'share'    => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>',
+        'favorite' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>',
     );
     $visible   = 4; // cards shown by default before "View more"
     $post_ids  = array_values( array_filter( $post_ids ) );

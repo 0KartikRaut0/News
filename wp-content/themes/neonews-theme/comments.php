@@ -97,6 +97,8 @@ if ( post_password_required() ) {
         'submit_button'      => '<button type="submit" name="%1$s" id="%2$s" class="nn-btn %3$s">%4$s</button>',
         'submit_field'       => '<div class="nn-form-submit">%1$s %2$s</div>',
         'comment_notes_before' => '',
+        'comment_notes_after'  => '',
+        'logged_in_as'         => '',
     ) );
     ?>
 </section>

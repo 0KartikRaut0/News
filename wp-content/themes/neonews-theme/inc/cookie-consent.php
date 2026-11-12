@@ -190,6 +190,44 @@ function neonews_render_cookie_banner() {
 add_action( 'wp_footer', 'neonews_render_cookie_banner', 15 );
 
 /**
+ * Output Google Consent Mode v2 default state (must run before GA/AdSense).
+ * Required since March 2024 for GA4 + AdSense in EEA/UK.
+ */
+function neonews_output_consent_mode_defaults() {
+    if ( ! neonews_cookie_banner_enabled() ) {
+        return;
+    }
+
+    $settings = neonews_get_settings();
+    $has_ga   = ! empty( $settings['analytics_enabled'] ) && ! empty( $settings['google_analytics_id'] );
+    $has_ads  = neonews_adsense_is_active();
+
+    if ( ! $has_ga && ! $has_ads ) {
+        return;
+    }
+
+    $level          = neonews_get_cookie_consent_level();
+    $analytics_val  = ( 'all' === $level ) ? 'granted' : 'denied';
+    $marketing_val  = ( 'all' === $level && neonews_cookie_allows( 'marketing' ) ) ? 'granted' : 'denied';
+    ?>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+        'analytics_storage':          '<?php echo esc_js( $analytics_val ); ?>',
+        'ad_storage':                 '<?php echo esc_js( $marketing_val ); ?>',
+        'ad_user_data':               '<?php echo esc_js( $marketing_val ); ?>',
+        'ad_personalization':         '<?php echo esc_js( $marketing_val ); ?>',
+        'functionality_storage':      'granted',
+        'security_storage':           'granted',
+        'wait_for_update':            500
+    });
+    </script>
+    <?php
+}
+add_action( 'wp_head', 'neonews_output_consent_mode_defaults', 1 );
+
+/**
  * Output Google Analytics when consent allows.
  */
 function neonews_output_analytics_scripts() {

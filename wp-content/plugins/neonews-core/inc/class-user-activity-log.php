@@ -112,6 +112,7 @@ class NeoNews_User_Activity_Log {
             'profile_update' => __( 'Profile updated', 'neonews-core' ),
             'profile_photo'  => __( 'Profile photo', 'neonews-core' ),
             'post_like'      => __( 'Liked article', 'neonews-core' ),
+            'post_favorite'  => __( 'Saved article', 'neonews-core' ),
             'post_share'     => __( 'Shared article', 'neonews-core' ),
             'comment'        => __( 'Posted comment', 'neonews-core' ),
             'admin_action'   => __( 'Admin action', 'neonews-core' ),
@@ -262,7 +263,7 @@ class NeoNews_User_Activity_Log {
             if ( ! empty( $row['context'] ) ) {
                 $row['context'] = json_decode( $row['context'], true );
             }
-            if ( ! empty( $row['object_id'] ) && in_array( $row['event_type'], array( 'post_read', 'post_like', 'post_share', 'article_submit', 'comment' ), true ) ) {
+            if ( ! empty( $row['object_id'] ) && in_array( $row['event_type'], array( 'post_read', 'post_like', 'post_favorite', 'post_share', 'article_submit', 'comment' ), true ) ) {
                 $row['object_title'] = get_the_title( (int) $row['object_id'] );
                 $row['object_url']   = get_permalink( (int) $row['object_id'] );
             }
@@ -400,7 +401,7 @@ class NeoNews_User_Activity_Log {
             'created_at' => $row['created_at'],
         );
 
-        if ( ! empty( $row['object_id'] ) && in_array( $row['event_type'], array( 'post_read', 'post_like', 'post_share', 'article_submit', 'comment' ), true ) ) {
+        if ( ! empty( $row['object_id'] ) && in_array( $row['event_type'], array( 'post_read', 'post_like', 'post_favorite', 'post_share', 'article_submit', 'comment' ), true ) ) {
             $item['object_title'] = get_the_title( (int) $row['object_id'] );
             $item['object_url']   = get_permalink( (int) $row['object_id'] );
         }

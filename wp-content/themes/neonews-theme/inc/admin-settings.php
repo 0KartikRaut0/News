@@ -27,9 +27,14 @@ function neonews_get_default_settings() {
         'show_header_datetime'=> true,
         'home_banner_enabled' => true,
         'home_banner_type'    => 'image',
+        'home_banner_style'   => 'classic',
         'home_banner_image'   => 0,
         'home_banner_video'   => '',
         'home_banner_link'    => '',
+        'home_carousel_style' => 'overlay',
+        'home_category_layout'=> 'featured-list',
+        'home_latest_layout'  => 'cards',
+        'home_video_layout'   => 'grid',
         'ad_zones'            => array(
             'ad-header'       => true,
             'ad-content'      => true,
@@ -152,6 +157,7 @@ function neonews_get_default_settings() {
         // Features.
         'show_engagement_bar'     => true,
         'show_post_likes'         => true,
+        'show_post_favorites'     => true,
         'show_post_shares'        => true,
         'show_post_views'         => true,
         'excerpt_length'          => 25,
@@ -344,6 +350,7 @@ function neonews_sanitize_settings( $input ) {
         $output['home_banner_image']    = absint( $input['home_banner_image'] ?? 0 );
         $output['home_banner_video']    = esc_url_raw( $input['home_banner_video'] ?? '' );
         $output['home_banner_link']     = esc_url_raw( $input['home_banner_link'] ?? '' );
+        $output['home_banner_style']    = neonews_sanitize_home_layout( 'banner', $input['home_banner_style'] ?? '', 'classic' );
 
         $output['ad_zones'] = array();
         foreach ( array_keys( $defaults['ad_zones'] ) as $zone ) {
@@ -455,6 +462,7 @@ function neonews_sanitize_settings( $input ) {
                         'html'  => wp_kses_post( $cs['html'] ?? '' ),
                         'show_title' => ! empty( $cs['show_title'] ),
                         'see_all_url' => esc_url_raw( $cs['see_all_url'] ?? '' ),
+                        'layout'      => ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], '' ) : '',
                     );
                     if ( $entry['id'] ) {
                         $custom_sections[] = $entry;
@@ -498,6 +506,7 @@ function neonews_sanitize_settings( $input ) {
                     if ( empty( $blk['slug'] ) ) {
                         continue;
                     }
+                    $layout = ! empty( $blk['layout'] ) ? neonews_sanitize_home_layout( 'posts', $blk['layout'], '' ) : '';
                     $home_cat_blocks[] = array(
                         'slug'        => sanitize_title( $blk['slug'] ),
                         'label'       => sanitize_text_field( $blk['label'] ?? '' ),
@@ -505,6 +514,7 @@ function neonews_sanitize_settings( $input ) {
                         'count'       => max( 1, min( 20, absint( $blk['count'] ?? 3 ) ) ),
                         'see_all_url' => esc_url_raw( $blk['see_all_url'] ?? '' ),
                         'enabled'     => ! empty( $blk['enabled'] ),
+                        'layout'      => $layout,
                     );
                 }
             }
@@ -518,6 +528,10 @@ function neonews_sanitize_settings( $input ) {
         $output['home_mid_ad_after_cat']  = max( 0, min( 10, absint( $input['home_mid_ad_after_cat'] ?? $previous['home_mid_ad_after_cat'] ) ) );
         $output['home_video_count']       = max( 1, min( 12, absint( $input['home_video_count'] ?? $previous['home_video_count'] ) ) );
         $output['home_latest_count']      = max( 1, min( 24, absint( $input['home_latest_count'] ?? $previous['home_latest_count'] ) ) );
+        $output['home_carousel_style']    = neonews_sanitize_home_layout( 'carousel', $input['home_carousel_style'] ?? '', 'overlay' );
+        $output['home_category_layout']   = neonews_sanitize_home_layout( 'posts', $input['home_category_layout'] ?? '', 'featured-list' );
+        $output['home_latest_layout']     = neonews_sanitize_home_layout( 'latest', $input['home_latest_layout'] ?? '', 'cards' );
+        $output['home_video_layout']      = neonews_sanitize_home_layout( 'video', $input['home_video_layout'] ?? '', 'grid' );
     }
 
     if ( 'header' === $active ) {
@@ -582,7 +596,8 @@ function neonews_sanitize_settings( $input ) {
 
     if ( 'features' === $active ) {
         $output['show_engagement_bar'] = ! empty( $input['show_engagement_bar'] );
-        $output['show_post_likes']    = ! empty( $input['show_post_likes'] );
+        $output['show_post_likes']       = ! empty( $input['show_post_likes'] );
+        $output['show_post_favorites']   = ! empty( $input['show_post_favorites'] );
         $output['show_post_shares']   = ! empty( $input['show_post_shares'] );
         $output['show_post_views']    = ! empty( $input['show_post_views'] );
         $output['excerpt_length']     = max( 5, min( 80, absint( $input['excerpt_length'] ?? $previous['excerpt_length'] ) ) );
@@ -794,6 +809,17 @@ function neonews_render_settings_page() {
                             <option value="image" <?php selected( $settings['home_banner_type'], 'image' ); ?>><?php esc_html_e( 'Image', 'neonews' ); ?></option>
                             <option value="video" <?php selected( $settings['home_banner_type'], 'video' ); ?>><?php esc_html_e( 'YouTube video', 'neonews' ); ?></option>
                         </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Banner style', 'neonews' ); ?></th>
+                    <td>
+                        <select name="neonews_platform_settings[home_banner_style]">
+                            <?php foreach ( neonews_home_layout_choices( 'banner' ) as $key => $label ) : ?>
+                                <option value="<?php echo esc_attr( $key ); ?>" <?php selected( $settings['home_banner_style'] ?? 'classic', $key ); ?>><?php echo esc_html( $label ); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Shape and effect of the homepage top banner.', 'neonews' ); ?></p>
                     </td>
                 </tr>
                 <tr>
@@ -1050,7 +1076,8 @@ function neonews_render_home_banner() {
     }
 
     $link = ! empty( $settings['home_banner_link'] ) ? $settings['home_banner_link'] : '';
-    echo '<section class="nn-home-banner nn-container nn-reveal">';
+    $banner_class = 'nn-home-banner nn-container nn-reveal ' . neonews_get_home_banner_style_class();
+    echo '<section class="' . esc_attr( $banner_class ) . '">';
     if ( $link ) {
         echo '<a href="' . esc_url( $link ) . '" class="nn-home-banner-link">';
     } else {

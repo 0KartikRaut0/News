@@ -36,7 +36,7 @@ $author_id  = (int) get_the_author_meta( 'ID' );
 
             <?php if ( has_post_thumbnail() ) : ?>
 
-                <a href="<?php the_permalink(); ?>">
+                <a href="<?php the_permalink(); ?>"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
                     <?php the_post_thumbnail( 'neonews-card', array( 'loading' => 'lazy' ) ); ?>
 
@@ -44,7 +44,7 @@ $author_id  = (int) get_the_author_meta( 'ID' );
 
             <?php else : ?>
 
-                <a href="<?php the_permalink(); ?>" class="nn-post-thumbnail-placeholder">
+                <a href="<?php the_permalink(); ?>" class="nn-post-thumbnail-placeholder"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 
                     <span class="nn-card-rich-fallback"></span>
 
@@ -78,7 +78,7 @@ $author_id  = (int) get_the_author_meta( 'ID' );
 
             <h3 class="nn-post-title">
 
-                <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+                <a href="<?php the_permalink(); ?>"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php the_title(); ?></a>
 
             </h3>
 

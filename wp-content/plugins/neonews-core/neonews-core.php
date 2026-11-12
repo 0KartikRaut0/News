@@ -94,6 +94,10 @@ final class NeoNews_Core {
             require_once NEONEWS_CORE_DIR . 'admin/class-post-meta.php';
             require_once NEONEWS_CORE_DIR . 'admin/class-activity-log-admin.php';
             require_once NEONEWS_CORE_DIR . 'admin/class-activity-dashboard-widget.php';
+            require_once NEONEWS_CORE_DIR . 'admin/class-post-cloner.php';
+            require_once NEONEWS_CORE_DIR . 'admin/class-analytics-dashboard.php';
+            NeoNews_Post_Cloner::init();
+            NeoNews_Analytics_Dashboard::init();
         }
     }
 

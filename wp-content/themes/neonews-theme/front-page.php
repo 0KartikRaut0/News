@@ -92,7 +92,7 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
         elseif ( 'carousel' === $section ) :
             if ( $featured_query && $featured_query->have_posts() ) : ?>
                 <section class="nn-container nn-hero-carousel-wrap nn-reveal">
-                    <div class="nn-featured-carousel nn-carousel-modern nn-carousel-hero">
+                    <div class="nn-featured-carousel nn-carousel-modern nn-carousel-hero <?php echo esc_attr( neonews_get_home_carousel_style_class() ); ?>">
                         <div class="nn-carousel-track">
                             <?php
                             $slide_i = 0;
@@ -107,7 +107,7 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
                                     } ?>
                                     <div class="nn-carousel-overlay nn-carousel-overlay-rich">
                                         <?php neonews_the_category_badge( 'nn-carousel-category' ); ?>
-                                        <h2 class="nn-carousel-title"><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h2>
+                                        <h2 class="nn-carousel-title"><a href="<?php the_permalink(); ?>"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php the_title(); ?></a></h2>
                                         <?php neonews_the_post_meta_line( get_the_ID(), true ); ?>
                                     </div>
                                 </article>
@@ -173,16 +173,9 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
                                     <span class="nn-section-sub"><?php echo esc_html( $settings['home_video_subtitle'] ); ?></span>
                                 <?php endif; ?>
                             </header>
-                            <div class="nn-watch-grid">
-                                <?php
-                                $v = 0;
-                                while ( $video_query->have_posts() ) :
-                                    $video_query->the_post();
-                                    get_template_part( 'template-parts/home', 'video-card', array( 'featured' => 0 === $v ) );
-                                    $v++;
-                                endwhile;
-                                wp_reset_postdata(); ?>
-                            </div>
+                            <?php
+                            neonews_render_home_video_layout( $video_query, neonews_get_setting( 'home_video_layout', 'grid' ) );
+                            ?>
                         </section>
                     <?php endif;
 
@@ -201,19 +194,15 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
                                     <a href="<?php echo esc_url( get_permalink( $blog_id ) ); ?>" class="nn-section-link"><?php esc_html_e( 'All news', 'neonews' ); ?> →</a>
                                 <?php endif; ?>
                             </header>
-                            <div class="nn-post-grid nn-post-grid-compact">
-                                <?php
-                                $latest = new WP_Query( array(
-                                    'post_type'      => 'post',
-                                    'posts_per_page' => $latest_count,
-                                    'no_found_rows'  => true,
-                                ) );
-                                while ( $latest->have_posts() ) :
-                                    $latest->the_post();
-                                    get_template_part( 'template-parts/content', 'card' );
-                                endwhile;
-                                wp_reset_postdata(); ?>
-                            </div>
+                            <?php
+                            $latest = new WP_Query( array(
+                                'post_type'      => 'post',
+                                'posts_per_page' => $latest_count,
+                                'no_found_rows'  => true,
+                            ) );
+                            $latest_layout = neonews_sanitize_home_layout( 'latest', $settings['home_latest_layout'] ?? '', 'cards' );
+                            neonews_render_home_posts_layout( $latest, $latest_layout );
+                            ?>
                         </section>
                     <?php endif;
 

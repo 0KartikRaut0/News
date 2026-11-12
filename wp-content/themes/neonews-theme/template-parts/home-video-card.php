@@ -32,7 +32,7 @@ if ( $yt_id ) {
     <?php if ( $yt_id ) : ?>
     <button type="button" class="nn-watch-media nn-watch-trigger" data-yt-id="<?php echo esc_attr( $yt_id ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: video title */ __( 'Play video: %s', 'neonews' ), get_the_title() ) ); ?>">
     <?php else : ?>
-    <a href="<?php the_permalink(); ?>" class="nn-watch-media" tabindex="-1" aria-hidden="true">
+    <a href="<?php the_permalink(); ?>" class="nn-watch-media" tabindex="-1" aria-hidden="true"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
     <?php endif; ?>
         <?php if ( $yt_thumb ) : ?>
             <img src="<?php echo esc_url( $yt_thumb ); ?>" alt="" loading="lazy" />
@@ -53,7 +53,7 @@ if ( $yt_id ) {
         ?>
             <span class="nn-watch-cat">• <?php echo esc_html( strtoupper( $cats[0]->name ) ); ?></span>
         <?php endif; ?>
-        <a class="nn-watch-title" href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+        <a class="nn-watch-title" href="<?php the_permalink(); ?>"<?php echo neonews_post_link_target_attrs(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>><?php the_title(); ?></a>
         <span class="nn-watch-views">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             <?php echo esc_html( neonews_format_views( neonews_get_post_views() ) ); ?> <?php esc_html_e( 'views', 'neonews' ); ?>

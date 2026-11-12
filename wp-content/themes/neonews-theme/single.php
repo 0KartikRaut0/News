@@ -18,6 +18,7 @@ get_header();
         while ( have_posts() ) :
             the_post();
             ?>
+            <?php neonews_breadcrumbs(); ?>
             <header class="nn-single-header">
                 <?php
                 $categories = get_the_category();

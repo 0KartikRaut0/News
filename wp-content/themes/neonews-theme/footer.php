@@ -70,14 +70,15 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                     <?php if ( ! empty( $settings['footer_newsletter_text'] ) ) : ?>
                         <p><?php echo esc_html( $settings['footer_newsletter_text'] ); ?></p>
                     <?php endif; ?>
-                    <?php
-                    $action   = ! empty( $settings['newsletter_form_action'] ) ? $settings['newsletter_form_action'] : '#';
-                    $onsubmit = empty( $settings['newsletter_form_action'] ) ? ' onsubmit="return false;"' : '';
-                    ?>
-                    <form class="nn-newsletter-form nn-footer-newsletter-form" action="<?php echo esc_url( $action ); ?>" method="post"<?php echo $onsubmit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-                        <input type="email" name="email" placeholder="<?php esc_attr_e( 'Email', 'neonews' ); ?>" aria-label="<?php esc_attr_e( 'Email', 'neonews' ); ?>" required />
+                    <form class="nn-newsletter-form nn-footer-newsletter-form nn-sub-form" data-nn-subscribe="1" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" method="post">
+                        <?php if ( class_exists( 'NeoNews_Newsletter_Ajax' ) ) : ?>
+                            <input type="hidden" name="action" value="nn_subscribe">
+                            <input type="hidden" name="nonce" value=""><!-- filled by JS -->
+                        <?php endif; ?>
+                        <input type="email" name="email" placeholder="<?php esc_attr_e( 'Your email address', 'neonews' ); ?>" aria-label="<?php esc_attr_e( 'Email', 'neonews' ); ?>" required autocomplete="email" />
                         <button type="submit" class="nn-btn nn-btn-join"><?php esc_html_e( 'Join', 'neonews' ); ?></button>
                     </form>
+                    <p class="nn-sub-feedback" aria-live="polite" style="display:none;margin-top:8px;font-size:13px;color:#ccc;"></p>
                 </div>
                 <?php endif; ?>
             </div>
@@ -105,7 +106,10 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                     $url = neonews_get_legal_page_url( $slug );
                     echo '<a href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
                 }
+                if ( neonews_cookie_banner_enabled() ) :
                 ?>
+                <button type="button" class="nn-cookie-reopen nn-footer-cookie-btn" aria-label="<?php esc_attr_e( 'Manage cookie preferences', 'neonews' ); ?>"><?php esc_html_e( 'Cookie Preferences', 'neonews' ); ?></button>
+                <?php endif; ?>
             </nav>
         </div>
     </div>

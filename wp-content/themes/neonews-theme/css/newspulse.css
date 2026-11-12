@@ -1002,6 +1002,137 @@ body.nn-page-enter-active #main-content {
     color: var(--nn-primary);
 }
 
+/* Cookie preferences button in footer — styled to match legal links */
+.nn-footer-cookie-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    line-height: inherit;
+}
+.nn-footer-cookie-btn:hover {
+    color: var(--nn-primary);
+}
+
+/* ── Article navigation bar (Back / Home) — iOS PWA safe areas ─────────── */
+.nn-article-nav {
+    position: fixed;
+    z-index: 10050;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    background: #fff;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.nn-article-nav-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    max-width: 160px;
+    padding: 12px 10px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: #1d3557;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+.nn-article-nav-btn:hover,
+.nn-article-nav-btn:focus-visible {
+    background: #f0f4f8;
+    color: #e63946;
+}
+.nn-article-nav-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+body.nn-has-article-nav #main-content {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}
+body.nn-has-article-nav .nn-back-to-top {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+/* PWA / standalone: bar at top (no browser chrome on iOS) */
+@media (display-mode: standalone) {
+    .nn-article-nav {
+        top: 0;
+        bottom: auto;
+        border-top: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        padding-top: env(safe-area-inset-top, 0);
+        padding-bottom: 0;
+    }
+    body.nn-has-article-nav #main-content {
+        padding-top: calc(48px + env(safe-area-inset-top, 0px));
+        padding-bottom: 0;
+    }
+    body.nn-has-article-nav .nn-back-to-top {
+        bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+}
+body.nn-standalone .nn-article-nav {
+    top: 0;
+    bottom: auto;
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: 0;
+}
+body.nn-standalone.nn-has-article-nav #main-content {
+    padding-top: calc(48px + env(safe-area-inset-top, 0px));
+    padding-bottom: 0;
+}
+
+@media (min-width: 900px) {
+  .nn-article-nav {
+        top: auto;
+        bottom: 24px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: auto;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 4px;
+        gap: 4px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+    }
+    .nn-article-nav-btn {
+        border-radius: 999px;
+        padding: 10px 20px;
+        max-width: none;
+    }
+    body.nn-has-article-nav #main-content {
+        padding-bottom: 80px;
+        padding-top: 0;
+    }
+    body.nn-standalone.nn-has-article-nav #main-content {
+        padding-top: 0;
+    }
+}
+
+.nn-single-post .nn-breadcrumbs {
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
 /* Account */
 .nn-account-header {
     display: flex;
@@ -2810,6 +2941,38 @@ body.nn-mobile-menu-open {
     color: var(--nn-primary);
 }
 
+/* Bookmark / save favorite */
+.nn-fav-btn.favorited {
+    color: #f59e0b !important;
+}
+
+.nn-fav-btn.favorited svg {
+    fill: #f59e0b !important;
+    stroke: #f59e0b !important;
+}
+
+.nn-fav-btn.nn-fav-pop svg {
+    animation: nnHeartPop 0.45s ease;
+}
+
+.nn-fav-btn {
+    position: relative;
+}
+
+.nn-fav-btn-guest {
+    cursor: pointer;
+    opacity: 0.75;
+}
+
+.nn-fav-btn-guest:hover {
+    opacity: 1;
+    color: #f59e0b;
+}
+
+.nn-fav-label {
+    font-size: 0.8rem;
+}
+
 /* Guest sign-in toast */
 .nn-guest-toast {
     position: absolute;
@@ -3345,6 +3508,26 @@ body.nn-mobile-menu-open {
     border-radius: var(--nn-radius-xl);
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+}
+
+.nn-member-since {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--nn-text-muted);
+    font-weight: 400;
+    margin-top: 0.15rem;
+}
+
+.nn-member-since time {
+    font-weight: inherit;
+}
+
+.nn-profile-hero .nn-member-since {
+    margin-top: 0.35rem;
+}
+
+.nn-account-header .nn-member-since {
+    margin-top: 0.2rem;
 }
 
 .nn-profile-photo-wrap img,
@@ -5116,4 +5299,167 @@ body.nn-newspulse {
 .nn-ad-adsense-ad-home-sidebar,
 .nn-ad-adsense-ad-sidebar {
     min-height: 250px;
+}
+
+/* ── Homepage layout styles (admin-selectable) ─────────────────────────── */
+
+.nn-hscroll-wrap {
+    position: relative;
+    margin: 0 -0.25rem;
+}
+.nn-hscroll-track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem 0.25rem 0.75rem;
+    scrollbar-width: thin;
+}
+.nn-hscroll-item {
+    flex: 0 0 min(300px, 82vw);
+    scroll-snap-align: start;
+}
+.nn-hscroll-item .nn-post-card,
+.nn-hscroll-item .nn-watch-card {
+    height: 100%;
+}
+.nn-post-grid-dense {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.nn-home-list-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* Banner styles */
+.nn-banner-style-fullbleed {
+    max-width: none;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 1.25rem;
+}
+.nn-banner-style-fullbleed .nn-home-banner-img,
+.nn-banner-style-fullbleed .nn-home-banner-video,
+.nn-banner-style-fullbleed .nn-home-banner-inner,
+.nn-banner-style-fullbleed .nn-home-banner-link {
+    border-radius: 0;
+}
+.nn-banner-style-fullbleed .nn-home-banner-img {
+    max-height: 480px;
+}
+.nn-banner-style-minimal .nn-home-banner-img {
+    max-height: 200px;
+    border-radius: var(--nn-radius-md);
+}
+.nn-banner-style-minimal .nn-home-banner-video {
+    padding-bottom: 28%;
+}
+.nn-banner-style-cinematic {
+    position: relative;
+}
+.nn-banner-style-cinematic .nn-home-banner-img {
+    max-height: min(56vh, 520px);
+    filter: contrast(1.05) saturate(1.05);
+}
+.nn-banner-style-cinematic::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.35);
+}
+.nn-banner-style-framed .nn-home-banner-inner,
+.nn-banner-style-framed .nn-home-banner-link {
+    border: 4px solid var(--nn-primary);
+    border-radius: var(--nn-radius-xl);
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+/* Carousel styles */
+.nn-carousel-style-split .nn-carousel-slide {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    aspect-ratio: auto;
+    min-height: 300px;
+    align-items: stretch;
+    overflow: hidden;
+    border-radius: var(--nn-radius-xl);
+}
+.nn-carousel-style-split .nn-carousel-image,
+.nn-carousel-style-split .nn-hero-placeholder {
+    height: 100%;
+    min-height: 280px;
+    object-fit: cover;
+}
+.nn-carousel-style-split .nn-carousel-overlay-rich {
+    position: relative;
+    background: var(--nn-bg-primary);
+    color: var(--nn-text-primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.nn-carousel-style-split .nn-meta-light {
+    color: var(--nn-text-muted);
+}
+.nn-carousel-style-filmstrip .nn-carousel-track {
+    gap: 1rem;
+    padding: 0.5rem 0.25rem;
+}
+.nn-carousel-style-filmstrip .nn-carousel-slide {
+    flex: 0 0 min(88%, 640px);
+    border-radius: var(--nn-radius-xl);
+    overflow: hidden;
+    scroll-snap-align: center;
+}
+.nn-carousel-style-compact .nn-carousel-slide {
+    aspect-ratio: 21 / 8;
+    min-height: 200px;
+    max-height: 260px;
+}
+
+/* Category block: horizontal spans full width in 2-col grid */
+.nn-home-cat-grid .nn-cat-layout-horizontal {
+    grid-column: 1 / -1;
+}
+.nn-cat-layout-horizontal .nn-hscroll-item {
+    flex: 0 0 min(260px, 70vw);
+}
+
+/* Video theater */
+.nn-watch-layout-theater.nn-watch-theater {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+.nn-watch-theater-lead {
+    grid-column: 1 / -1;
+}
+.nn-watch-theater-lead .nn-watch-card {
+    max-width: 100%;
+}
+@media (min-width: 768px) {
+    .nn-watch-layout-theater.nn-watch-theater {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .nn-watch-theater-lead {
+        grid-column: 1 / -1;
+    }
+    .nn-watch-theater-item {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 767px) {
+    .nn-carousel-style-split .nn-carousel-slide {
+        grid-template-columns: 1fr;
+    }
+    .nn-carousel-style-split .nn-carousel-overlay-rich {
+        padding: 1.25rem;
+    }
 }

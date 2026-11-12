@@ -129,25 +129,14 @@ function neonews_render_home_category_block( $slug_or_block ) {
         wp_reset_postdata();
         return;
     }
+    $layout = neonews_get_category_block_layout( $block );
     ?>
-    <section class="nn-home-cat-block nn-reveal" style="--nn-cat-accent: <?php echo esc_attr( $accent ); ?>">
+    <section class="nn-home-cat-block nn-reveal nn-cat-layout-<?php echo esc_attr( $layout ); ?>" style="--nn-cat-accent: <?php echo esc_attr( $accent ); ?>">
         <header class="nn-home-cat-header">
             <h2 class="nn-home-cat-title"><span class="nn-cat-bar"></span><?php echo esc_html( $label ); ?></h2>
             <a href="<?php echo esc_url( $see_all ); ?>" class="nn-section-link"><?php esc_html_e( 'See all', 'neonews' ); ?> →</a>
         </header>
-        <?php
-        $i = 0;
-        while ( $query->have_posts() ) :
-            $query->the_post();
-            if ( 0 === $i ) {
-                get_template_part( 'template-parts/home', 'featured' );
-            } else {
-                get_template_part( 'template-parts/home', 'list-item' );
-            }
-            $i++;
-        endwhile;
-        wp_reset_postdata();
-        ?>
+        <?php neonews_render_home_posts_layout( $query, $layout ); ?>
     </section>
     <?php
 }
@@ -261,17 +250,22 @@ function neonews_youtube_embed( $post_id = null ) {
  */
 function neonews_home_newsletter() {
     $settings = neonews_get_settings();
-    $action   = ! empty( $settings['newsletter_form_action'] ) ? $settings['newsletter_form_action'] : '#';
-    $onsubmit = empty( $settings['newsletter_form_action'] ) ? ' onsubmit="return false;"' : '';
+    // Use built-in subscriber plugin if active, else fall back to custom action.
+    $use_builtin = function_exists( 'NeoNews_Newsletter_Ajax' ) || class_exists( 'NeoNews_Newsletter_Ajax' );
     ?>
     <section class="nn-newsletter-box nn-reveal">
         <h3><?php esc_html_e( 'Daily briefing', 'neonews' ); ?></h3>
         <p><?php echo esc_html( $settings['footer_newsletter_text'] ); ?></p>
-        <form class="nn-newsletter-form" action="<?php echo esc_url( $action ); ?>" method="post"<?php echo $onsubmit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+        <form class="nn-newsletter-form nn-sub-form" data-nn-subscribe="1" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" method="post">
+            <?php if ( $use_builtin ) : ?>
+                <input type="hidden" name="action" value="nn_subscribe">
+                <input type="hidden" name="nonce" value=""><!-- filled by JS -->
+            <?php endif; ?>
             <label class="nn-visually-hidden" for="nn-newsletter-email"><?php esc_html_e( 'Email', 'neonews' ); ?></label>
-            <input type="email" id="nn-newsletter-email" name="email" placeholder="<?php esc_attr_e( 'Email', 'neonews' ); ?>" required />
+            <input type="email" id="nn-newsletter-email" name="email" placeholder="<?php esc_attr_e( 'Your email address', 'neonews' ); ?>" required autocomplete="email" />
             <button type="submit" class="nn-btn nn-btn-join"><?php esc_html_e( 'Join', 'neonews' ); ?></button>
         </form>
+        <p class="nn-sub-feedback" aria-live="polite" style="display:none;margin-top:10px;font-size:14px;"></p>
     </section>
     <?php
 }
@@ -524,12 +518,8 @@ function neonews_render_custom_home_section( $cs ) {
         echo '<h2 class="nn-section-title">' . esc_html( $title ?: $tag->name ) . '</h2>';
         echo '<a href="' . esc_url( $see_all ) . '" class="nn-section-link">' . esc_html__( 'See all', 'neonews' ) . ' →</a>';
         echo '</header>';
-        echo '<div class="nn-post-grid nn-post-grid-compact">';
-        while ( $query->have_posts() ) :
-            $query->the_post();
-            get_template_part( 'template-parts/content', 'card' );
-        endwhile;
-        wp_reset_postdata();
-        echo '</div></section>';
+        $layout = ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], 'cards' ) : neonews_sanitize_home_layout( 'latest', neonews_get_setting( 'home_latest_layout', 'cards' ), 'cards' );
+        neonews_render_home_posts_layout( $query, $layout );
+        echo '</section>';
     }
 }

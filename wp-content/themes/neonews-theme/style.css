@@ -1387,6 +1387,11 @@ ul, ol {
     color: var(--nn-text-muted);
 }
 
+.nn-comment-meta .nn-member-since {
+    display: block;
+    margin-top: 0.15rem;
+}
+
 .nn-comment-content p:last-child {
     margin-bottom: 0;
 }

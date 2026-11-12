@@ -28,6 +28,8 @@
         initInlineVideos();
         initMobileAdCollapse();
         initActivityMoreBtns();
+        initNewsletterForms();
+        initArticleNav();
 
         var runHeavy = function() {
             initScrollReveal();
@@ -783,7 +785,10 @@
 
         // ── Guest sign-in toast ──────────────────────────────────────────────
         var _guestToastTimer = null;
-        function showGuestLikeToast(anchorEl) {
+        function showGuestEngageToast(anchorEl, opts) {
+            opts = opts || {};
+            var icon = opts.icon || '❤️';
+            var msg = opts.message || 'Sign in to like this post';
             // Remove any existing toast.
             var old = document.getElementById('nn-guest-like-toast');
             if (old) { old.remove(); }
@@ -795,8 +800,8 @@
             toast.setAttribute('role', 'status');
             // Use .nn-open-login so the existing auth modal opens — no redirect to wp-login.php.
             toast.innerHTML =
-                '<span class="nn-gt-icon">❤️</span>' +
-                '<span class="nn-gt-msg">Sign in to like this post</span>' +
+                '<span class="nn-gt-icon">' + icon + '</span>' +
+                '<span class="nn-gt-msg">' + msg + '</span>' +
                 '<button type="button" class="nn-gt-cta nn-open-login">Sign in</button>' +
                 '<button type="button" class="nn-gt-close" aria-label="Close">×</button>';
 
@@ -835,7 +840,7 @@
 
                 // ── Guest user ───────────────────────────────────────────
                 if (likeBtn.classList.contains('nn-like-btn-guest')) {
-                    showGuestLikeToast(likeBtn);
+                    showGuestEngageToast(likeBtn, { icon: '❤️', message: 'Sign in to like this post' });
                     // Track interest silently.
                     var gfd = new FormData();
                     gfd.append('action', 'neonews_guest_like');
@@ -876,6 +881,54 @@
                         if (svg) {
                             svg.setAttribute('fill', data.data.liked ? 'currentColor' : 'none');
                         }
+                    }
+                })
+                .catch(function() {});
+                return;
+            }
+
+            var favBtn = e.target.closest('.nn-fav-btn');
+            if (favBtn) {
+                e.preventDefault();
+                var favPostId = favBtn.getAttribute('data-post-id');
+                if (!favPostId) { return; }
+
+                if (favBtn.classList.contains('nn-fav-btn-guest')) {
+                    showGuestEngageToast(favBtn, { icon: '🔖', message: 'Sign in to save this post' });
+                    return;
+                }
+
+                var favData = new FormData();
+                favData.append('action', 'neonews_toggle_favorite');
+                favData.append('nonce', neonewsData.nonce);
+                favData.append('post_id', favPostId);
+
+                fetch(neonewsData.ajaxUrl, {
+                    method: 'POST',
+                    body: favData,
+                    credentials: 'same-origin'
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success) { return; }
+                    var isFaved = !!data.data.favorited;
+                    favBtn.classList.toggle('favorited', isFaved);
+                    favBtn.setAttribute('aria-pressed', isFaved ? 'true' : 'false');
+                    favBtn.setAttribute('aria-label', isFaved ? 'Remove from favorites' : 'Save to favorites');
+                    favBtn.setAttribute('title', isFaved ? 'Saved' : 'Save');
+                    var labelEl = favBtn.querySelector('.nn-fav-label');
+                    if (labelEl) {
+                        labelEl.textContent = isFaved ? 'Saved' : 'Save';
+                    }
+                    var favSvg = favBtn.querySelector('svg');
+                    if (favSvg) {
+                        favSvg.setAttribute('fill', isFaved ? 'currentColor' : 'none');
+                    }
+                    if (isFaved) {
+                        favBtn.classList.add('nn-fav-pop');
+                        setTimeout(function() {
+                            favBtn.classList.remove('nn-fav-pop');
+                        }, 450);
                     }
                 })
                 .catch(function() {});
@@ -1606,6 +1659,18 @@
 
         syncMarketingVisibility();
 
+        // Google Consent Mode v2 — update signal when user makes a choice
+        if (typeof gtag === 'function') {
+            var analyticsVal = (level === 'all') ? 'granted' : 'denied';
+            var marketingVal = (level === 'all') ? 'granted' : 'denied';
+            gtag('consent', 'update', {
+                'analytics_storage':  analyticsVal,
+                'ad_storage':         marketingVal,
+                'ad_user_data':       marketingVal,
+                'ad_personalization': marketingVal
+            });
+        }
+
         if (level === 'all') {
             loadConsentScripts();
         }
@@ -2082,6 +2147,127 @@
         }
 
         targets.forEach(loadWeatherTarget);
+    }
+
+    // ── Article navigation bar (Back / Home / Close) — PWA + mobile + desktop ─
+    function initArticleNav() {
+        var nav = document.getElementById('nn-article-nav');
+        if (!nav) {
+            return;
+        }
+
+        var homeUrl = (typeof neonewsData !== 'undefined' && neonewsData.homeUrl) ? neonewsData.homeUrl : '/';
+        var isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || window.navigator.standalone === true;
+
+        if (isStandalone) {
+            document.body.classList.add('nn-standalone');
+        }
+
+        // Show Close when opened as a new tab from this site.
+        var openedTab = false;
+        try {
+            openedTab = window.opener && !window.opener.closed;
+        } catch (err) {
+            openedTab = false;
+        }
+        if (window.name === 'nn_article_tab' || openedTab || (window.history.length <= 1 && document.referrer)) {
+            var exitBtn = nav.querySelector('[data-nn-nav="exit"]');
+            if (exitBtn) {
+                exitBtn.hidden = false;
+            }
+        }
+
+        nav.addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-nn-nav]');
+            if (!btn) {
+                return;
+            }
+            var action = btn.getAttribute('data-nn-nav');
+
+            if (action === 'back') {
+                e.preventDefault();
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = homeUrl;
+                }
+                return;
+            }
+
+            if (action === 'exit') {
+                e.preventDefault();
+                if (openedTab) {
+                    window.close();
+                    window.setTimeout(function() {
+                        window.location.href = homeUrl;
+                    }, 200);
+                } else {
+                    window.location.href = homeUrl;
+                }
+            }
+        });
+    }
+
+    // ── Newsletter subscribe forms ────────────────────────────────────────────
+    function initNewsletterForms() {
+        document.addEventListener('submit', function(e) {
+            var form = e.target.closest('[data-nn-subscribe]');
+            if (!form) { return; }
+            e.preventDefault();
+
+            var emailInput    = form.querySelector('input[type="email"]');
+            var submitBtn     = form.querySelector('button[type="submit"]');
+            var feedback      = form.parentNode.querySelector('.nn-sub-feedback');
+            var nonceInput    = form.querySelector('input[name="nonce"]');
+
+            if (!emailInput || !emailInput.value) { return; }
+
+            // Fill nonce from neonewsData (injected by plugin).
+            if (nonceInput && typeof neonewsData !== 'undefined' && neonewsData.subscribeNonce) {
+                nonceInput.value = neonewsData.subscribeNonce;
+            }
+
+            var originalText = submitBtn ? submitBtn.textContent : '';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '…'; }
+
+            var data = new FormData(form);
+
+            fetch(form.action, { method: 'POST', body: data, credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }
+
+                    // Nonce expired — refresh and retry once.
+                    if (!res.success && res.data && res.data.code === 'nonce_fail' && res.data.fresh_nonce) {
+                        if (typeof neonewsData !== 'undefined') { neonewsData.subscribeNonce = res.data.fresh_nonce; }
+                        if (nonceInput) { nonceInput.value = res.data.fresh_nonce; }
+                        form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                        return;
+                    }
+
+                    var msg = (res.data && res.data.message) ? res.data.message : '';
+                    if (feedback && msg) {
+                        feedback.textContent = msg;
+                        feedback.style.display = 'block';
+                        feedback.style.color = res.success ? '#2d6a4f' : '#c0392b';
+                    }
+
+                    if (res.success) {
+                        emailInput.value = '';
+                        // Hide feedback after 8s.
+                        if (feedback) { setTimeout(function(){ feedback.style.display = 'none'; }, 8000); }
+                    }
+                })
+                .catch(function() {
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalText; }
+                    if (feedback) {
+                        feedback.textContent = 'Something went wrong. Please try again.';
+                        feedback.style.display = 'block';
+                        feedback.style.color = '#c0392b';
+                    }
+                });
+        });
     }
 
 })();
