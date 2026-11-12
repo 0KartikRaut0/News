@@ -35,10 +35,23 @@ class NeoNews_Analytics_Dashboard {
 
     /* ── Assets ───────────────────────────────────────────────────────────── */
 
+    /**
+     * @param string $hook Admin hook suffix.
+     * @return bool
+     */
+    private static function is_analytics_screen( $hook ) {
+        if ( 'neonews_page_neonews-analytics' === $hook ) {
+            return true;
+        }
+        return is_admin() && isset( $_GET['page'] ) && 'neonews-analytics' === sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+    }
+
     public static function enqueue( $hook ) {
-        if ( 'neonews_page_neonews-analytics' !== $hook ) {
+        if ( ! self::is_analytics_screen( $hook ) ) {
             return;
         }
+
+        wp_add_inline_style( 'wp-admin', self::get_css() );
 
         $chart_file = NEONEWS_CORE_DIR . 'assets/js/chart.umd.min.js';
         $chart_src  = file_exists( $chart_file )
@@ -50,7 +63,6 @@ class NeoNews_Analytics_Dashboard {
 
         wp_register_script( 'neonews-analytics-dash', false, array( 'neonews-chartjs' ), NEONEWS_CORE_VERSION, true );
         wp_enqueue_script( 'neonews-analytics-dash' );
-        wp_add_inline_script( 'neonews-analytics-dash', self::get_js() );
 
         wp_localize_script(
             'neonews-analytics-dash',
@@ -61,7 +73,7 @@ class NeoNews_Analytics_Dashboard {
             )
         );
 
-        wp_add_inline_style( 'wp-admin', self::get_css() );
+        wp_add_inline_script( 'neonews-analytics-dash', self::get_js() );
     }
 
     /* ── AJAX data endpoint ───────────────────────────────────────────────── */
@@ -88,7 +100,19 @@ class NeoNews_Analytics_Dashboard {
             $to   = gmdate( 'Y-m-d' );
         }
 
-        wp_send_json_success( array(
+        wp_send_json_success( self::build_dashboard_payload( $from, $to, $days ) );
+    }
+
+    /**
+     * Full dashboard dataset for AJAX + first paint.
+     *
+     * @param string $from Y-m-d.
+     * @param string $to   Y-m-d.
+     * @param int    $days Day count.
+     * @return array
+     */
+    private static function build_dashboard_payload( $from, $to, $days ) {
+        return array(
             'stat_cards'     => self::get_stat_cards( $from, $to, $days ),
             'views_chart'    => self::get_views_chart( $from, $to, $days ),
             'visitors_chart' => self::get_visitors_chart( $from, $to ),
@@ -103,7 +127,7 @@ class NeoNews_Analytics_Dashboard {
                 'to'   => $to,
                 'days' => $days,
             ),
-        ) );
+        );
     }
 
     /* ── Data helpers ─────────────────────────────────────────────────────── */
@@ -569,10 +593,115 @@ class NeoNews_Analytics_Dashboard {
         return $notes;
     }
 
+    /**
+     * Output stat cards HTML.
+     *
+     * @param array $cards Stat rows.
+     */
+    private static function render_stat_cards_html( $cards ) {
+        foreach ( $cards as $c ) {
+            $color = isset( $c['color'] ) ? $c['color'] : '#1d3557';
+            ?>
+            <div class="nn-stat-card">
+                <div class="nn-stat-card-top">
+                    <span class="nn-stat-icon-wrap" style="<?php echo esc_attr( 'background:' . $color . '18;color:' . $color ); ?>">
+                        <span class="nn-stat-icon" aria-hidden="true"><?php echo esc_html( $c['icon'] ); ?></span>
+                    </span>
+                </div>
+                <span class="nn-stat-value" style="<?php echo esc_attr( 'color:' . $color ); ?>"><?php echo esc_html( $c['value'] ); ?></span>
+                <span class="nn-stat-label"><?php echo esc_html( $c['label'] ); ?></span>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Top articles list HTML.
+     *
+     * @param array $posts Post rows.
+     */
+    private static function render_top_posts_html( $posts ) {
+        if ( empty( $posts ) ) {
+            echo '<p class="nn-empty-state">' . esc_html__( 'No article views in this period yet. Open stories on the site (accept cookies) to collect data.', 'neonews-core' ) . '</p>';
+            return;
+        }
+        $ranks = array( 'gold', 'silver', 'bronze' );
+        foreach ( $posts as $i => $p ) {
+            $rc    = isset( $ranks[ $i ] ) ? $ranks[ $i ] : '';
+            $thumb = ! empty( $p['thumb'] )
+                ? '<img src="' . esc_url( $p['thumb'] ) . '" class="nn-top-thumb" alt="" loading="lazy">'
+                : '<div class="nn-top-thumb-placeholder" aria-hidden="true">📰</div>';
+            $period = (int) ( $p['period_views'] ?? 0 );
+            $all    = (int) ( $p['views'] ?? 0 );
+            $main   = $period > 0 ? $period : $all;
+            $sub    = $period > 0 ? sprintf( /* translators: %s: all-time count */ __( 'period · total %s', 'neonews-core' ), number_format_i18n( $all ) ) : __( 'all-time views', 'neonews-core' );
+            ?>
+            <div class="nn-top-post">
+                <span class="nn-top-rank <?php echo esc_attr( $rc ); ?>"><?php echo (int) ( $i + 1 ); ?></span>
+                <?php echo $thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                <div class="nn-top-info">
+                    <a href="<?php echo esc_url( $p['url'] ); ?>" class="nn-top-title" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $p['title'] ); ?></a>
+                    <span class="nn-top-meta"><?php echo esc_html( $p['category'] . ' · ' . $p['date'] ); ?></span>
+                </div>
+                <div class="nn-top-views">
+                    <?php echo esc_html( number_format_i18n( $main ) ); ?>
+                    <small><?php echo esc_html( $sub ); ?></small>
+                </div>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Activity feed HTML.
+     *
+     * @param array $items Feed rows.
+     */
+    private static function render_activity_html( $items ) {
+        if ( empty( $items ) ) {
+            echo '<div class="nn-activity-empty">' . esc_html__( 'No activity in this period. Enable activity tracking under Core Features.', 'neonews-core' ) . '</div>';
+            return;
+        }
+        $icons = array(
+            'login' => '🔐', 'logout' => '🚪', 'post_read' => '📖', 'post_like' => '❤️',
+            'post_favorite' => '🔖', 'post_share' => '🔗', 'comment' => '💬',
+        );
+        foreach ( $items as $a ) {
+            $icon = isset( $icons[ $a['event'] ] ) ? $icons[ $a['event'] ] : '📌';
+            ?>
+            <div class="nn-activity-item">
+                <div class="nn-activity-icon" aria-hidden="true"><?php echo esc_html( $icon ); ?></div>
+                <div class="nn-activity-body">
+                    <div class="nn-activity-msg"><?php echo esc_html( $a['message'] ); ?></div>
+                    <div class="nn-activity-meta">@<?php echo esc_html( $a['user'] ); ?> · <?php echo esc_html( $a['time'] ); ?></div>
+                </div>
+            </div>
+            <?php
+        }
+    }
+
+    /**
+     * Admin notices HTML.
+     *
+     * @param array $notices Notice rows.
+     */
+    private static function render_notices_html( $notices ) {
+        foreach ( $notices as $n ) {
+            $cls = ( isset( $n['type'] ) && 'warning' === $n['type'] ) ? 'nn-warning' : 'nn-info';
+            echo '<div class="nn-dash-notice ' . esc_attr( $cls ) . '">' . esc_html( $n['message'] ) . '</div>';
+        }
+    }
+
     /* ── Render ───────────────────────────────────────────────────────────── */
 
     public static function render() {
-        if ( ! current_user_can( 'manage_options' ) ) { return; }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        $from = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
+        $to   = gmdate( 'Y-m-d' );
+        $boot = self::build_dashboard_payload( $from, $to, 7 );
         ?>
         <div class="wrap nn-dash-wrap" id="nn-analytics-dashboard">
 
@@ -582,9 +711,22 @@ class NeoNews_Analytics_Dashboard {
                     <span class="nn-dash-logo">📊</span>
                     <div>
                         <h1><?php esc_html_e( 'Analytics Dashboard', 'neonews-core' ); ?></h1>
-                        <p class="nn-dash-subtitle"><?php esc_html_e( 'Real-time insights for your news platform', 'neonews-core' ); ?></p>
+                        <p class="nn-dash-subtitle"><?php esc_html_e( 'Views, visitors, top stories & member activity', 'neonews-core' ); ?></p>
+                        <p class="nn-dash-range-label" id="nn-dash-range-label">
+                            <?php
+                            echo esc_html(
+                                sprintf(
+                                    /* translators: 1: start date, 2: end date */
+                                    __( 'Showing %1$s → %2$s', 'neonews-core' ),
+                                    $from,
+                                    $to
+                                )
+                            );
+                            ?>
+                        </p>
                     </div>
                 </div>
+                <span class="nn-dash-build"><?php echo esc_html( 'NewsPulse Analytics · v' . NEONEWS_CORE_VERSION ); ?></span>
 
                 <!-- Date range controls -->
                 <div class="nn-dash-controls">
@@ -605,20 +747,23 @@ class NeoNews_Analytics_Dashboard {
                 </div>
             </div>
 
-            <!-- Loading overlay -->
-            <div class="nn-dash-loading" id="nn-dash-loading">
-                <div class="nn-spinner"></div>
-                <p><?php esc_html_e( 'Loading data…', 'neonews-core' ); ?></p>
+            <div id="nn-dash-notices" class="nn-dash-notices" aria-live="polite">
+                <?php self::render_notices_html( $boot['notices'] ); ?>
             </div>
-
-            <div id="nn-dash-notices" class="nn-dash-notices" aria-live="polite"></div>
             <div id="nn-dash-error" class="nn-dash-error" style="display:none;" role="alert"></div>
 
             <!-- Stat cards -->
-            <div class="nn-stat-cards" id="nn-stat-cards"></div>
+            <div class="nn-stat-cards" id="nn-stat-cards">
+                <?php self::render_stat_cards_html( $boot['stat_cards'] ); ?>
+            </div>
 
+            <div id="nn-dash-body" class="nn-dash-body">
+            <div class="nn-dash-loading" id="nn-dash-loading" aria-hidden="true">
+                <div class="nn-spinner"></div>
+                <p><?php esc_html_e( 'Updating charts…', 'neonews-core' ); ?></p>
+            </div>
             <!-- Charts row -->
-            <div class="nn-charts-row">
+            <div class="nn-charts-row nn-charts-panel">
                 <div class="nn-chart-card nn-chart-wide">
                     <div class="nn-chart-header">
                         <h3><?php esc_html_e( 'Daily Views', 'neonews-core' ); ?></h3>
@@ -650,7 +795,9 @@ class NeoNews_Analytics_Dashboard {
                         <h3>🏆 <?php esc_html_e( 'Top Articles', 'neonews-core' ); ?></h3>
                         <span class="nn-card-sub"><?php esc_html_e( 'By views in selected period', 'neonews-core' ); ?></span>
                     </div>
-                    <div id="nn-top-posts"></div>
+                    <div id="nn-top-posts">
+                        <?php self::render_top_posts_html( $boot['top_posts'] ); ?>
+                    </div>
                 </div>
 
                 <!-- Donut charts -->
@@ -673,12 +820,18 @@ class NeoNews_Analytics_Dashboard {
                         <h3>🕐 <?php esc_html_e( 'Recent Activity', 'neonews-core' ); ?></h3>
                         <span class="nn-card-sub"><?php esc_html_e( 'Latest user events', 'neonews-core' ); ?></span>
                     </div>
-                    <div id="nn-activity-feed"></div>
+                    <div id="nn-activity-feed">
+                        <?php self::render_activity_html( $boot['activity_feed'] ); ?>
+                    </div>
                 </div>
 
             </div><!-- .nn-bottom-row -->
+            </div><!-- .nn-dash-body -->
 
         </div><!-- .nn-dash-wrap -->
+        <script>
+        window.nnDashBoot = <?php echo wp_json_encode( $boot ); ?>;
+        </script>
         <?php
     }
 
@@ -687,7 +840,16 @@ class NeoNews_Analytics_Dashboard {
     private static function get_css() {
         return '
         /* ── Layout ── */
-        .nn-dash-wrap { max-width:1400px; padding-bottom:40px; }
+        #nn-analytics-dashboard.nn-dash-wrap {
+            max-width: 1480px;
+            margin: 0 -8px 0 0;
+            padding: 8px 20px 48px;
+            background: linear-gradient(165deg, #e9eef5 0%, #f3f5f8 45%, #fafbfc 100%);
+            border-radius: 12px;
+            min-height: calc(100vh - 80px);
+            box-sizing: border-box;
+        }
+        .nn-dash-body { position: relative; }
 
         .nn-dash-notices { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
         .nn-dash-notice {
@@ -703,15 +865,42 @@ class NeoNews_Analytics_Dashboard {
         }
 
         .nn-dash-header {
-            display:flex; align-items:center; justify-content:space-between;
-            flex-wrap:wrap; gap:16px;
-            background:#1d3557; color:#fff;
-            padding:20px 24px; border-radius:10px; margin-bottom:24px;
+            display:flex; align-items:flex-start; justify-content:space-between;
+            flex-wrap:wrap; gap:20px;
+            background: linear-gradient(125deg, #1d3557 0%, #264653 42%, #e63946 140%);
+            color:#fff;
+            padding:24px 28px; border-radius:16px; margin-bottom:22px;
+            box-shadow: 0 12px 40px rgba(29, 53, 87, 0.22);
+            position: relative;
+            overflow: hidden;
         }
-        .nn-dash-title { display:flex; align-items:center; gap:14px; }
-        .nn-dash-logo  { font-size:36px; line-height:1; }
-        .nn-dash-title h1 { color:#fff !important; margin:0; font-size:1.5rem; }
-        .nn-dash-subtitle { margin:2px 0 0; opacity:.75; font-size:13px; }
+        .nn-dash-header::after {
+            content: "";
+            position: absolute;
+            right: -60px; top: -60px;
+            width: 200px; height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.06);
+            pointer-events: none;
+        }
+        .nn-dash-title { display:flex; align-items:center; gap:16px; position: relative; z-index: 1; }
+        .nn-dash-logo  {
+            font-size: 40px; line-height: 1;
+            width: 56px; height: 56px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.12);
+            border-radius: 14px;
+        }
+        .nn-dash-title h1 { color:#fff !important; margin:0; font-size:1.65rem; font-weight: 800; letter-spacing: -.02em; }
+        .nn-dash-subtitle { margin:4px 0 0; opacity:.88; font-size:13px; }
+        .nn-dash-range-label { margin:8px 0 0; font-size:12px; opacity:.75; font-weight: 600; }
+        .nn-dash-build {
+            font-size: 11px; font-weight: 600; opacity: .85;
+            background: rgba(255,255,255,.12);
+            padding: 6px 12px; border-radius: 20px;
+            align-self: flex-start;
+            position: relative; z-index: 1;
+        }
 
         /* Controls */
         .nn-dash-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
@@ -742,11 +931,17 @@ class NeoNews_Analytics_Dashboard {
         .nn-refresh-btn:hover { background:rgba(255,255,255,.25); }
 
         /* Loading */
-        .nn-dash-loading {
-            display:none; flex-direction:column; align-items:center;
-            justify-content:center; padding:60px; gap:16px; color:#666;
+        .nn-dash-body .nn-dash-loading {
+            display: none;
+            position: absolute; inset: 0; z-index: 5;
+            flex-direction: column; align-items: center;
+            justify-content: center;
+            gap: 16px; color: #475569;
+            background: rgba(255,255,255,.72);
+            backdrop-filter: blur(3px);
+            border-radius: 14px;
         }
-        .nn-dash-loading.nn-show { display:flex; }
+        .nn-dash-body .nn-dash-loading.nn-show { display: flex; }
         .nn-spinner {
             width:36px; height:36px; border:4px solid #e0e0e0;
             border-top-color:#1d3557; border-radius:50%;
@@ -757,21 +952,36 @@ class NeoNews_Analytics_Dashboard {
         /* ── Stat Cards ── */
         .nn-stat-cards {
             display:grid;
-            grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
-            gap:14px; margin-bottom:24px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 22px;
         }
         .nn-stat-card {
-            background:#fff; border-radius:10px;
-            border:1px solid #e8eaed;
-            padding:16px 18px;
-            display:flex; flex-direction:column; gap:6px;
-            box-shadow:0 1px 4px rgba(0,0,0,.05);
-            transition:transform .15s, box-shadow .15s;
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid rgba(29, 53, 87, 0.06);
+            padding: 18px 18px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 28px rgba(29, 53, 87, 0.07);
+            transition: transform .2s ease, box-shadow .2s ease;
         }
-        .nn-stat-card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.1); }
-        .nn-stat-icon { font-size:22px; line-height:1; }
-        .nn-stat-value { font-size:1.6rem; font-weight:800; line-height:1; }
-        .nn-stat-label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+        .nn-stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 36px rgba(29, 53, 87, 0.12);
+        }
+        .nn-stat-card-top { display: flex; align-items: center; justify-content: space-between; }
+        .nn-stat-icon-wrap {
+            width: 42px; height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+        }
+        .nn-stat-icon { font-size: 20px; line-height: 1; }
+        .nn-stat-value { font-size: 1.75rem; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+        .nn-stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .45px; font-weight: 700; line-height: 1.35; }
+        .nn-empty-state { color: #64748b; font-size: 13px; text-align: center; padding: 28px 12px; line-height: 1.5; }
 
         /* ── Charts Row ── */
         .nn-charts-row {
@@ -780,10 +990,11 @@ class NeoNews_Analytics_Dashboard {
             gap:16px; margin-bottom:16px;
         }
         .nn-chart-wide { grid-column:auto; }
+        .nn-charts-panel { position: relative; }
         .nn-chart-card {
-            background:#fff; border-radius:10px; border:1px solid #e8eaed;
+            background:#fff; border-radius:14px; border:1px solid rgba(29,53,87,.06);
             padding:20px 20px 16px;
-            box-shadow:0 1px 4px rgba(0,0,0,.05);
+            box-shadow:0 8px 28px rgba(29,53,87,.06);
         }
         .nn-chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .nn-chart-header h3 { margin:0; font-size:14px; font-weight:700; color:#1d3557; }
@@ -799,9 +1010,9 @@ class NeoNews_Analytics_Dashboard {
             gap:16px;
         }
         .nn-card {
-            background:#fff; border-radius:10px; border:1px solid #e8eaed;
-            padding:20px;
-            box-shadow:0 1px 4px rgba(0,0,0,.05);
+            background:#fff; border-radius:14px; border:1px solid rgba(29,53,87,.06);
+            padding:22px;
+            box-shadow:0 8px 28px rgba(29,53,87,.06);
             overflow:hidden;
         }
         .nn-card-header { margin-bottom:14px; }
@@ -873,14 +1084,18 @@ class NeoNews_Analytics_Dashboard {
             .nn-bottom-row { grid-template-columns:1fr 1fr; }
             .nn-card-top-posts { grid-column:1/-1; }
         }
+        @media (max-width:1100px) {
+            .nn-stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         @media (max-width:820px) {
             .nn-charts-row { grid-template-columns:1fr; }
             .nn-bottom-row { grid-template-columns:1fr; }
             .nn-dash-header { flex-direction:column; align-items:flex-start; }
-            .nn-stat-cards { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+            .nn-stat-cards { grid-template-columns:1fr; }
+            #nn-analytics-dashboard.nn-dash-wrap { margin: 0; padding: 8px 12px 32px; }
         }
         @media (max-width:500px) {
-            .nn-stat-cards { grid-template-columns:1fr 1fr; }
+            .nn-stat-cards { grid-template-columns:1fr; }
             .nn-range-pills { gap:4px; }
             .nn-pill { padding:5px 10px; font-size:11px; }
         }
@@ -916,9 +1131,37 @@ class NeoNews_Analytics_Dashboard {
     }
 
     function showLoading(yes){
-        el('nn-dash-loading').classList.toggle('nn-show', yes);
-        var cards = el('nn-stat-cards');
-        if(cards) cards.style.opacity = yes ? '.3' : '1';
+        var loader = el('nn-dash-loading');
+        if(loader){
+            loader.classList.toggle('nn-show', yes);
+            loader.setAttribute('aria-hidden', yes ? 'false' : 'true');
+        }
+    }
+
+    function updateRangeLabel(range){
+        var lbl = el('nn-dash-range-label');
+        if(!lbl || !range) return;
+        lbl.textContent = 'Showing ' + range.from + ' → ' + range.to;
+    }
+
+    function hydrate(d){
+        if(!d) return;
+        renderNotices(d.notices);
+        renderStatCards(d.stat_cards);
+        renderTopPosts(d.top_posts);
+        renderActivityFeed(d.activity_feed);
+        updateRangeLabel(d.range);
+        try {
+            renderViewsChart(d.views_chart);
+            renderVisitorsChart(d.visitors_chart);
+            renderUsersChart(d.user_growth);
+            renderCategoryChart(d.category_split);
+            renderDeviceChart(d.device_split);
+        } catch (e) {
+            if(!chartReady()){
+                showError('Charts could not load. Install chart library or sync wp-content/plugins/neonews-core/assets/js/chart.umd.min.js to Local.');
+            }
+        }
     }
 
     function renderNotices(notices){
@@ -956,22 +1199,7 @@ class NeoNews_Analytics_Dashboard {
                     showError((res && res.data && res.data.message) ? res.data.message : 'Could not load analytics data.');
                     return;
                 }
-                var d = res.data;
-                renderNotices(d.notices);
-                renderStatCards(d.stat_cards);
-                try {
-                    renderViewsChart(d.views_chart);
-                    renderVisitorsChart(d.visitors_chart);
-                    renderUsersChart(d.user_growth);
-                    renderCategoryChart(d.category_split);
-                    renderDeviceChart(d.device_split);
-                } catch (e) {
-                    if(!chartReady()){
-                        showError('Charts could not load. Stats and tables below still show your data.');
-                    }
-                }
-                renderTopPosts(d.top_posts);
-                renderActivityFeed(d.activity_feed);
+                hydrate(res.data);
             })
             .catch(function(){
                 showLoading(false);
@@ -984,9 +1212,11 @@ class NeoNews_Analytics_Dashboard {
         var wrap = el('nn-stat-cards');
         if(!wrap || !cards) return;
         wrap.innerHTML = cards.map(function(c){
-            return '<div class="nn-stat-card" style="border-top:3px solid '+c.color+'">'
-                + '<span class="nn-stat-icon">'+c.icon+'</span>'
-                + '<span class="nn-stat-value" style="color:'+c.color+'">'+c.value+'</span>'
+            var color = c.color || '#1d3557';
+            return '<div class="nn-stat-card">'
+                + '<div class="nn-stat-card-top"><span class="nn-stat-icon-wrap" style="background:'+color+'18;color:'+color+'">'
+                + '<span class="nn-stat-icon">'+c.icon+'</span></span></div>'
+                + '<span class="nn-stat-value" style="color:'+color+'">'+c.value+'</span>'
                 + '<span class="nn-stat-label">'+c.label+'</span>'
                 + '</div>';
         }).join('');
@@ -1187,8 +1417,11 @@ class NeoNews_Analytics_Dashboard {
             });
         }
 
-        // Initial load.
-        loadData();
+        if (window.nnDashBoot) {
+            hydrate(window.nnDashBoot);
+        } else {
+            loadData();
+        }
     });
 })();
 JS;
