@@ -14,6 +14,19 @@ class NeoNews_FC_Feature_Overrides {
 	const OPTION = 'neonews_fc_overrides';
 
 	/**
+	 * Option names merged by this class (filter callback name).
+	 *
+	 * @var array<string, string>
+	 */
+	private static $merged_options = array(
+		'neonews_platform_settings'   => 'merge_platform',
+		'neonews_core_settings'       => 'merge_core',
+		'neonews_smart_settings'      => 'merge_smart',
+		'neonews_membership_settings' => 'merge_membership',
+		'neonews_pwa_settings'        => 'merge_pwa',
+	);
+
+	/**
 	 * @return array<string, array<string, int>>
 	 */
 	public static function all() {
@@ -106,6 +119,66 @@ class NeoNews_FC_Feature_Overrides {
 	}
 
 	/**
+	 * Read option array from the database without Feature Control overlays (for saving).
+	 *
+	 * @param string       $option   Option name.
+	 * @param array<mixed> $defaults Default values to merge.
+	 * @return array<mixed>
+	 */
+	public static function get_stored_option_array( $option, $defaults = array() ) {
+		$method = self::$merged_options[ $option ] ?? '';
+
+		if ( $method && has_filter( "option_{$option}", array( __CLASS__, $method ) ) ) {
+			remove_filter( "option_{$option}", array( __CLASS__, $method ), 50 );
+		}
+
+		$raw = get_option( $option, array() );
+		if ( ! is_array( $raw ) ) {
+			$raw = array();
+		}
+
+		if ( $method ) {
+			add_filter( "option_{$option}", array( __CLASS__, $method ), 50 );
+		}
+
+		if ( ! empty( $defaults ) && is_array( $defaults ) ) {
+			return wp_parse_args( $raw, $defaults );
+		}
+
+		return $raw;
+	}
+
+	/**
+	 * Membership uses tabbed forms — only sync Feature Control keys from the tab that was saved.
+	 *
+	 * @param string       $tab       Tab slug.
+	 * @param array<mixed> $sanitized Sanitized settings being written.
+	 */
+	public static function sync_membership_fc_keys_for_tab( $tab, array $sanitized ) {
+		if ( ! class_exists( 'NeoNews_FC_Feature_Store' ) ) {
+			return;
+		}
+
+		$keys_by_tab = array(
+			'general' => array( 'enable_paywall', 'show_exclusive_nav_link' ),
+			'popup'   => array( 'enable_upgrade_popup', 'show_home_premium_section' ),
+		);
+
+		if ( ! isset( $keys_by_tab[ $tab ] ) ) {
+			return;
+		}
+
+		foreach ( $keys_by_tab[ $tab ] as $key ) {
+			if ( ! array_key_exists( $key, $sanitized ) ) {
+				continue;
+			}
+			self::set( 'membership', $key, NeoNews_FC_Feature_Store::public_to_bool( $sanitized[ $key ] ) );
+		}
+
+		NeoNews_FC_Feature_Store::bust_option_cache( 'neonews_membership_settings' );
+	}
+
+	/**
 	 * @param mixed  $value Raw option.
 	 * @param string $bucket Bucket id.
 	 * @return array
@@ -165,6 +238,10 @@ class NeoNews_FC_Feature_Overrides {
 				"update_option_{$option}",
 				static function ( $old_value, $new_value ) use ( $bucket ) {
 					unset( $old_value );
+					// Membership FC sync runs from tab sanitize (partial forms); skip full-bucket sync here.
+					if ( 'membership' === $bucket ) {
+						return;
+					}
 					self::sync_bucket_from_saved_settings( $bucket, $new_value );
 				},
 				10,

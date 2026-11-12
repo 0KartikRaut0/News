@@ -129,7 +129,16 @@ class NeoNews_Membership_Admin {
     }
 
     public function sanitize_settings( $input ) {
-        $previous = NeoNews_Membership::get_settings();
+        $defaults = function_exists( 'neonews_membership_default_settings' )
+            ? neonews_membership_default_settings()
+            : array();
+
+        if ( class_exists( 'NeoNews_FC_Feature_Overrides' ) ) {
+            $previous = NeoNews_FC_Feature_Overrides::get_stored_option_array( 'neonews_membership_settings', $defaults );
+        } else {
+            $previous = wp_parse_args( get_option( 'neonews_membership_settings', array() ), $defaults );
+        }
+
         if ( ! is_array( $input ) ) {
             return $previous;
         }
@@ -178,13 +187,14 @@ class NeoNews_Membership_Admin {
                 break;
 
             case 'popup':
-                $sanitized['enable_upgrade_popup']   = $bool( 'enable_upgrade_popup' );
-                $sanitized['popup_delay_seconds']    = max( 5, absint( $input['popup_delay_seconds'] ?? $previous['popup_delay_seconds'] ) );
-                $sanitized['popup_interval_hours']   = max( 1, absint( $input['popup_interval_hours'] ?? $previous['popup_interval_hours'] ) );
-                $sanitized['popup_title']            = sanitize_text_field( wp_unslash( $input['popup_title'] ?? $previous['popup_title'] ) );
-                $sanitized['popup_message']          = sanitize_textarea_field( wp_unslash( $input['popup_message'] ?? $previous['popup_message'] ) );
-                $sanitized['home_premium_title']     = sanitize_text_field( wp_unslash( $input['home_premium_title'] ?? $previous['home_premium_title'] ) );
-                $sanitized['home_premium_count']     = max( 1, min( 12, absint( $input['home_premium_count'] ?? $previous['home_premium_count'] ) ) );
+                $sanitized['enable_upgrade_popup']      = $bool( 'enable_upgrade_popup' );
+                $sanitized['show_home_premium_section'] = $bool( 'show_home_premium_section' );
+                $sanitized['popup_delay_seconds']       = max( 5, absint( $input['popup_delay_seconds'] ?? $previous['popup_delay_seconds'] ) );
+                $sanitized['popup_interval_hours']      = max( 1, absint( $input['popup_interval_hours'] ?? $previous['popup_interval_hours'] ) );
+                $sanitized['popup_title']               = sanitize_text_field( wp_unslash( $input['popup_title'] ?? $previous['popup_title'] ) );
+                $sanitized['popup_message']             = sanitize_textarea_field( wp_unslash( $input['popup_message'] ?? $previous['popup_message'] ) );
+                $sanitized['home_premium_title']        = sanitize_text_field( wp_unslash( $input['home_premium_title'] ?? $previous['home_premium_title'] ) );
+                $sanitized['home_premium_count']        = max( 1, min( 12, absint( $input['home_premium_count'] ?? $previous['home_premium_count'] ) ) );
                 break;
 
             case 'exclusive':
@@ -221,6 +231,7 @@ class NeoNews_Membership_Admin {
 
             default:
                 $sanitized['enable_paywall']            = $bool( 'enable_paywall' );
+                $sanitized['show_exclusive_nav_link']   = $bool( 'show_exclusive_nav_link' );
                 $sanitized['hide_ads_for_premium']      = $bool( 'hide_ads_for_premium' );
                 $sanitized['free_article_limit']        = absint( $input['free_article_limit'] ?? $previous['free_article_limit'] );
                 $sanitized['free_article_period']       = sanitize_key( $input['free_article_period'] ?? $previous['free_article_period'] );
@@ -234,6 +245,10 @@ class NeoNews_Membership_Admin {
                     }
                 }
                 break;
+        }
+
+        if ( class_exists( 'NeoNews_FC_Feature_Overrides' ) ) {
+            NeoNews_FC_Feature_Overrides::sync_membership_fc_keys_for_tab( $tab, $sanitized );
         }
 
         return $sanitized;
@@ -351,6 +366,7 @@ class NeoNews_Membership_Admin {
         ?>
         <table class="form-table">
             <tr><th><?php esc_html_e( 'Enable paywall', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[enable_paywall]" value="1" <?php checked( ! empty( $s['enable_paywall'] ) ); ?> /> <?php esc_html_e( 'Restrict premium posts', 'neonews-membership' ); ?></label></td></tr>
+            <tr><th><?php esc_html_e( 'Exclusive nav link', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[show_exclusive_nav_link]" value="1" <?php checked( ! empty( $s['show_exclusive_nav_link'] ) ); ?> /> <?php esc_html_e( 'Show “Exclusive” in the main navigation', 'neonews-membership' ); ?></label></td></tr>
             <tr><th><?php esc_html_e( 'Hide ads for premium', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[hide_ads_for_premium]" value="1" <?php checked( ! empty( $s['hide_ads_for_premium'] ) ); ?> /> <?php esc_html_e( 'Premium members see no ads', 'neonews-membership' ); ?></label></td></tr>
             <tr><th><?php esc_html_e( 'Free article limit', 'neonews-membership' ); ?></th><td><input type="number" name="neonews_membership_settings[free_article_limit]" value="<?php echo esc_attr( $s['free_article_limit'] ); ?>" min="0" class="small-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Free period', 'neonews-membership' ); ?></th><td><select name="neonews_membership_settings[free_article_period]"><option value="day" <?php selected( $s['free_article_period'], 'day' ); ?>><?php esc_html_e( 'Day', 'neonews-membership' ); ?></option><option value="week" <?php selected( $s['free_article_period'], 'week' ); ?>><?php esc_html_e( 'Week', 'neonews-membership' ); ?></option><option value="month" <?php selected( $s['free_article_period'], 'month' ); ?>><?php esc_html_e( 'Month', 'neonews-membership' ); ?></option></select></td></tr>
@@ -601,6 +617,7 @@ class NeoNews_Membership_Admin {
         ?>
         <table class="form-table">
             <tr><th><?php esc_html_e( 'Enable upgrade popup', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[enable_upgrade_popup]" value="1" <?php checked( ! empty( $s['enable_upgrade_popup'] ) ); ?> /></label></td></tr>
+            <tr><th><?php esc_html_e( 'Premium picks on home', 'neonews-membership' ); ?></th><td><label><input type="checkbox" name="neonews_membership_settings[show_home_premium_section]" value="1" <?php checked( ! empty( $s['show_home_premium_section'] ) ); ?> /> <?php esc_html_e( 'Show the premium stories section on the homepage', 'neonews-membership' ); ?></label></td></tr>
             <tr><th><?php esc_html_e( 'Popup delay (seconds)', 'neonews-membership' ); ?></th><td><input type="number" name="neonews_membership_settings[popup_delay_seconds]" value="<?php echo esc_attr( $s['popup_delay_seconds'] ); ?>" min="5" class="small-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Popup interval (hours)', 'neonews-membership' ); ?></th><td><input type="number" name="neonews_membership_settings[popup_interval_hours]" value="<?php echo esc_attr( $s['popup_interval_hours'] ); ?>" min="1" class="small-text" /></td></tr>
             <tr><th><?php esc_html_e( 'Popup title', 'neonews-membership' ); ?></th><td><input type="text" name="neonews_membership_settings[popup_title]" value="<?php echo esc_attr( $s['popup_title'] ); ?>" class="large-text" /></td></tr>

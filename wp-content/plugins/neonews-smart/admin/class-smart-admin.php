@@ -48,7 +48,12 @@ class NeoNews_Smart_Admin {
      * @return array
      */
     public function sanitize( $input ) {
-        $prev = NeoNews_Smart::get_settings();
+        $defaults = function_exists( 'neonews_smart_default_settings' ) ? neonews_smart_default_settings() : array();
+        if ( class_exists( 'NeoNews_FC_Feature_Overrides' ) ) {
+            $prev = NeoNews_FC_Feature_Overrides::get_stored_option_array( 'neonews_smart_settings', $defaults );
+        } else {
+            $prev = NeoNews_Smart::get_settings();
+        }
         $out  = $prev;
 
         $bools = array(

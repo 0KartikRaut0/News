@@ -337,7 +337,33 @@ class NeoNews_Admin_Settings {
      * Sanitize settings
      */
     public function sanitize_settings( $input ) {
-        $previous  = NeoNews_Core::get_settings();
+        $core_defaults = array(
+            'enable_submission'            => true,
+            'submission_allow_premium'     => true,
+            'submission_allow_basic'       => false,
+            'submission_page_id'           => 0,
+            'submission_locked_title'      => '',
+            'submission_locked_message'    => '',
+            'submission_upgrade_url'       => '',
+            'submission_notify_author'     => true,
+            'submission_notify_admin'      => true,
+            'enable_view_counter'          => true,
+            'enable_activity_tracking'     => true,
+            'enable_activity_alerts'       => false,
+            'activity_alert_email'         => get_option( 'admin_email' ),
+            'activity_alert_admin_login'   => false,
+            'enable_activity_webhook'      => false,
+            'activity_webhook_type'        => 'generic',
+            'activity_webhook_url'         => '',
+            'onesignal_app_id'             => '',
+            'onesignal_rest_key'           => '',
+        );
+
+        if ( class_exists( 'NeoNews_FC_Feature_Overrides' ) ) {
+            $previous = NeoNews_FC_Feature_Overrides::get_stored_option_array( 'neonews_core_settings', $core_defaults );
+        } else {
+            $previous = NeoNews_Core::get_settings();
+        }
         $sanitized = $previous;
 
         $sanitized['enable_submission'] = ! empty( $input['enable_submission'] );
