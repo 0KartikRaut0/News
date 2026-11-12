@@ -533,10 +533,34 @@ self.addEventListener('fetch', (event) => {
         }
 
         $settings = $this->get_settings();
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-pwa-settings',
+                    'icon'     => '📲',
+                    'title'    => __( 'PWA', 'neonews-pwa' ),
+                    'subtitle' => __( 'Installable app experience — manifest, service worker, and install prompts.', 'neonews-pwa' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '📱',
+                            'value' => ! empty( $settings['enable_pwa'] ) ? __( 'On', 'neonews-pwa' ) : __( 'Off', 'neonews-pwa' ),
+                            'label' => __( 'PWA active', 'neonews-pwa' ),
+                        ),
+                        array(
+                            'icon'  => '⬇️',
+                            'value' => ! empty( $settings['enable_install_banner'] ) ? __( 'On', 'neonews-pwa' ) : __( 'Off', 'neonews-pwa' ),
+                            'label' => __( 'Install banner', 'neonews-pwa' ),
+                        ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap"><h1>' . esc_html__( 'PWA Settings', 'neonews-pwa' ) . '</h1>';
+        }
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'PWA Settings', 'neonews-pwa' ); ?></h1>
-            
             <form method="post">
                 <?php wp_nonce_field( 'neonews_pwa_save', 'neonews_pwa_nonce' ); ?>
                 
@@ -653,8 +677,13 @@ self.addEventListener('fetch', (event) => {
                     <li><?php esc_html_e( 'After making changes, clear your browser cache and service worker.', 'neonews-pwa' ); ?></li>
                 </ul>
             </div>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     /**

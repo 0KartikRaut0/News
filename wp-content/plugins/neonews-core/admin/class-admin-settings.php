@@ -374,10 +374,50 @@ class NeoNews_Admin_Settings {
         }
 
         $this->render_test_alert_notices();
+
+        $core = NeoNews_Core::get_settings();
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-core-features',
+                    'icon'     => '⚡',
+                    'title'    => __( 'Core Features', 'neonews-core' ),
+                    'subtitle' => __( 'Submissions, view counts, activity tracking, and OneSignal.', 'neonews-core' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '👁',
+                            'value' => ! empty( $core['enable_view_counter'] ) ? __( 'On', 'neonews-core' ) : __( 'Off', 'neonews-core' ),
+                            'label' => __( 'View counter', 'neonews-core' ),
+                        ),
+                        array(
+                            'icon'  => '📨',
+                            'value' => ! empty( $core['enable_submission'] ) ? __( 'On', 'neonews-core' ) : __( 'Off', 'neonews-core' ),
+                            'label' => __( 'Submissions', 'neonews-core' ),
+                        ),
+                        array(
+                            'icon'  => '📋',
+                            'value' => ! empty( $core['enable_activity_tracking'] ) ? __( 'On', 'neonews-core' ) : __( 'Off', 'neonews-core' ),
+                            'label' => __( 'Activity log', 'neonews-core' ),
+                        ),
+                    ),
+                    'actions'  => array(
+                        array(
+                            'label'   => __( 'Story Submissions', 'neonews-core' ),
+                            'url'     => admin_url( 'admin.php?page=neonews-submissions' ),
+                            'primary' => true,
+                        ),
+                        array(
+                            'label' => __( 'User Activity', 'neonews-core' ),
+                            'url'   => admin_url( 'admin.php?page=neonews-user-activity' ),
+                        ),
+                    ),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap"><h1>' . esc_html( get_admin_page_title() ) . '</h1>';
+        }
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-            
             <form action="options.php" method="post">
                 <?php
                 settings_fields( 'neonews_core_settings_group' );
@@ -423,8 +463,13 @@ class NeoNews_Admin_Settings {
                 <h3><?php esc_html_e( 'Shortcodes', 'neonews-core' ); ?></h3>
                 <p><code>[neonews_submit_form]</code> - <?php esc_html_e( 'Frontend article submission form for reporters.', 'neonews-core' ); ?></p>
             </div>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     /**

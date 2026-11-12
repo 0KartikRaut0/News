@@ -656,6 +656,7 @@ require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings-tabs.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings-ui.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-dashboard-icons.php';
+require_once NEONEWS_THEME_DIR . '/inc/admin-shell.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-settings.php';
 require_once NEONEWS_THEME_DIR . '/inc/admin-performance-panel.php';
 require_once NEONEWS_THEME_DIR . '/inc/legal-pages.php';

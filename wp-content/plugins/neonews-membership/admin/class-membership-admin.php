@@ -262,14 +262,34 @@ class NeoNews_Membership_Admin {
 
         $settings      = NeoNews_Membership::get_settings();
         $premium_count = NeoNews_Membership_Levels::get_premium_count();
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-membership',
+                    'icon'     => '⭐',
+                    'title'    => __( 'Membership', 'neonews-membership' ),
+                    'subtitle' => __( 'Paywall, activation keys, premium content, and exclusive areas.', 'neonews-membership' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '👥',
+                            'value' => number_format_i18n( $premium_count ),
+                            'label' => __( 'Premium members', 'neonews-membership' ),
+                        ),
+                        array(
+                            'icon'  => '🔒',
+                            'value' => ! empty( $settings['enable_paywall'] ) ? __( 'On', 'neonews-membership' ) : __( 'Off', 'neonews-membership' ),
+                            'label' => __( 'Paywall', 'neonews-membership' ),
+                        ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap"><h1>' . esc_html( get_admin_page_title() ) . '</h1>';
+        }
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
-
-            <div class="nn-membership-stats" style="background:#fff;padding:20px;margin-bottom:20px;border:1px solid #ccd0d4;border-radius:4px;">
-                <p><strong><?php esc_html_e( 'Premium members:', 'neonews-membership' ); ?></strong> <?php echo esc_html( number_format_i18n( $premium_count ) ); ?></p>
-            </div>
-
             <nav class="nav-tab-wrapper">
                 <?php foreach ( $tabs as $slug => $label ) : ?>
                     <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-membership&tab=' . $slug ) ); ?>" class="nav-tab<?php echo $tab === $slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
@@ -311,8 +331,13 @@ class NeoNews_Membership_Admin {
                     <?php submit_button(); ?>
                 </form>
             <?php endif; ?>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     private function render_general_fields( $s ) {

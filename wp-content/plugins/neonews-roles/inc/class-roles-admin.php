@@ -226,14 +226,43 @@ class NeoNews_Roles_Admin {
         $role_slugs  = array_keys( $roles );
 
         $save_url = admin_url( 'admin-post.php' );
+        $page_count = count( $pages );
+        $role_count = count( $roles );
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-roles-wrap',
+                    'icon'     => '🔐',
+                    'title'    => __( 'Role Manager', 'neonews-roles' ),
+                    'subtitle' => __( 'Control which roles can access each NeoNews admin screen.', 'neonews-roles' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '📄',
+                            'value' => number_format_i18n( $page_count ),
+                            'label' => __( 'Protected pages', 'neonews-roles' ),
+                        ),
+                        array(
+                            'icon'  => '👥',
+                            'value' => number_format_i18n( $role_count ),
+                            'label' => __( 'Editable roles', 'neonews-roles' ),
+                        ),
+                        array(
+                            'icon'  => 'ℹ️',
+                            'value' => NN_ROLES_VERSION,
+                            'label' => __( 'Plugin version', 'neonews-roles' ),
+                        ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap" id="nn-roles-wrap"><h1>' . esc_html__( 'Role Manager', 'neonews-roles' ) . '</h1>';
+        }
         ?>
-        <div class="wrap" id="nn-roles-wrap">
-            <h1><?php esc_html_e( 'Role Manager', 'neonews-roles' ); ?></h1>
             <p class="description" style="margin-bottom:4px;">
-                <?php esc_html_e( 'Control which roles can access each admin page. Administrators always have full access and cannot be restricted.', 'neonews-roles' ); ?>
-                <span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#f0f4f8;border-radius:4px;font-size:11px;font-weight:600;color:#1d3557;">
-                    <?php echo esc_html( sprintf( /* translators: %s: plugin version */ __( 'Plugin v%s', 'neonews-roles' ), NN_ROLES_VERSION ) ); ?>
-                </span>
+                <?php esc_html_e( 'Administrators always have full access and cannot be restricted.', 'neonews-roles' ); ?>
             </p>
 
             <?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : ?>
@@ -351,8 +380,13 @@ class NeoNews_Roles_Admin {
                 </ul>
             </div>
 
-        </div><!-- .wrap -->
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
         self::print_roles_page_script();
     }
 

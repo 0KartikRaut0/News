@@ -285,10 +285,42 @@ function neonews_render_guest_activity_page() {
     if ( ! is_array( $log ) ) {
         $log = array();
     }
+
+    $like_count = 0;
+    foreach ( $log as $entry ) {
+        if ( 'like' === ( $entry['type'] ?? '' ) ) {
+            ++$like_count;
+        }
+    }
+
+    if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+        neonews_admin_shell_begin(
+            array(
+                'id'       => 'nn-guest-activity',
+                'icon'     => '👁',
+                'title'    => __( 'Guest Activity', 'neonews' ),
+                'subtitle' => __( 'When visitors tap Like without signing in, interest is logged here — IPs are stored as short hashes only.', 'neonews' ),
+                'stats'    => array(
+                    array(
+                        'icon'  => '📋',
+                        'value' => number_format_i18n( count( $log ) ),
+                        'label' => __( 'Log entries', 'neonews' ),
+                    ),
+                    array(
+                        'icon'  => '❤️',
+                        'value' => number_format_i18n( $like_count ),
+                        'label' => __( 'Like signals', 'neonews' ),
+                    ),
+                ),
+                'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+            )
+        );
+        neonews_admin_shell_panel_open();
+    } else {
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__( 'Guest Activity', 'neonews' ) . '</h1>';
+    }
     ?>
-    <div class="wrap">
-        <h1><?php esc_html_e( 'Guest Activity', 'neonews' ); ?></h1>
-        <p class="description"><?php esc_html_e( 'Logged when a non-logged-in visitor clicks Like on a post. IP addresses are stored as a short hash — no raw IPs are kept.', 'neonews' ); ?></p>
 
         <?php if ( empty( $log ) ) : ?>
             <p><?php esc_html_e( 'No guest activity recorded yet.', 'neonews' ); ?></p>
@@ -327,8 +359,13 @@ function neonews_render_guest_activity_page() {
                 </tbody>
             </table>
         <?php endif; ?>
-    </div>
     <?php
+    if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+        neonews_admin_shell_panel_close();
+        neonews_admin_shell_end();
+    } else {
+        echo '</div>';
+    }
 }
 
 /**

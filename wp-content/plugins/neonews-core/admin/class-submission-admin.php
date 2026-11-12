@@ -134,13 +134,62 @@ class NeoNews_Submission_Admin {
         }
         $query = new WP_Query( $args );
 
+        $count_pending = (int) ( new WP_Query(
+            array(
+                'post_type'      => 'post',
+                'post_status'    => 'pending',
+                'meta_key'       => '_neonews_submitted_via_frontend',
+                'posts_per_page' => 1,
+                'fields'         => 'ids',
+            )
+        ) )->found_posts;
+
         $this->render_notice();
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-story-submissions',
+                    'icon'     => '📝',
+                    'title'    => __( 'Story Submissions', 'neonews-core' ),
+                    'subtitle' => __( 'Review reporter stories from the frontend submit form.', 'neonews-core' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '⏳',
+                            'value' => number_format_i18n( $count_pending ),
+                            'label' => __( 'Pending review', 'neonews-core' ),
+                        ),
+                        array(
+                            'icon'  => '📂',
+                            'value' => ucfirst( $tab ),
+                            'label' => __( 'Current tab', 'neonews-core' ),
+                        ),
+                        array(
+                            'icon'  => '📋',
+                            'value' => number_format_i18n( $query->found_posts ),
+                            'label' => __( 'Showing', 'neonews-core' ),
+                        ),
+                    ),
+                    'actions'  => array(
+                        array(
+                            'label'   => __( 'Submission settings', 'neonews-core' ),
+                            'url'     => admin_url( 'admin.php?page=neonews-core-settings#nn-submission-settings' ),
+                            'primary' => true,
+                        ),
+                        array(
+                            'label' => __( 'Core Features', 'neonews-core' ),
+                            'url'   => admin_url( 'admin.php?page=neonews-core-settings' ),
+                        ),
+                    ),
+                )
+            );
+            neonews_admin_shell_panel_open( 'nn-submissions-admin' );
+        } else {
+            echo '<div class="wrap nn-submissions-admin"><h1>' . esc_html__( 'Story Submissions', 'neonews-core' ) . '</h1>';
+        }
         ?>
-        <div class="wrap nn-submissions-admin">
-            <h1><?php esc_html_e( 'Story Submissions', 'neonews-core' ); ?></h1>
             <p class="description">
                 <?php esc_html_e( 'Stories sent from the Submit Story page. Approving publishes the story and emails the author; rejecting moves it to drafts and emails the reason.', 'neonews-core' ); ?>
-                <a href="<?php echo esc_url( admin_url( 'admin.php?page=neonews-core-settings#nn-submission-settings' ) ); ?>"><?php esc_html_e( 'Submission settings', 'neonews-core' ); ?></a>
             </p>
 
             <nav class="nav-tab-wrapper">
@@ -202,7 +251,6 @@ class NeoNews_Submission_Admin {
                 <?php endif; ?>
                 </tbody>
             </table>
-        </div>
         <style>
             .nn-submissions-admin form.nn-sub-action { display:inline-block; margin:0 4px 4px 0; vertical-align:top; }
             .nn-submissions-admin .nn-sub-reason { display:block; width:220px; margin-bottom:4px; }
@@ -211,6 +259,12 @@ class NeoNews_Submission_Admin {
             .nn-sub-plan-basic { background:#e2e8f0; color:#334155; }
         </style>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     /**

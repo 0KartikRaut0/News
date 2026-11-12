@@ -100,8 +100,46 @@ class NeoNews_Security_Dashboard {
         $analysis = ! empty( $last['findings'] ) ? NeoNews_Threat_Analyzer::analyze( $last['findings'] ) : null;
         $counts   = NeoNews_Security_Log::count_by_severity();
         $logs     = NeoNews_Security_Log::get_recent( 20 );
+        $score    = isset( $last['score'] ) ? (int) $last['score'] : 0;
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-security-center',
+                    'icon'     => '🛡️',
+                    'title'    => __( 'Security Center', 'neonews-security' ),
+                    'subtitle' => __( 'Scan, monitor, and harden your news site.', 'neonews-security' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '📊',
+                            'value' => $score . '/100',
+                            'label' => __( 'Security score', 'neonews-security' ),
+                        ),
+                        array(
+                            'icon'  => '🔴',
+                            'value' => number_format_i18n( $counts['critical'] ),
+                            'label' => __( 'Critical (7d)', 'neonews-security' ),
+                        ),
+                        array(
+                            'icon'  => '🟠',
+                            'value' => number_format_i18n( $counts['high'] ),
+                            'label' => __( 'High (7d)', 'neonews-security' ),
+                        ),
+                        array(
+                            'icon'  => '🟡',
+                            'value' => number_format_i18n( $counts['medium'] + $counts['low'] ),
+                            'label' => __( 'Other (7d)', 'neonews-security' ),
+                        ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open();
+            echo '<div class="nn-sec-wrap">';
+        } else {
+            echo '<div class="wrap nn-sec-wrap">';
+        }
         ?>
-        <div class="wrap nn-sec-wrap">
             <header class="nn-sec-header">
                 <div>
                     <h1><?php esc_html_e( 'NeoNews Security Center', 'neonews-security' ); ?></h1>
@@ -206,6 +244,10 @@ class NeoNews_Security_Dashboard {
             </div>
         </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        }
     }
 
     /**

@@ -128,10 +128,50 @@ final class NeoNews_SEO_Lite_Admin {
         }
 
         $s = NeoNews_SEO_Lite::settings();
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-seo-lite',
+                    'icon'     => '🔍',
+                    'title'    => __( 'SEO Lite', 'neonews-seo-lite' ),
+                    'subtitle' => __( 'Lightweight meta, schema, breadcrumbs, and sitemap controls.', 'neonews-seo-lite' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '⚡',
+                            'value' => ! empty( $s['enabled'] ) ? __( 'On', 'neonews-seo-lite' ) : __( 'Off', 'neonews-seo-lite' ),
+                            'label' => __( 'SEO Lite', 'neonews-seo-lite' ),
+                        ),
+                        array(
+                            'icon'  => '🏷',
+                            'value' => ! empty( $s['enable_schema'] ) ? __( 'On', 'neonews-seo-lite' ) : __( 'Off', 'neonews-seo-lite' ),
+                            'label' => __( 'Schema', 'neonews-seo-lite' ),
+                        ),
+                        array(
+                            'icon'  => '🧭',
+                            'value' => ! empty( $s['enable_breadcrumbs'] ) ? __( 'On', 'neonews-seo-lite' ) : __( 'Off', 'neonews-seo-lite' ),
+                            'label' => __( 'Breadcrumbs', 'neonews-seo-lite' ),
+                        ),
+                    ),
+                    'actions'  => array_merge(
+                        array(
+                            array(
+                                'label'    => __( 'View sitemap', 'neonews-seo-lite' ),
+                                'url'      => home_url( '/wp-sitemap.xml' ),
+                                'external' => true,
+                                'primary'  => true,
+                            ),
+                        ),
+                        function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array()
+                    ),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap"><h1>' . esc_html__( 'NeoNews SEO Lite', 'neonews-seo-lite' ) . '</h1>';
+        }
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'NeoNews SEO Lite', 'neonews-seo-lite' ); ?></h1>
-            <p><?php esc_html_e( 'Lightweight SEO designed for low-memory hosts. Deactivate the full NeoNews SEO plugin when using this.', 'neonews-seo-lite' ); ?></p>
+            <p class="description"><?php esc_html_e( 'Lightweight SEO designed for low-memory hosts. Deactivate the full NeoNews SEO plugin when using this.', 'neonews-seo-lite' ); ?></p>
 
             <form method="post" action="options.php">
                 <?php settings_fields( 'neonews_seo_lite_group' ); ?>
@@ -214,7 +254,12 @@ final class NeoNews_SEO_Lite_Admin {
                 </table>
                 <?php submit_button(); ?>
             </form>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 }

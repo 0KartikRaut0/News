@@ -108,11 +108,34 @@ class NeoNews_Demo_Importer {
 
     public function render_page() {
         $imported = get_option( 'neonews_demo_imported', false );
-        ?>
-        <div class="wrap neonews-demo-wrap">
-            <h1><?php esc_html_e( 'NeoNews — Full Site Demo', 'neonews-demo' ); ?></h1>
-            <p class="description"><?php esc_html_e( 'One click sets up everything: youth-style homepage, menus, widgets, footer, pages, and copyright-free photos.', 'neonews-demo' ); ?></p>
 
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-demo-content',
+                    'icon'     => '📥',
+                    'title'    => __( 'Demo Content', 'neonews-demo' ),
+                    'subtitle' => __( 'One click sets up homepage, menus, widgets, demo posts, categories, and local images.', 'neonews-demo' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => $imported ? '✅' : '○',
+                            'value' => $imported ? __( 'Imported', 'neonews-demo' ) : __( 'Fresh', 'neonews-demo' ),
+                            'label' => __( 'Demo status', 'neonews-demo' ),
+                        ),
+                        array(
+                            'icon'  => '📰',
+                            'value' => '15+',
+                            'label' => __( 'Demo articles', 'neonews-demo' ),
+                        ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open( 'neonews-demo-wrap' );
+        } else {
+            echo '<div class="wrap neonews-demo-wrap"><h1>' . esc_html__( 'NeoNews — Full Site Demo', 'neonews-demo' ) . '</h1>';
+        }
+        ?>
             <div class="neonews-demo-card">
                 <h2><?php esc_html_e( 'Import Turnkey Demo', 'neonews-demo' ); ?></h2>
 
@@ -152,8 +175,13 @@ class NeoNews_Demo_Importer {
                     <p class="progress-text"><?php esc_html_e( 'Generating images and configuring site…', 'neonews-demo' ); ?></p>
                 </div>
             </div>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     public function ajax_import() {

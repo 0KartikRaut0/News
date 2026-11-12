@@ -79,6 +79,30 @@ class NeoNews_Smart_Admin {
         }
 
         $s = NeoNews_Smart::get_settings();
+        $on  = 0;
+        foreach ( array( 'enable_auto_excerpt', 'enable_story_glance', 'enable_smart_related', 'enable_personalized_home' ) as $k ) {
+            if ( ! empty( $s[ $k ] ) ) {
+                ++$on;
+            }
+        }
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-smart-tools',
+                    'icon'     => '🧠',
+                    'title'    => __( 'Smart Tools', 'neonews-smart' ),
+                    'subtitle' => __( 'Server-local editorial helpers — no external AI or API keys.', 'neonews-smart' ),
+                    'stats'    => array(
+                        array( 'icon' => '⚡', 'value' => (string) $on, 'label' => __( 'Key features on', 'neonews-smart' ) ),
+                        array( 'icon' => '📬', 'value' => ! empty( $s['enable_weekly_digest'] ) ? __( 'On', 'neonews-smart' ) : __( 'Off', 'neonews-smart' ), 'label' => __( 'Weekly digest', 'neonews-smart' ) ),
+                    ),
+                    'actions'  => function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array(),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap">';
+        }
         $days = array(
             0 => __( 'Sunday', 'neonews-smart' ),
             1 => __( 'Monday', 'neonews-smart' ),
@@ -89,10 +113,6 @@ class NeoNews_Smart_Admin {
             6 => __( 'Saturday', 'neonews-smart' ),
         );
         ?>
-        <div class="wrap">
-            <h1><?php esc_html_e( 'Smart Tools', 'neonews-smart' ); ?></h1>
-            <p><?php esc_html_e( 'All features run on your server only — no external AI or API keys. Data never leaves your site.', 'neonews-smart' ); ?></p>
-
             <form method="post" action="options.php">
                 <?php settings_fields( 'neonews_smart_group' ); ?>
 
@@ -148,7 +168,12 @@ class NeoNews_Smart_Admin {
 
                 <?php submit_button(); ?>
             </form>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 }

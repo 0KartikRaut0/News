@@ -116,9 +116,56 @@ class NeoNews_Activity_Log_Admin {
             ),
             'neonews_export_activity'
         );
+
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            $shell_stats = array(
+                array(
+                    'icon'  => '📊',
+                    'value' => number_format_i18n( $stats['total_events'] ),
+                    'label' => __( 'Events (7 days)', 'neonews-core' ),
+                ),
+                array(
+                    'icon'  => '👤',
+                    'value' => number_format_i18n( $stats['active_users'] ),
+                    'label' => __( 'Active users', 'neonews-core' ),
+                ),
+            );
+            if ( ! empty( $stats['by_type'] ) ) {
+                $top = $stats['by_type'][0];
+                $shell_stats[] = array(
+                    'icon'  => '🔝',
+                    'value' => number_format_i18n( (int) $top['cnt'] ),
+                    'label' => $types[ $top['event_type'] ] ?? $top['event_type'],
+                );
+            }
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-user-activity',
+                    'icon'     => '📋',
+                    'title'    => __( 'User Activity', 'neonews-core' ),
+                    'subtitle' => __( 'Logins, reading, likes, shares, comments, and profile changes.', 'neonews-core' ),
+                    'stats'    => $shell_stats,
+                    'actions'  => array_merge(
+                        array(
+                            array(
+                                'label'   => __( 'Export CSV', 'neonews-core' ),
+                                'url'     => $export_url,
+                                'primary' => true,
+                            ),
+                            array(
+                                'label' => __( 'Core Features', 'neonews-core' ),
+                                'url'   => admin_url( 'admin.php?page=neonews-core-settings' ),
+                            ),
+                        ),
+                        function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array()
+                    ),
+                )
+            );
+            neonews_admin_shell_panel_open( 'nn-activity-log-wrap' );
+        } else {
+            echo '<div class="wrap nn-activity-log-wrap"><h1>' . esc_html__( 'User Activity Log', 'neonews-core' ) . '</h1>';
+        }
         ?>
-        <div class="wrap nn-activity-log-wrap">
-            <h1><?php esc_html_e( 'User Activity Log', 'neonews-core' ); ?></h1>
             <p class="description">
                 <?php esc_html_e( 'Track logins, reading, submissions, likes, shares, comments, and profile changes. Enable tracking in NewsPulse → Core Features.', 'neonews-core' ); ?>
             </p>
@@ -286,8 +333,13 @@ class NeoNews_Activity_Log_Admin {
                 <?php esc_html_e( 'REST API (admin auth required):', 'neonews-core' ); ?>
                 <code><?php echo esc_html( rest_url( 'neonews/v1/activity' ) ); ?></code>
             </p>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 
     /**

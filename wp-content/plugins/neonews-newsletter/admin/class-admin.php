@@ -136,16 +136,52 @@ class NeoNews_Newsletter_Admin {
             'nn_export_subscribers'
         );
 
+        if ( function_exists( 'neonews_admin_shell_begin' ) ) {
+            neonews_admin_shell_begin(
+                array(
+                    'id'       => 'nn-subscribers',
+                    'icon'     => '📧',
+                    'title'    => __( 'Subscribers', 'neonews-newsletter' ),
+                    'subtitle' => __( 'Newsletter sign-ups, confirmation flow, and CSV export.', 'neonews-newsletter' ),
+                    'stats'    => array(
+                        array(
+                            'icon'  => '👥',
+                            'value' => number_format_i18n( $counts['total'] ),
+                            'label' => __( 'Total', 'neonews-newsletter' ),
+                        ),
+                        array(
+                            'icon'  => '✅',
+                            'value' => number_format_i18n( $counts['confirmed'] ),
+                            'label' => __( 'Confirmed', 'neonews-newsletter' ),
+                        ),
+                        array(
+                            'icon'  => '⏳',
+                            'value' => number_format_i18n( $counts['pending'] ),
+                            'label' => __( 'Pending', 'neonews-newsletter' ),
+                        ),
+                        array(
+                            'icon'  => '🚫',
+                            'value' => number_format_i18n( $counts['unsubscribed'] ),
+                            'label' => __( 'Unsubscribed', 'neonews-newsletter' ),
+                        ),
+                    ),
+                    'actions'  => array_merge(
+                        array(
+                            array(
+                                'label'   => __( 'Export CSV', 'neonews-newsletter' ),
+                                'url'     => $export_url,
+                                'primary' => true,
+                            ),
+                        ),
+                        function_exists( 'neonews_admin_shell_default_actions' ) ? neonews_admin_shell_default_actions() : array()
+                    ),
+                )
+            );
+            neonews_admin_shell_panel_open();
+        } else {
+            echo '<div class="wrap"><h1>' . esc_html__( 'Newsletter Subscribers', 'neonews-newsletter' ) . '</h1>';
+        }
         ?>
-        <div class="wrap">
-            <h1 style="display:flex;align-items:center;gap:12px;">
-                <?php esc_html_e( 'Newsletter Subscribers', 'neonews-newsletter' ); ?>
-                <a href="<?php echo esc_url( $export_url ); ?>" class="page-title-action nn-export-btn">
-                    ⬇ <?php esc_html_e( 'Export CSV', 'neonews-newsletter' ); ?>
-                </a>
-            </h1>
-
-            <!-- Stats -->
             <div class="nn-sub-stats">
                 <div class="nn-sub-stat">
                     <strong><?php echo esc_html( $counts['total'] ); ?></strong>
@@ -271,7 +307,12 @@ class NeoNews_Newsletter_Admin {
                     <?php esc_html_e( 'Tip: For reliable email delivery, install WP Mail SMTP and connect it to Gmail, Outlook, or Brevo (free).', 'neonews-newsletter' ); ?>
                 </p>
             </div>
-        </div>
         <?php
+        if ( function_exists( 'neonews_admin_shell_panel_close' ) ) {
+            neonews_admin_shell_panel_close();
+            neonews_admin_shell_end();
+        } else {
+            echo '</div>';
+        }
     }
 }

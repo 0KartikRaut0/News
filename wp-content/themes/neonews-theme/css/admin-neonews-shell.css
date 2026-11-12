@@ -1,0 +1,216 @@
+/**
+ * Shared NeoNews admin shell — analytics-inspired layout.
+ */
+
+.nn-admin-shell-wrap {
+	max-width: 1480px;
+	margin: 8px 12px 40px 0;
+	padding: 12px 20px 36px;
+	background: linear-gradient(165deg, #e9eef5 0%, #f3f5f8 50%, #fafbfc 100%);
+	border-radius: 12px;
+	min-height: calc(100vh - 72px);
+	box-sizing: border-box;
+}
+
+.nn-admin-shell-wrap > .wrap {
+	margin: 0;
+	max-width: none;
+}
+
+.nn-admin-shell-wrap.nn-shell-hide-wp-title > .nn-admin-panel > h1:first-child,
+.nn-admin-shell-wrap.nn-shell-hide-wp-title > h1:first-child {
+	display: none !important;
+}
+
+.nn-admin-shell-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 18px;
+	background: linear-gradient(125deg, #1d3557 0%, #264653 42%, #e63946 140%);
+	color: #fff;
+	padding: 22px 26px;
+	border-radius: 16px;
+	margin-bottom: 18px;
+	box-shadow: 0 12px 40px rgba(29, 53, 87, 0.22);
+}
+
+.nn-admin-shell-title {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+}
+
+.nn-admin-shell-icon {
+	font-size: 30px;
+	width: 52px;
+	height: 52px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 14px;
+	font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.nn-admin-shell-header h1 {
+	margin: 0;
+	padding: 0;
+	color: #fff !important;
+	font-size: 1.55rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+
+.nn-admin-shell-subtitle {
+	margin: 5px 0 0;
+	font-size: 13px;
+	opacity: 0.9;
+	max-width: 560px;
+}
+
+.nn-admin-shell-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.nn-admin-shell-btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 7px 14px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.14);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	color: #fff !important;
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.nn-admin-shell-btn:hover,
+.nn-admin-shell-btn:focus {
+	background: #e63946;
+	border-color: #e63946;
+	color: #fff !important;
+}
+
+.nn-admin-shell-btn-primary {
+	background: #fff;
+	color: #1d3557 !important;
+	border-color: #fff;
+}
+
+.nn-admin-stat-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.nn-admin-stat-card {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	padding: 14px 16px;
+	box-shadow: 0 8px 26px rgba(29, 53, 87, 0.07);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.15s ease;
+}
+
+.nn-admin-stat-card:hover {
+	transform: translateY(-2px);
+}
+
+.nn-admin-stat-icon {
+	font-size: 20px;
+	font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.nn-admin-stat-value {
+	font-size: 1.35rem;
+	font-weight: 800;
+	color: #1d3557;
+}
+
+.nn-admin-stat-label {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-weight: 700;
+	color: #64748b;
+}
+
+.nn-admin-panel {
+	background: #fff;
+	border-radius: 16px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	box-shadow: 0 8px 32px rgba(29, 53, 87, 0.06);
+	padding: 20px 24px 24px;
+	margin-bottom: 16px;
+}
+
+.nn-admin-panel .form-table th {
+	width: 220px;
+	font-weight: 600;
+	color: #334155;
+}
+
+.nn-admin-panel h2,
+.nn-admin-panel h3 {
+	color: #1d3557;
+	font-weight: 700;
+}
+
+.nn-admin-panel .nav-tab-wrapper {
+	border-bottom-color: #e2e8f0;
+	margin-bottom: 16px;
+}
+
+.nn-admin-panel .widefat {
+	border-radius: 10px;
+	overflow: hidden;
+	border: 1px solid #e2e8f0;
+}
+
+.nn-admin-panel .button-primary {
+	background: #e63946 !important;
+	border-color: #c1121f !important;
+}
+
+.nn-admin-shell-wrap .nn-sec-wrap,
+.nn-admin-shell-wrap.neonews-demo-wrap {
+	background: transparent;
+	padding: 0;
+	margin: 0;
+	max-width: none;
+}
+
+.nn-admin-shell-wrap .nn-sec-header > div:first-child {
+	display: none;
+}
+
+.nn-admin-shell-wrap .nn-sec-header {
+	margin-bottom: 1.25rem;
+	padding: 0;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+}
+
+.nn-admin-shell-wrap .nn-sub-stats,
+.nn-admin-shell-wrap .nn-activity-stats {
+	display: none;
+}
+
+.nn-admin-shell-wrap .nn-sec-grid .nn-sec-card,
+.nn-admin-shell-wrap .neonews-demo-card {
+	border-radius: 12px;
+	box-shadow: 0 6px 22px rgba(29, 53, 87, 0.06);
+}
