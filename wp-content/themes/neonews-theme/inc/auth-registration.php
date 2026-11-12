@@ -268,7 +268,7 @@ function neonews_render_auth_modal() {
             <div id="nn-auth-panel-login" class="nn-auth-panel is-active" data-auth-panel="login">
                 <h2 id="nn-auth-title"><?php esc_html_e( 'Welcome back', 'neonews' ); ?></h2>
                 <p><?php esc_html_e( 'Sign in to track your reading, likes, and comments.', 'neonews' ); ?></p>
-                <form id="nn-login-form" class="nn-auth-form">
+                <form id="nn-login-form" class="nn-auth-form" autocomplete="on" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" method="post">
                     <label for="nn-login-user"><?php esc_html_e( 'Email or username', 'neonews' ); ?></label>
                     <input type="text" id="nn-login-user" name="log" class="nn-form-input" required autocomplete="username" />
                     <label for="nn-login-pass"><?php esc_html_e( 'Password', 'neonews' ); ?></label>
@@ -374,12 +374,20 @@ function neonews_ajax_login() {
     }
 
     // Credentials OK — set cookie.
-    // Always use $secure = false: on http:// (Local WP) a secure cookie is
-    // never sent back, which makes the browser appear logged-out even though
-    // authentication succeeded.
+    // $secure = false: on http:// (Local WP) a secure-only cookie is never
+    // sent back by the browser, making the session appear broken.
     wp_set_current_user( $user->ID );
     wp_set_auth_cookie( $user->ID, $remember, false );
     do_action( 'wp_login', $user->user_login, $user );
+
+    // If "Remember me" was checked, also set a longer-lived logged_in cookie
+    // so the front-end stays logged in across browser restarts.
+    if ( $remember ) {
+        add_filter( 'auth_cookie_expiration', function( $length ) {
+            return 30 * DAY_IN_SECONDS; // 30 days
+        } );
+        wp_set_auth_cookie( $user->ID, true, false );
+    }
 
     wp_send_json_success( array(
         'redirect' => neonews_get_account_url(),

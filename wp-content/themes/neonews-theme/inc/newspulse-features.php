@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * NewsPulse-style header, ads, scroll UX, engagement.
  *
@@ -615,11 +615,11 @@ function neonews_account_shortcode() {
         return ob_get_clean();
     }
 
-    $user_id = get_current_user_id();
-    $read    = class_exists( 'NeoNews_Activity_Tracker' ) ? NeoNews_Activity_Tracker::get_posts_read( $user_id, 10 ) : array();
-    $liked   = get_user_meta( $user_id, '_neonews_liked_posts', true );
-    $shared  = get_user_meta( $user_id, '_neonews_shared_posts', true );
-    $comments = get_comments( array( 'user_id' => $user_id, 'number' => 10, 'status' => 'approve' ) );
+    $user_id  = get_current_user_id();
+    $read     = class_exists( 'NeoNews_Activity_Tracker' ) ? NeoNews_Activity_Tracker::get_posts_read( $user_id, 500 ) : array();
+    $liked    = get_user_meta( $user_id, '_neonews_liked_posts', true );
+    $shared   = get_user_meta( $user_id, '_neonews_shared_posts', true );
+    $comments = get_comments( array( 'user_id' => $user_id, 'number' => 500, 'status' => 'approve' ) );
 
     if ( ! is_array( $liked ) ) {
         $liked = array();
@@ -685,11 +685,19 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
         'like'  => '<svg width="20" height="20" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
         'share' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>',
     );
+    $visible   = 4; // cards shown by default before "View more"
+    $post_ids  = array_values( array_filter( $post_ids ) );
+    $total     = count( $post_ids );
+    $has_more  = $total > $visible;
+    $uid       = 'nn-act-' . $type . '-' . wp_rand( 1000, 9999 );
     ?>
     <section class="nn-activity-block nn-activity-<?php echo esc_attr( $type ); ?> nn-page-card">
         <header class="nn-activity-head">
             <span class="nn-activity-icon"><?php echo $icons[ $type ] ?? ''; // phpcs:ignore ?></span>
             <h3><?php echo esc_html( $title ); ?></h3>
+            <?php if ( $total > 0 ) : ?>
+                <span class="nn-activity-count"><?php echo esc_html( $total ); ?></span>
+            <?php endif; ?>
         </header>
         <?php if ( empty( $post_ids ) ) : ?>
             <div class="nn-activity-empty">
@@ -697,16 +705,17 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                 <p><?php esc_html_e( 'Nothing here yet — start exploring!', 'neonews' ); ?></p>
             </div>
         <?php else : ?>
-            <div class="nn-activity-cards">
+            <div class="nn-activity-cards" id="<?php echo esc_attr( $uid ); ?>">
                 <?php
-                foreach ( array_slice( $post_ids, 0, 6 ) as $pid ) {
+                foreach ( $post_ids as $i => $pid ) {
                     $post = get_post( $pid );
                     if ( ! $post ) {
                         continue;
                     }
-                    $thumb = get_the_post_thumbnail_url( $pid, 'neonews-card' );
+                    $thumb   = get_the_post_thumbnail_url( $pid, 'neonews-card' );
+                    $hidden  = $i >= $visible ? ' nn-activity-card-hidden' : '';
                     ?>
-                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" class="nn-activity-card">
+                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" class="nn-activity-card<?php echo esc_attr( $hidden ); ?>">
                         <span class="nn-activity-card-thumb">
                             <?php if ( $thumb ) : ?>
                                 <img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy" />
@@ -726,6 +735,14 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                 }
                 ?>
             </div>
+            <?php if ( $has_more ) : ?>
+                <button type="button" class="nn-activity-more-btn" data-target="<?php echo esc_attr( $uid ); ?>"
+                    data-label-more="<?php echo esc_attr( sprintf( __( 'View all %d', 'neonews' ), $total ) ); ?>"
+                    data-label-less="<?php esc_attr_e( 'Show less', 'neonews' ); ?>">
+                    <?php echo esc_html( sprintf( __( 'View all %d', 'neonews' ), $total ) ); ?>
+                    <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+            <?php endif; ?>
         <?php endif; ?>
     </section>
     <?php
@@ -737,24 +754,41 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
  * @param array $comments Comment objects.
  */
 function neonews_account_comments_section( $comments ) {
+    $visible  = 4;
+    $total    = count( $comments );
+    $has_more = $total > $visible;
+    $uid      = 'nn-act-comments-' . wp_rand( 1000, 9999 );
     ?>
     <section class="nn-activity-block nn-activity-comments nn-page-card">
         <header class="nn-activity-head">
             <span class="nn-activity-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></span>
             <h3><?php esc_html_e( 'Your Comments', 'neonews' ); ?></h3>
+            <?php if ( $total > 0 ) : ?>
+                <span class="nn-activity-count"><?php echo esc_html( $total ); ?></span>
+            <?php endif; ?>
         </header>
         <?php if ( empty( $comments ) ) : ?>
             <div class="nn-activity-empty"><p><?php esc_html_e( 'No comments yet.', 'neonews' ); ?></p></div>
         <?php else : ?>
-            <div class="nn-comment-cards">
-                <?php foreach ( $comments as $c ) : ?>
-                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>" class="nn-comment-card">
-                        <span class="nn-comment-quote">“</span>
+            <div class="nn-comment-cards" id="<?php echo esc_attr( $uid ); ?>">
+                <?php foreach ( $comments as $i => $c ) :
+                    $hidden = $i >= $visible ? ' nn-activity-card-hidden' : '';
+                    ?>
+                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>" class="nn-comment-card<?php echo esc_attr( $hidden ); ?>">
+                        <span class="nn-comment-quote">"</span>
                         <span class="nn-comment-text"><?php echo esc_html( wp_trim_words( $c->comment_content, 18 ) ); ?></span>
                         <span class="nn-comment-meta"><?php echo esc_html( get_the_title( $c->comment_post_ID ) ); ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
+            <?php if ( $has_more ) : ?>
+                <button type="button" class="nn-activity-more-btn" data-target="<?php echo esc_attr( $uid ); ?>"
+                    data-label-more="<?php echo esc_attr( sprintf( __( 'View all %d', 'neonews' ), $total ) ); ?>"
+                    data-label-less="<?php esc_attr_e( 'Show less', 'neonews' ); ?>">
+                    <?php echo esc_html( sprintf( __( 'View all %d', 'neonews' ), $total ) ); ?>
+                    <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+            <?php endif; ?>
         <?php endif; ?>
     </section>
     <?php

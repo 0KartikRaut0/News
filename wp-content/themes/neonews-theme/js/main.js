@@ -27,6 +27,7 @@
         initProfilePhotoPreview();
         initInlineVideos();
         initMobileAdCollapse();
+        initActivityMoreBtns();
 
         var runHeavy = function() {
             initScrollReveal();
@@ -1000,6 +1001,20 @@
             return;
         }
 
+        // Pre-fill login form with saved credentials (Credential Management API).
+        // This is what makes the browser auto-populate username + password.
+        if (window.PasswordCredential && navigator.credentials && navigator.credentials.get) {
+            navigator.credentials.get({ password: true, mediation: 'optional' })
+                .then(function(cred) {
+                    if (!cred) return;
+                    var uEl = document.getElementById('nn-login-user');
+                    var pEl = document.getElementById('nn-login-pass');
+                    if (uEl && cred.id)       uEl.value = cred.id;
+                    if (pEl && cred.password) pEl.value = cred.password;
+                })
+                .catch(function() {});
+        }
+
         var loginForm = document.getElementById('nn-login-form');
         var registerForm = document.getElementById('nn-register-form');
         var forgotForm = document.getElementById('nn-forgot-form');
@@ -1169,6 +1184,19 @@
                         return;
                     }
                     if (data.success) {
+                        // Tell the browser to offer "Save password?" via Credential Management API.
+                        if (action === 'neonews_ajax_login' && window.PasswordCredential) {
+                            var usernameEl = form.querySelector('[name="log"]');
+                            var passwordEl = form.querySelector('[name="pwd"]');
+                            if (usernameEl && passwordEl) {
+                                var cred = new PasswordCredential({
+                                    id:       usernameEl.value,
+                                    password: passwordEl.value,
+                                    name:     usernameEl.value
+                                });
+                                navigator.credentials.store(cred).catch(function(){});
+                            }
+                        }
                         window.location.href = data.data.redirect || neonewsData.homeUrl;
                         return;
                     }
@@ -1363,6 +1391,47 @@
         setTimeout(function() {
             toast.classList.remove('nn-toast-visible');
         }, 5000);
+    }
+
+    /* ── Activity section "View more / Show less" toggle ── */
+    function initActivityMoreBtns() {
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.nn-activity-more-btn');
+            if (!btn) return;
+            var targetId = btn.getAttribute('data-target');
+            var container = targetId ? document.getElementById(targetId) : null;
+            if (!container) return;
+
+            var expanded = btn.classList.contains('is-expanded');
+            var hidden   = container.querySelectorAll('.nn-activity-card-hidden, .nn-comment-card.nn-activity-card-hidden');
+            // Also handle comment cards which use nn-comment-card class
+            var allHidden = container.querySelectorAll('[class*="nn-activity-card-hidden"]');
+
+            if (!expanded) {
+                // Show all
+                container.querySelectorAll('.nn-activity-card, .nn-comment-card').forEach(function(el) {
+                    el.style.display = '';
+                    el.classList.remove('nn-activity-card-hidden');
+                });
+                btn.classList.add('is-expanded');
+                btn.innerHTML = btn.getAttribute('data-label-less') +
+                    ' <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            } else {
+                // Collapse — hide items beyond index 3
+                var items = container.querySelectorAll('.nn-activity-card, .nn-comment-card');
+                items.forEach(function(el, i) {
+                    if (i >= 4) {
+                        el.classList.add('nn-activity-card-hidden');
+                    }
+                });
+                btn.classList.remove('is-expanded');
+                btn.innerHTML = btn.getAttribute('data-label-more') +
+                    ' <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                // Scroll back up to section header
+                var section = btn.closest('.nn-activity-block');
+                if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+            }
+        });
     }
 
     function initLiveDateTime() {
