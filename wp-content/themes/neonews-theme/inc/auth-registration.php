@@ -354,17 +354,36 @@ function neonews_ajax_login() {
     $password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore
     $remember = ! empty( $_POST['rememberme'] );
 
+    // On local/dev environments wp_signon must NOT force secure cookies
+    // (the site runs on http://), otherwise the auth cookie is never set.
+    $secure = is_ssl() && ! in_array(
+        wp_get_environment_type(),
+        array( 'local', 'development' ),
+        true
+    );
+
     $user = wp_signon(
         array(
             'user_login'    => $username,
             'user_password' => $password,
             'remember'      => $remember,
         ),
-        is_ssl()
+        $secure
     );
 
     if ( is_wp_error( $user ) ) {
-        wp_send_json_error( array( 'message' => __( 'Invalid username or password.', 'neonews' ) ) );
+        // wp_signon failed — try a manual authenticate + set_auth_cookie approach
+        // which avoids the cookie-domain pitfalls on local dev environments.
+        $auth_user = wp_authenticate( $username, $password );
+
+        if ( is_wp_error( $auth_user ) ) {
+            $msg = wp_strip_all_tags( $auth_user->get_error_message() );
+            wp_send_json_error( array( 'message' => $msg ?: __( 'Invalid username or password.', 'neonews' ) ) );
+        }
+
+        wp_set_current_user( $auth_user->ID );
+        wp_set_auth_cookie( $auth_user->ID, $remember, $secure );
+        do_action( 'wp_login', $auth_user->user_login, $auth_user );
     }
 
     wp_send_json_success(

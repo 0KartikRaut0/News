@@ -1355,25 +1355,17 @@
         }
         function tick() {
             var now = new Date();
-            var w = window.innerWidth;
-            var isXs = w <= 480;
-            var isMobile = w <= 640;
+            var isMobile = window.innerWidth <= 768;
             var datePart, timePart;
 
-            if (isXs) {
-                // Ultra-compact: "Thu, Nov 12"
+            if (isMobile) {
+                // Mobile: full weekday + full date, no seconds (fits the card nicely)
                 datePart = now.toLocaleDateString(undefined, {
-                    weekday: 'short', month: 'short', day: 'numeric'
-                });
-                timePart = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
-            } else if (isMobile) {
-                // Compact: "Thu, Nov 12, 2026"
-                datePart = now.toLocaleDateString(undefined, {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 });
                 timePart = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
             } else {
-                // Full: "Thursday, November 12, 2026"
+                // Desktop: full date + seconds ticking
                 datePart = now.toLocaleDateString(undefined, {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 });
