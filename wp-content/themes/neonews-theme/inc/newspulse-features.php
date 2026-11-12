@@ -228,7 +228,9 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
     // Include pending comments in the count so it updates immediately on submit,
     // before the admin approves. Spam and trash are always excluded.
     $_cc      = wp_count_comments( $post_id );
-    $comments = (int) $_cc->approved + (int) $_cc->awaiting_moderation;
+    // `awaiting_moderation` may be absent on some WP builds; `moderated` is the alias.
+    $comments = (int) ( $_cc->approved ?? 0 )
+              + (int) ( $_cc->awaiting_moderation ?? $_cc->moderated ?? 0 );
     $likes    = (int) get_post_meta( $post_id, '_neonews_likes', true );
     $liked    = is_user_logged_in() && neonews_user_liked_post( $post_id );
     ?>
