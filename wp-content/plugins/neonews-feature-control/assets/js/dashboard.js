@@ -28,6 +28,7 @@
             return;
         }
         card.classList.toggle('is-on', !!on);
+        card.classList.toggle('is-saving', false);
         var status = card.querySelector('.nn-fc-card-status');
         var sw = card.querySelector('.nn-fc-switch');
         if (status && cfg.i18n) {
@@ -39,40 +40,59 @@
         }
     }
 
-    function bindSwitches(root) {
-        root.querySelectorAll('.nn-fc-switch').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                if (btn.disabled) {
-                    return;
+    function toggleFeature(btn) {
+        if (!btn || btn.disabled) {
+            return;
+        }
+        var id = btn.dataset.id;
+        var wasOn = btn.dataset.enabled === '1';
+        var next = !wasOn;
+        var card = btn.closest('.nn-fc-card');
+
+        setCardState(card, next);
+        if (card) {
+            card.classList.add('is-saving');
+        }
+        btn.disabled = true;
+
+        post('nn_fc_toggle', { id: id, enabled: next ? '1' : '0' })
+            .then(function (json) {
+                if (!json || !json.success) {
+                    throw new Error((json && json.data && json.data.message) || 'error');
                 }
-                var id = btn.dataset.id;
-                var next = btn.dataset.enabled !== '1';
-                var card = btn.closest('.nn-fc-card');
-                btn.disabled = true;
-                if (cfg.i18n && card) {
-                    var status = card.querySelector('.nn-fc-card-status');
-                    if (status) {
-                        status.textContent = cfg.i18n.saving;
+                setCardState(card, json.data.enabled);
+            })
+            .catch(function () {
+                setCardState(card, wasOn);
+                if (card && cfg.i18n) {
+                    var st = card.querySelector('.nn-fc-card-status');
+                    if (st) {
+                        st.textContent = cfg.i18n.error;
                     }
                 }
-                post('nn_fc_toggle', { id: id, enabled: next ? '1' : '0' })
-                    .then(function (json) {
-                        if (!json || !json.success) {
-                            throw new Error((json && json.data && json.data.message) || 'error');
-                        }
-                        setCardState(card, json.data.enabled);
-                    })
-                    .catch(function () {
-                        if (card && cfg.i18n) {
-                            var st = card.querySelector('.nn-fc-card-status');
-                            if (st) {
-                                st.textContent = cfg.i18n.error;
-                            }
-                        }
-                    })
-                    .finally(function () {
-                        btn.disabled = false;
-                    });
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
+    }
+
+    function bindSwitches(root) {
+        root.querySelectorAll('.nn-fc-switch').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                toggleFeature(btn);
+            });
+        });
+
+        root.querySelectorAll('.nn-fc-card:not(.is-unavailable)').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('.nn-fc-switch')) {
+                    return;
+                }
+                var sw = card.querySelector('.nn-fc-switch');
+                if (sw) {
+                    toggleFeature(sw);
+                }
             });
         });
     }

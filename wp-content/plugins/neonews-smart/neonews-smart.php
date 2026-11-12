@@ -136,20 +136,28 @@ final class NeoNews_Smart {
         return is_singular( 'post' ) || is_front_page();
     }
 
-    public static function get_settings( $key = null ) {
-        static $settings = null;
+    /** @var array|null */
+    private static $settings_cache = null;
 
-        if ( null === $settings ) {
-            $settings = wp_parse_args(
+    public static function get_settings( $key = null ) {
+        if ( null === self::$settings_cache ) {
+            self::$settings_cache = wp_parse_args(
                 get_option( 'neonews_smart_settings', array() ),
                 neonews_smart_default_settings()
             );
         }
 
         if ( null !== $key ) {
-            return isset( $settings[ $key ] ) ? $settings[ $key ] : null;
+            return isset( self::$settings_cache[ $key ] ) ? self::$settings_cache[ $key ] : null;
         }
-        return $settings;
+        return self::$settings_cache;
+    }
+
+    /**
+     * Clear in-request settings cache (after external updates, e.g. Feature Control).
+     */
+    public static function flush_settings_cache() {
+        self::$settings_cache = null;
     }
 
     public static function is_enabled( $feature ) {

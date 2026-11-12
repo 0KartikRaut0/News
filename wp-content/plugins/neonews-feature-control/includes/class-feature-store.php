@@ -100,16 +100,23 @@ class NeoNews_FC_Feature_Store {
 					return new WP_Error( 'missing_plugin', __( 'PWA plugin is not active.', 'neonews-feature-control' ) );
 				}
 				$settings = neonews_pwa()->get_settings();
-				$settings[ $feature['key'] ] = $enabled;
-				update_option( 'neonews_pwa_settings', $settings );
+				$settings[ $feature['key'] ] = $enabled ? 1 : 0;
+				update_option( 'neonews_pwa_settings', $settings, false );
+				self::bust_option_cache( 'neonews_pwa_settings' );
 				break;
 
 			case 'compound':
-				return self::compound_set( $feature, $enabled );
+				$compound = self::compound_set( $feature, $enabled );
+				if ( is_wp_error( $compound ) ) {
+					return $compound;
+				}
+				break;
 
 			default:
 				return new WP_Error( 'invalid_source', __( 'Unknown feature source.', 'neonews-feature-control' ) );
 		}
+
+		self::after_save( $feature );
 
 		/**
 		 * Fires after a feature toggle is saved.
@@ -128,14 +135,31 @@ class NeoNews_FC_Feature_Store {
 	 * @return bool
 	 */
 	private static function platform_get( $key ) {
-		if ( function_exists( 'neonews_is_feature_enabled' ) ) {
-			return neonews_is_feature_enabled( $key );
+		$saved = get_option( 'neonews_platform_settings', array() );
+		if ( ! is_array( $saved ) ) {
+			$saved = array();
 		}
-		if ( function_exists( 'neonews_get_setting' ) ) {
-			return (bool) neonews_get_setting( $key, false );
+
+		if ( array_key_exists( $key, $saved ) ) {
+			return self::to_bool( $saved[ $key ] );
 		}
-		$settings = get_option( 'neonews_platform_settings', array() );
-		return ! empty( $settings[ $key ] );
+
+		if ( function_exists( 'neonews_get_default_settings' ) ) {
+			$defaults = neonews_get_default_settings();
+			if ( array_key_exists( $key, $defaults ) ) {
+				return self::to_bool( $defaults[ $key ] );
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param mixed $value Raw stored value.
+	 * @return bool
+	 */
+	private static function to_bool( $value ) {
+		return filter_var( $value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE ) ?? ! empty( $value );
 	}
 
 	/**
@@ -143,12 +167,23 @@ class NeoNews_FC_Feature_Store {
 	 * @param bool   $enabled Value.
 	 */
 	private static function platform_set( $key, $enabled ) {
-		$defaults = function_exists( 'neonews_get_default_settings' )
-			? neonews_get_default_settings()
-			: array();
-		$settings = wp_parse_args( get_option( 'neonews_platform_settings', array() ), $defaults );
-		$settings[ $key ] = $enabled;
-		update_option( 'neonews_platform_settings', $settings );
+		$settings = get_option( 'neonews_platform_settings', array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		$settings[ $key ] = $enabled ? 1 : 0;
+		update_option( 'neonews_platform_settings', $settings, false );
+		self::bust_option_cache( 'neonews_platform_settings' );
+	}
+
+	/**
+	 * Clear option caches so the next read matches what we saved.
+	 *
+	 * @param string $option Option name.
+	 */
+	public static function bust_option_cache( $option ) {
+		wp_cache_delete( $option, 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
 	}
 
 	/**
@@ -187,12 +222,12 @@ class NeoNews_FC_Feature_Store {
 		$type = $feature['compound'] ?? '';
 		if ( 'breaking_ticker' === $type ) {
 			self::platform_set( 'show_breaking_news', $enabled );
-			set_theme_mod( 'neonews_show_breaking_news', $enabled );
+			set_theme_mod( 'neonews_show_breaking_news', $enabled ? 1 : 0 );
 			return true;
 		}
 		if ( 'featured_carousel' === $type ) {
 			self::platform_set( 'show_home_carousel', $enabled );
-			set_theme_mod( 'neonews_show_featured_carousel', $enabled );
+			set_theme_mod( 'neonews_show_featured_carousel', $enabled ? 1 : 0 );
 			return true;
 		}
 		return new WP_Error( 'invalid_compound', __( 'Unknown compound feature.', 'neonews-feature-control' ) );
@@ -210,8 +245,9 @@ class NeoNews_FC_Feature_Store {
 		$current  = get_option( $option, array() );
 		$current  = is_array( $current ) ? $current : array();
 		$settings = wp_parse_args( $current, $defaults );
-		$settings[ $key ] = $value;
-		update_option( $option, $settings );
+		$settings[ $key ] = $value ? 1 : 0;
+		update_option( $option, $settings, false );
+		self::bust_option_cache( $option );
 	}
 
 	/**
@@ -223,11 +259,27 @@ class NeoNews_FC_Feature_Store {
 			? neonews_smart_default_settings()
 			: array();
 		$settings = wp_parse_args( get_option( 'neonews_smart_settings', array() ), $defaults );
-		$settings[ $key ] = $enabled;
+		$settings[ $key ] = $enabled ? 1 : 0;
 		if ( function_exists( 'neonews_smart_save_settings' ) ) {
 			neonews_smart_save_settings( $settings );
 		} else {
 			update_option( 'neonews_smart_settings', $settings, false );
+		}
+		self::bust_option_cache( 'neonews_smart_settings' );
+		if ( class_exists( 'NeoNews_Smart' ) && method_exists( 'NeoNews_Smart', 'flush_settings_cache' ) ) {
+			NeoNews_Smart::flush_settings_cache();
+		}
+	}
+
+	/**
+	 * Post-save hooks per source (cache flush, etc.).
+	 *
+	 * @param array $feature Registry row.
+	 */
+	private static function after_save( array $feature ) {
+		$source = $feature['source'] ?? 'platform';
+		if ( 'pwa' === $source ) {
+			self::bust_option_cache( 'neonews_pwa_settings' );
 		}
 	}
 }

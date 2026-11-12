@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'NEONEWS_FC_VERSION', '1.0.0' );
+define( 'NEONEWS_FC_VERSION', '1.0.1' );
 define( 'NEONEWS_FC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEONEWS_FC_URL', plugin_dir_url( __FILE__ ) );
 

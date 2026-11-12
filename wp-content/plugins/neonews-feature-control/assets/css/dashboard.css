@@ -243,6 +243,15 @@
 	border-color: rgba(230, 57, 70, 0.2);
 }
 
+.nn-fc-card:not(.is-unavailable) {
+	cursor: pointer;
+}
+
+.nn-fc-card.is-saving {
+	opacity: 0.85;
+	pointer-events: none;
+}
+
 .nn-fc-card:hover {
 	transform: translateY(-3px);
 	box-shadow: 0 16px 40px rgba(29, 53, 87, 0.12);

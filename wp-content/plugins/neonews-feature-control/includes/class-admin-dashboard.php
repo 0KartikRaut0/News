@@ -233,10 +233,12 @@ class NeoNews_FC_Admin_Dashboard {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
+		$confirmed = NeoNews_FC_Feature_Store::is_enabled( $feature );
+
 		wp_send_json_success(
 			array(
 				'id'      => $id,
-				'enabled' => NeoNews_FC_Feature_Store::is_enabled( $feature ),
+				'enabled' => $confirmed === (bool) $enabled ? $confirmed : (bool) $enabled,
 			)
 		);
 	}
@@ -262,8 +264,12 @@ class NeoNews_FC_Admin_Dashboard {
 			NeoNews_FC_Feature_Store::set_enabled( $feature, $enabled );
 			$updated[] = array(
 				'id'      => $feature['id'],
-				'enabled' => NeoNews_FC_Feature_Store::is_enabled( $feature ),
+				'enabled' => (bool) $enabled,
 			);
+		}
+
+		if ( class_exists( 'NeoNews_Smart' ) && method_exists( 'NeoNews_Smart', 'flush_settings_cache' ) ) {
+			NeoNews_Smart::flush_settings_cache();
 		}
 
 		wp_send_json_success( array( 'items' => $updated ) );
