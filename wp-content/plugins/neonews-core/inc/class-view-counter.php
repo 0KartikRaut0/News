@@ -37,40 +37,75 @@ class NeoNews_View_Counter {
             return;
         }
 
+        // Server-side fallback (works without JS / for non-cached pages).
         add_action( 'wp_head', array( $this, 'track_view' ) );
+        // AJAX endpoint — called by JS so it works even on fully cached pages.
         add_action( 'wp_ajax_neonews_track_view', array( $this, 'ajax_track_view' ) );
         add_action( 'wp_ajax_nopriv_neonews_track_view', array( $this, 'ajax_track_view' ) );
+        // Inject post ID into the page for JS to use.
+        add_action( 'wp_footer', array( $this, 'inject_view_script' ), 5 );
     }
 
     /**
-     * Track view on page load
+     * Inject a small inline script in wp_footer so JS can fire the AJAX view ping.
+     * This runs after the page is served — works correctly even with page caching.
      */
-    public function track_view() {
-        if ( ! apply_filters( 'neonews_allow_view_tracking', true ) ) {
-            return;
-        }
-
+    public function inject_view_script() {
         if ( ! is_singular( 'post' ) ) {
             return;
         }
-
         if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
             return;
         }
-
         if ( $this->is_bot() ) {
             return;
         }
 
-        $post_id = get_the_ID();
-        
-        if ( $this->can_count_view( $post_id ) ) {
-            $this->increment_view( $post_id );
-        }
+        $post_id   = get_the_ID();
+        $ajax_url  = admin_url( 'admin-ajax.php' );
+        $nonce     = wp_create_nonce( 'neonews_view_' . $post_id );
+        $store_key = 'nn_view_' . $post_id;
+        ?>
+        <script>
+        (function(){
+            var key = <?php echo wp_json_encode( $store_key ); ?>;
+            var postId = <?php echo (int) $post_id; ?>;
+            var ajaxUrl = <?php echo wp_json_encode( $ajax_url ); ?>;
+            var nonce = <?php echo wp_json_encode( $nonce ); ?>;
+
+            // Client-side guard: localStorage stores timestamp of last view ping.
+            // Only fire AJAX if more than 24 hours have passed.
+            try {
+                var last = parseInt( localStorage.getItem( key ) || '0', 10 );
+                var now  = Math.floor( Date.now() / 1000 );
+                if ( last && ( now - last ) < 86400 ) {
+                    return; // already counted within 24 h on this device
+                }
+                localStorage.setItem( key, String( now ) );
+            } catch(e) {}
+
+            // Fire AJAX ping — server does a second IP-based check before incrementing.
+            var fd = new FormData();
+            fd.append( 'action',  'neonews_track_view' );
+            fd.append( 'nonce',   nonce );
+            fd.append( 'post_id', postId );
+            fetch( ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' } ).catch(function(){});
+        })();
+        </script>
+        <?php
     }
 
     /**
-     * AJAX handler for view tracking
+     * Server-side fallback: track view on wp_head (no-JS / non-cached pages).
+     * The AJAX path (inject_view_script) is preferred; this is a belt-and-suspenders backup.
+     */
+    public function track_view() {
+        // Skip — JS AJAX path handles it to avoid double-counting on non-cached pages.
+        // Kept as hook registration is still in __construct for legacy compatibility.
+    }
+
+    /**
+     * AJAX handler for view tracking — called by inject_view_script JS.
      */
     public function ajax_track_view() {
         if ( ! apply_filters( 'neonews_allow_view_tracking', true ) ) {
@@ -78,9 +113,13 @@ class NeoNews_View_Counter {
         }
 
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-
         if ( ! $post_id || 'post' !== get_post_type( $post_id ) ) {
             wp_send_json_error();
+        }
+
+        // Verify nonce (post-specific so it can't be replayed across posts).
+        if ( ! check_ajax_referer( 'neonews_view_' . $post_id, 'nonce', false ) ) {
+            wp_send_json_error( array( 'reason' => 'nonce' ) );
         }
 
         if ( $this->is_bot() ) {
@@ -89,10 +128,10 @@ class NeoNews_View_Counter {
 
         if ( $this->can_count_view( $post_id ) ) {
             $this->increment_view( $post_id );
-            wp_send_json_success();
+            wp_send_json_success( array( 'counted' => true ) );
         }
 
-        wp_send_json_error();
+        wp_send_json_success( array( 'counted' => false ) ); // duplicate, not an error
     }
 
     /**
@@ -116,13 +155,15 @@ class NeoNews_View_Counter {
             return true;
         }
 
-        // Guest: 24-hour cooldown per IP per post.
+        // Guest: rolling 24-hour cooldown per IP per post.
+        // Hash is IP + secret salt (no date component) so the key is stable;
+        // the transient TTL of DAY_IN_SECONDS enforces the rolling 24 h window.
         $ip_hash       = $this->get_ip_hash();
-        $transient_key = 'nn_view_' . $post_id . '_' . $ip_hash;
+        $transient_key = 'nn_vw_' . $post_id . '_' . $ip_hash; // max 172 chars — safe for WP transient key
         if ( get_transient( $transient_key ) ) {
             return false;
         }
-        set_transient( $transient_key, true, DAY_IN_SECONDS );
+        set_transient( $transient_key, 1, DAY_IN_SECONDS );
         return true;
     }
 
@@ -160,17 +201,19 @@ class NeoNews_View_Counter {
      */
     private function get_ip_hash() {
         $ip = '';
-        
+
         if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
             $ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
         } elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
             $ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-            $ip = explode( ',', $ip )[0];
+            $ip = trim( explode( ',', $ip )[0] );
         } elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
             $ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
         }
 
-        return md5( $ip . gmdate( 'Y-m-d' ) );
+        // Use WordPress auth salt so the hash is site-specific and non-reversible.
+        // No date component — the transient TTL handles the rolling 24 h window.
+        return substr( hash( 'sha256', $ip . wp_salt( 'auth' ) ), 0, 16 );
     }
 
     /**

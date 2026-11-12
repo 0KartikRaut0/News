@@ -101,7 +101,7 @@ class NeoNews_Content_Restriction {
                     <p><?php esc_html_e( 'Become a premium member to read the full article without interruptions.', 'neonews-membership' ); ?></p>
                     <div class="nn-paywall-actions">
                         <?php if ( ! is_user_logged_in() ) : ?>
-                            <a href="<?php echo esc_url( wp_login_url( get_permalink( $post_id ) ) ); ?>" class="nn-btn nn-btn-outline"><?php esc_html_e( 'Log In', 'neonews-membership' ); ?></a>
+                            <button type="button" class="nn-btn nn-btn-outline nn-open-login"><?php esc_html_e( 'Log In', 'neonews-membership' ); ?></button>
                         <?php endif; ?>
                         <a href="<?php echo esc_url( NeoNews_Membership_Frontend::get_enroll_url() ); ?>" class="nn-btn"><?php esc_html_e( 'Enroll to Premium', 'neonews-membership' ); ?></a>
                     </div>
@@ -271,9 +271,9 @@ class NeoNews_Content_Restriction {
 
                 <div class="nn-paywall-actions">
                     <?php if ( ! is_user_logged_in() ) : ?>
-                        <a href="<?php echo esc_url( wp_login_url( get_permalink() ) ); ?>" class="nn-btn nn-btn-outline">
+                        <button type="button" class="nn-btn nn-btn-outline nn-open-login">
                             <?php esc_html_e( 'Log In', 'neonews-membership' ); ?>
-                        </a>
+                        </button>
                     <?php endif; ?>
                     <a href="<?php echo esc_url( $this->get_subscribe_url() ); ?>" class="nn-btn">
                         <?php esc_html_e( 'Subscribe Now', 'neonews-membership' ); ?>

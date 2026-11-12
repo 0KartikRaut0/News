@@ -381,8 +381,8 @@
 .nn-premium-lock-preview {
     position: relative;
     border-radius: 12px;
-    overflow: hidden;
     border: 1px solid var(--nn-border-color, #e2e8f0);
+    /* No overflow:hidden here — overlay panel must not be clipped */
 }
 
 .nn-premium-lock-blur {
@@ -390,26 +390,32 @@
     user-select: none;
     pointer-events: none;
     padding: 1.5rem;
-    max-height: 220px;
+    max-height: 180px;
     overflow: hidden;
+    border-radius: 12px;
 }
 
 .nn-premium-lock-fade {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, transparent, var(--nn-bg-primary, #fff));
+    top: 0; left: 0; right: 0;
+    height: 180px;
+    background: linear-gradient(to bottom, transparent 40%, var(--nn-bg-primary, #fff));
+    border-radius: 12px 12px 0 0;
+    pointer-events: none;
 }
 
+/* Overlay panel sits in normal flow — not absolute — so it is never clipped */
 .nn-premium-lock-overlay-panel {
-    position: absolute;
-    inset: 0;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 2rem;
-    background: rgba(255, 255, 255, 0.88);
+    padding: 2rem 1.5rem 2.5rem;
+    background: var(--nn-bg-primary, #fff);
+    border-radius: 0 0 12px 12px;
+    border-top: 1px solid var(--nn-border-color, #e2e8f0);
 }
 
 .nn-lock-blur {

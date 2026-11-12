@@ -170,7 +170,13 @@ get_header();
             <?php endif; ?>
 
             <?php
-            if ( comments_open() || get_comments_number() ) :
+            // Hide comments for non-premium users on gated posts.
+            $is_gated_for_user = class_exists( 'NeoNews_Premium_Content' )
+                && NeoNews_Premium_Content::is_premium_post( get_the_ID() )
+                && ! ( is_user_logged_in() && current_user_can( 'edit_posts' ) )
+                && ! ( class_exists( 'NeoNews_Membership_Levels' ) && NeoNews_Membership_Levels::is_premium() );
+
+            if ( ! $is_gated_for_user && ( comments_open() || neonews_get_comment_count( get_the_ID() ) ) ) :
                 comments_template();
             endif;
             ?>

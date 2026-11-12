@@ -2292,6 +2292,27 @@ html {
     }
 }
 
+/* ── Carousel nav arrows — mobile size reduction ──────────────────────── */
+@media (max-width: 768px) {
+    .nn-carousel-nav {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+    }
+    .nn-carousel-prev { left: 6px; }
+    .nn-carousel-next { right: 6px; }
+}
+
+@media (max-width: 480px) {
+    .nn-carousel-nav {
+        width: 28px;
+        height: 28px;
+        font-size: 0.85rem;
+    }
+    .nn-carousel-prev { left: 4px; }
+    .nn-carousel-next { right: 4px; }
+}
+
 @media (max-width: 480px) {
     .nn-footer-pulse-grid {
         grid-template-columns: 1fr;
