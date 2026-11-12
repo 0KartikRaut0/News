@@ -24,6 +24,7 @@ function neonews_admin_shell_begin( $args ) {
 			'actions'    => array(),
 			'show_title' => true,
 			'class'      => '',
+			'outer_wrap' => true,
 		)
 	);
 
@@ -34,7 +35,9 @@ function neonews_admin_shell_begin( $args ) {
 	$actions  = is_array( $args['actions'] ) ? $args['actions'] : array();
 
 	$extra_class = isset( $args['class'] ) ? trim( (string) $args['class'] ) : '';
-	echo '<div class="wrap nn-admin-shell-wrap' . ( $extra_class ? ' ' . esc_attr( $extra_class ) : '' ) . '" id="' . esc_attr( $id ) . '">';
+	if ( ! empty( $args['outer_wrap'] ) ) {
+		echo '<div class="wrap nn-admin-shell-wrap' . ( $extra_class ? ' ' . esc_attr( $extra_class ) : '' ) . '" id="' . esc_attr( $id ) . '">';
+	}
 
 	echo '<header class="nn-admin-shell-header">';
 	echo '<div class="nn-admin-shell-title">';
@@ -85,6 +88,9 @@ function neonews_admin_shell_begin( $args ) {
 			if ( $url ) {
 				echo ' href="' . esc_url( $url ) . '"';
 			}
+			if ( ! empty( $stat['state'] ) ) {
+				echo ' data-nn-state="' . esc_attr( (string) $stat['state'] ) . '"';
+			}
 			echo '>';
 			echo '<span class="nn-admin-stat-icon" aria-hidden="true">' . esc_html( $icon ) . '</span>';
 			echo '<strong class="nn-admin-stat-value">' . esc_html( (string) $value ) . '</strong>';
@@ -114,8 +120,10 @@ function neonews_admin_shell_panel_close() {
 /**
  * Close shell wrap.
  */
-function neonews_admin_shell_end() {
-	echo '</div>';
+function neonews_admin_shell_end( $close_outer_wrap = true ) {
+	if ( $close_outer_wrap ) {
+		echo '</div>';
+	}
 }
 
 /**

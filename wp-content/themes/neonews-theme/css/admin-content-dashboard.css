@@ -1,0 +1,77 @@
+/**
+ * Posts & Pages list — NeoNews dashboard layout.
+ */
+
+body.nn-content-dashboard #wpbody-content {
+	background: linear-gradient(165deg, #e9eef5 0%, #f3f5f8 50%, #fafbfc 100%);
+	padding-bottom: 32px;
+}
+
+body.nn-content-dashboard .wrap {
+	max-width: 1480px;
+	margin: 8px 12px 24px 0;
+}
+
+body.nn-content-dashboard .wrap > h1.wp-heading-inline,
+body.nn-content-dashboard .wrap > a.page-title-action,
+body.nn-content-dashboard .wrap > .page-title-action {
+	display: none !important;
+}
+
+body.nn-content-dashboard .nn-content-dashboard-bar {
+	margin: 0 0 16px;
+	max-width: 1480px;
+}
+
+body.nn-content-dashboard .nn-content-dashboard-bar .nn-admin-shell-header,
+body.nn-content-dashboard .nn-content-dashboard-bar .nn-admin-stat-cards {
+	margin-left: 0;
+	margin-right: 0;
+}
+
+body.nn-content-dashboard .nn-content-list-panel {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid rgba(29, 53, 87, 0.06);
+	box-shadow: 0 8px 26px rgba(29, 53, 87, 0.07);
+	padding: 16px 18px 20px;
+}
+
+body.nn-content-dashboard .nn-content-list-panel .tablenav {
+	padding-top: 4px;
+}
+
+body.nn-content-dashboard .nn-content-list-panel .wp-list-table {
+	border: none;
+	box-shadow: none;
+}
+
+body.nn-content-dashboard .nn-content-list-panel .subsubsub {
+	margin-bottom: 8px;
+}
+
+body.nn-content-dashboard .nn-admin-stat-card.nn-stat-active {
+	border-color: #e63946;
+	box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.2);
+}
+
+body.nn-content-dashboard .nn-admin-stat-card-link {
+	text-decoration: none;
+	color: inherit;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.nn-content-dashboard .nn-admin-stat-card-link:hover,
+body.nn-content-dashboard .nn-admin-stat-card-link:focus {
+	transform: translateY(-2px);
+	box-shadow: 0 12px 28px rgba(29, 53, 87, 0.12);
+}
+
+body.nn-content-dashboard .search-box input[type="search"] {
+	border-radius: 8px;
+}
+
+body.nn-content-dashboard .tablenav .button,
+body.nn-content-dashboard .tablenav .tablenav-pages a {
+	border-radius: 8px;
+}
