@@ -467,9 +467,16 @@ class NeoNews_News_Submission {
             return new WP_Error( 'invalid_type', esc_html__( 'Invalid image format. Allowed: JPG, PNG, GIF, WebP.', 'neonews-core' ) );
         }
 
-        $max_size = 2 * 1024 * 1024;
+        $max_size = (int) apply_filters( 'neonews_max_upload_bytes', 2 * MB_IN_BYTES );
         if ( $file['size'] > $max_size ) {
-            return new WP_Error( 'file_too_large', esc_html__( 'Image size must be less than 2MB.', 'neonews-core' ) );
+            return new WP_Error(
+                'file_too_large',
+                sprintf(
+                    /* translators: %s: max size in MB */
+                    esc_html__( 'Image size must be less than %s MB.', 'neonews-core' ),
+                    esc_html( (string) round( $max_size / MB_IN_BYTES, 1 ) )
+                )
+            );
         }
 
         require_once ABSPATH . 'wp-admin/includes/image.php';

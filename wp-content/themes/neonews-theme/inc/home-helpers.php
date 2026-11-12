@@ -129,11 +129,9 @@ function neonews_render_home_category_block( $slug_or_block ) {
         wp_reset_postdata();
         return;
     }
-    $layout        = neonews_get_category_block_layout( $block );
-    $section_style = neonews_get_category_block_section_style( $block );
-    $style_class   = neonews_home_section_style_class( $section_style );
+    $layout = neonews_get_category_block_layout( $block );
     ?>
-    <section class="nn-home-cat-block nn-reveal nn-cat-layout-<?php echo esc_attr( $layout ); ?> <?php echo esc_attr( $style_class ); ?>" style="--nn-cat-accent: <?php echo esc_attr( $accent ); ?>">
+    <section class="nn-home-cat-block nn-reveal nn-cat-layout-<?php echo esc_attr( $layout ); ?>" style="--nn-cat-accent: <?php echo esc_attr( $accent ); ?>">
         <header class="nn-home-cat-header">
             <h2 class="nn-home-cat-title"><span class="nn-cat-bar"></span><?php echo esc_html( $label ); ?></h2>
             <a href="<?php echo esc_url( $see_all ); ?>" class="nn-section-link"><?php esc_html_e( 'See all', 'neonews' ); ?> →</a>
@@ -448,7 +446,7 @@ function neonews_home_tipline() {
 }
 
 /**
- * Render a custom homepage section (template, posts feed, page, or legacy tag/html).
+ * Render a custom homepage section (tag, page, or html).
  *
  * @param array $cs Custom section config.
  */
@@ -459,33 +457,19 @@ function neonews_render_custom_home_section( $cs ) {
 
     $type = $cs['type'];
 
-    if ( 'template' === $type ) {
+    if ( 'template' === $type && function_exists( 'neonews_render_home_custom_template' ) ) {
         neonews_render_home_custom_template( $cs );
         return;
     }
 
     if ( 'posts' === $type || 'tag' === $type ) {
-        if ( 'tag' === $type && empty( $cs['source'] ) ) {
+        if ( 'tag' === $type ) {
             $cs['source'] = 'tag';
+            $cs['type']   = 'posts';
         }
-        neonews_render_custom_home_posts_feed( $cs );
-        return;
-    }
-
-    $title = ! empty( $cs['title'] ) ? $cs['title'] : '';
-
-    if ( 'html' === $type ) {
-        if ( empty( $cs['html'] ) ) {
-            return;
+        if ( function_exists( 'neonews_render_custom_home_posts_feed' ) ) {
+            neonews_render_custom_home_posts_feed( $cs );
         }
-        $style_class = ! empty( $cs['section_style'] ) ? neonews_home_section_style_class( $cs['section_style'] ) : 'nn-section-style-default';
-        echo '<section class="nn-custom-section nn-custom-section-html nn-reveal ' . esc_attr( $style_class ) . '">';
-        if ( $title ) {
-            echo '<header class="nn-section-header"><h2 class="nn-section-title">' . esc_html( $title ) . '</h2></header>';
-        }
-        echo '<div class="nn-custom-html-body">';
-        echo wp_kses_post( $cs['html'] );
-        echo '</div></section>';
         return;
     }
 
@@ -498,15 +482,27 @@ function neonews_render_custom_home_section( $cs ) {
         if ( ! $page || 'publish' !== $page->post_status ) {
             return;
         }
+        $title   = ! empty( $cs['title'] ) ? $cs['title'] : '';
         $see_all = ! empty( $cs['see_all_url'] ) ? $cs['see_all_url'] : get_permalink( $page_id );
-        $style_class = ! empty( $cs['section_style'] ) ? neonews_home_section_style_class( $cs['section_style'] ) : 'nn-section-style-default';
-        echo '<section class="nn-custom-section nn-custom-section-page nn-reveal ' . esc_attr( $style_class ) . '">';
+        echo '<section class="nn-custom-section nn-custom-section-page nn-reveal">';
         echo '<header class="nn-section-header">';
         echo '<h2 class="nn-section-title">' . esc_html( $title ?: get_the_title( $page_id ) ) . '</h2>';
         echo '<a href="' . esc_url( $see_all ) . '" class="nn-section-link">' . esc_html__( 'Read more', 'neonews' ) . ' →</a>';
         echo '</header>';
         echo '<div class="nn-custom-page-body nn-content-body">';
         echo apply_filters( 'the_content', $page->post_content ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo '</div></section>';
+        return;
+    }
+
+    if ( 'html' === $type && ! empty( $cs['html'] ) ) {
+        $title = ! empty( $cs['title'] ) ? $cs['title'] : '';
+        echo '<section class="nn-custom-section nn-custom-section-html nn-reveal">';
+        if ( $title ) {
+            echo '<header class="nn-section-header"><h2 class="nn-section-title">' . esc_html( $title ) . '</h2></header>';
+        }
+        echo '<div class="nn-custom-html-body">';
+        echo wp_kses_post( $cs['html'] );
         echo '</div></section>';
     }
 }

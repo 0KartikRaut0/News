@@ -106,6 +106,17 @@ function neonews_home_custom_templates() {
                 'youtube_url'  => array( 'type' => 'url', 'label' => __( 'YouTube URL', 'neonews' ), 'default' => '' ),
             ),
         ),
+        'cta_strip'       => array(
+            'label'       => __( 'Call-to-action strip', 'neonews' ),
+            'description' => __( 'Full-width banner with headline, short text, and button.', 'neonews' ),
+            'icon'        => '⚡',
+            'fields'      => array(
+                'headline'  => array( 'type' => 'text', 'label' => __( 'Headline', 'neonews' ), 'default' => __( 'Support independent journalism', 'neonews' ) ),
+                'subtext'   => array( 'type' => 'textarea', 'label' => __( 'Short text', 'neonews' ), 'default' => __( 'Become a member and read without limits.', 'neonews' ) ),
+                'btn_label' => array( 'type' => 'text', 'label' => __( 'Button label', 'neonews' ), 'default' => __( 'Join today', 'neonews' ) ),
+                'btn_url'   => array( 'type' => 'url', 'label' => __( 'Button link', 'neonews' ), 'default' => '' ),
+            ),
+        ),
     );
 }
 
@@ -195,10 +206,7 @@ function neonews_render_home_custom_template( $cs ) {
     $title  = ! empty( $cs['title'] ) ? $cs['title'] : $registry[ $tid ]['label'];
     $config = neonews_get_custom_template_config( $cs );
 
-    $style_class = ! empty( $cs['section_style'] )
-        ? neonews_home_section_style_class( $cs['section_style'] )
-        : 'nn-section-style-default';
-    echo '<section class="nn-custom-section nn-hs-template nn-hs-' . esc_attr( $tid ) . ' nn-reveal ' . esc_attr( $style_class ) . '">';
+    echo '<section class="nn-custom-section nn-hs-template nn-hs-' . esc_attr( $tid ) . ' nn-reveal">';
     $show_heading = ! empty( $cs['show_title'] ) && '' !== trim( (string) ( $cs['title'] ?? '' ) );
     if ( $show_heading ) {
         echo '<header class="nn-section-header"><h2 class="nn-section-title">' . esc_html( $title ) . '</h2></header>';
@@ -226,9 +234,32 @@ function neonews_render_home_custom_template( $cs ) {
         case 'video_spotlight':
             neonews_render_hs_template_video( $config );
             break;
+        case 'cta_strip':
+            neonews_render_hs_template_cta_strip( $config );
+            break;
     }
 
     echo '</section>';
+}
+
+/**
+ * @param array $c Config.
+ */
+function neonews_render_hs_template_cta_strip( $c ) {
+    $url = $c['btn_url'] ? $c['btn_url'] : home_url( '/' );
+    ?>
+    <div class="nn-hs-cta-strip">
+        <div class="nn-hs-cta-strip-copy">
+            <h3 class="nn-hs-cta-strip-title"><?php echo esc_html( $c['headline'] ); ?></h3>
+            <?php if ( ! empty( $c['subtext'] ) ) : ?>
+                <p class="nn-hs-cta-strip-sub"><?php echo esc_html( $c['subtext'] ); ?></p>
+            <?php endif; ?>
+        </div>
+        <?php if ( ! empty( $c['btn_label'] ) ) : ?>
+            <a href="<?php echo esc_url( $url ); ?>" class="nn-btn nn-hs-cta-strip-btn"><?php echo esc_html( $c['btn_label'] ); ?></a>
+        <?php endif; ?>
+    </div>
+    <?php
 }
 
 /**
@@ -452,10 +483,7 @@ function neonews_render_custom_home_posts_feed( $cs ) {
         return;
     }
 
-    $style_class = ! empty( $cs['section_style'] )
-        ? neonews_home_section_style_class( $cs['section_style'] )
-        : 'nn-section-style-default';
-    echo '<section class="nn-custom-section nn-custom-section-feed nn-reveal ' . esc_attr( $style_class ) . '">';
+    echo '<section class="nn-custom-section nn-custom-section-feed nn-reveal">';
     echo '<header class="nn-section-header">';
     echo '<h2 class="nn-section-title">' . esc_html( $title ) . '</h2>';
     if ( $see_all ) {

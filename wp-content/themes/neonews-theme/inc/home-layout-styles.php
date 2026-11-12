@@ -104,62 +104,6 @@ function neonews_sanitize_home_hover( $value ) {
 }
 
 /**
- * Visual wrapper style for homepage sections (Latest, Videos, categories, custom).
- *
- * @return array<string, string>
- */
-function neonews_home_section_style_choices() {
-    return array(
-        'default' => __( 'Standard — normal contained block', 'neonews' ),
-        'banner'  => __( 'Banner — full-width gradient band', 'neonews' ),
-        'strip'   => __( 'Strip — slim compact band', 'neonews' ),
-        'framed'  => __( 'Framed — bordered card wrapper', 'neonews' ),
-        'inset'   => __( 'Inset — soft panel background', 'neonews' ),
-        'edge'    => __( 'Edge — full viewport width', 'neonews' ),
-        'dark'    => __( 'Dark band — spotlight / inverted', 'neonews' ),
-    );
-}
-
-/**
- * @param string $value   Raw.
- * @param string $fallback Fallback slug.
- * @return string
- */
-function neonews_sanitize_home_section_style( $value, $fallback = 'default' ) {
-    $choices = neonews_home_section_style_choices();
-    $value   = sanitize_key( (string) $value );
-    if ( isset( $choices[ $value ] ) ) {
-        return $value;
-    }
-    return isset( $choices[ $fallback ] ) ? $fallback : 'default';
-}
-
-/**
- * CSS class for a section wrapper style.
- *
- * @param string $style Style slug.
- * @return string
- */
-function neonews_home_section_style_class( $style ) {
-    return 'nn-section-style-' . neonews_sanitize_home_section_style( $style, 'default' );
-}
-
-/**
- * Resolved section style for a category block (per-block or site default).
- *
- * @param array $block Block config.
- * @return string
- */
-function neonews_get_category_block_section_style( $block ) {
-    $settings = neonews_get_settings();
-    $default  = neonews_sanitize_home_section_style( $settings['home_category_section_style'] ?? '', 'default' );
-    if ( ! empty( $block['section_style'] ) ) {
-        return neonews_sanitize_home_section_style( $block['section_style'], $default );
-    }
-    return $default;
-}
-
-/**
  * Sanitize a layout key for a group.
  *
  * @param string $group Group key.

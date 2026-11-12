@@ -34,9 +34,6 @@ function neonews_get_default_settings() {
         'home_carousel_style' => 'overlay',
         'home_category_layout'=> 'featured-list',
         'home_latest_layout'  => 'cards',
-        'home_latest_section_style'  => 'default',
-        'home_video_section_style'   => 'default',
-        'home_category_section_style' => 'default',
         'home_video_layout'   => 'grid',
         'home_hover_effect'   => 'lift',
         'ad_zones'            => array(
@@ -192,6 +189,12 @@ function neonews_get_default_settings() {
         'perf_lazy_captcha'       => true,
         'perf_reduce_animations'  => true,
         'perf_conditional_core_assets' => true,
+        // Media uploads.
+        'media_limit_upload_size'  => true,
+        'media_max_upload_mb'      => 4,
+        'media_force_webp'         => true,
+        'media_strip_extra_sizes'  => true,
+        'media_big_image_max'      => 1920,
     );
 }
 
@@ -442,6 +445,12 @@ function neonews_sanitize_settings( $input ) {
         $output['perf_lazy_captcha']            = ! empty( $input['perf_lazy_captcha'] );
         $output['perf_reduce_animations']       = ! empty( $input['perf_reduce_animations'] );
         $output['perf_conditional_core_assets'] = ! empty( $input['perf_conditional_core_assets'] );
+
+        $output['media_limit_upload_size'] = ! empty( $input['media_limit_upload_size'] );
+        $output['media_max_upload_mb']     = max( 1, min( 32, absint( $input['media_max_upload_mb'] ?? $previous['media_max_upload_mb'] ?? 4 ) ) );
+        $output['media_force_webp']        = ! empty( $input['media_force_webp'] );
+        $output['media_strip_extra_sizes'] = ! empty( $input['media_strip_extra_sizes'] );
+        $output['media_big_image_max']     = max( 1200, min( 2560, absint( $input['media_big_image_max'] ?? $previous['media_big_image_max'] ?? 1920 ) ) );
     }
 
     if ( 'homepage' === $active ) {
@@ -458,49 +467,39 @@ function neonews_sanitize_settings( $input ) {
                     if ( empty( $cs['id'] ) || empty( $cs['type'] ) ) {
                         continue;
                     }
-                    $raw_type = sanitize_key( (string) $cs['type'] );
+                    $raw_type = (string) $cs['type'];
                     if ( 'tag' === $raw_type ) {
                         $raw_type = 'posts';
-                        if ( empty( $cs['source'] ) ) {
-                            $cs['source'] = 'tag';
-                        }
                     }
-                    if ( ! in_array( $raw_type, array( 'template', 'posts', 'page', 'html' ), true ) ) {
-                        $raw_type = 'template';
+                    $allowed_types = array( 'template', 'posts', 'page', 'html', 'tag' );
+                    $type          = in_array( $raw_type, $allowed_types, true ) ? $raw_type : 'template';
+                    if ( 'tag' === $type ) {
+                        $type = 'posts';
                     }
 
                     $entry = array(
-                        'id'            => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
-                        'type'          => $raw_type,
-                        'title'         => sanitize_text_field( $cs['title'] ?? '' ),
-                        'show_title'    => ! isset( $cs['show_title'] ) || ! empty( $cs['show_title'] ),
-                        'see_all_url'   => esc_url_raw( $cs['see_all_url'] ?? '' ),
-                        'section_style' => ! empty( $cs['section_style'] ) ? neonews_sanitize_home_section_style( $cs['section_style'], '' ) : '',
+                        'id'          => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
+                        'type'        => $type,
+                        'title'       => sanitize_text_field( $cs['title'] ?? '' ),
+                        'count'       => max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) ),
+                        'slug'        => sanitize_title( $cs['slug'] ?? '' ),
+                        'source'      => in_array( $cs['source'] ?? '', array( 'tag', 'category' ), true ) ? $cs['source'] : 'category',
+                        'page_id'     => absint( $cs['page_id'] ?? 0 ),
+                        'html'        => wp_kses_post( $cs['html'] ?? '' ),
+                        'show_title'  => ! empty( $cs['show_title'] ),
+                        'see_all_url' => esc_url_raw( $cs['see_all_url'] ?? '' ),
+                        'layout'      => ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], '' ) : '',
+                        'template'    => sanitize_key( $cs['template'] ?? '' ),
+                        'config'      => array(),
                     );
 
-                    if ( 'template' === $raw_type ) {
-                        $templates = neonews_home_custom_templates();
-                        $tid       = sanitize_key( (string) ( $cs['template'] ?? 'newsletter_cta' ) );
-                        if ( ! isset( $templates[ $tid ] ) ) {
-                            $tid = 'newsletter_cta';
+                    if ( 'template' === $type ) {
+                        $tid = $entry['template'];
+                        if ( ! $tid || ! isset( neonews_home_custom_templates()[ $tid ] ) ) {
+                            $tid                 = (string) array_key_first( neonews_home_custom_templates() );
+                            $entry['template']   = $tid;
                         }
-                        $entry['template'] = $tid;
-                        $entry['config']   = neonews_sanitize_custom_template_config( $tid, is_array( $cs['config'] ?? null ) ? $cs['config'] : array() );
-                    }
-
-                    if ( 'posts' === $raw_type ) {
-                        $entry['source'] = in_array( $cs['source'] ?? '', array( 'tag', 'category' ), true ) ? $cs['source'] : 'tag';
-                        $entry['slug']   = sanitize_title( (string) ( $cs['slug'] ?? '' ) );
-                        $entry['count']  = max( 1, min( 20, absint( $cs['count'] ?? 4 ) ) );
-                        $entry['layout'] = ! empty( $cs['layout'] ) ? neonews_sanitize_home_layout( 'posts', $cs['layout'], '' ) : '';
-                    }
-
-                    if ( 'page' === $raw_type ) {
-                        $entry['page_id'] = absint( $cs['page_id'] ?? 0 );
-                    }
-
-                    if ( 'html' === $raw_type ) {
-                        $entry['html'] = wp_kses_post( $cs['html'] ?? '' );
+                        $entry['config'] = neonews_sanitize_custom_template_config( $entry['template'], is_array( $cs['config'] ?? null ) ? $cs['config'] : array() );
                     }
 
                     if ( $entry['id'] ) {
@@ -553,8 +552,7 @@ function neonews_sanitize_settings( $input ) {
                         'count'       => max( 1, min( 20, absint( $blk['count'] ?? 3 ) ) ),
                         'see_all_url' => esc_url_raw( $blk['see_all_url'] ?? '' ),
                         'enabled'     => ! empty( $blk['enabled'] ),
-                        'layout'        => $layout,
-                        'section_style' => ! empty( $blk['section_style'] ) ? neonews_sanitize_home_section_style( $blk['section_style'], '' ) : '',
+                        'layout'      => $layout,
                     );
                 }
             }
@@ -573,9 +571,6 @@ function neonews_sanitize_settings( $input ) {
         $output['home_latest_layout']     = neonews_sanitize_home_layout( 'latest', $input['home_latest_layout'] ?? '', 'cards' );
         $output['home_video_layout']      = neonews_sanitize_home_layout( 'video', $input['home_video_layout'] ?? '', 'grid' );
         $output['home_hover_effect']      = neonews_sanitize_home_hover( $input['home_hover_effect'] ?? '' );
-        $output['home_latest_section_style']   = neonews_sanitize_home_section_style( $input['home_latest_section_style'] ?? '' );
-        $output['home_video_section_style']    = neonews_sanitize_home_section_style( $input['home_video_section_style'] ?? '' );
-        $output['home_category_section_style'] = neonews_sanitize_home_section_style( $input['home_category_section_style'] ?? '' );
     }
 
     if ( 'header' === $active ) {
@@ -972,6 +967,49 @@ function neonews_render_settings_page() {
                     <td>
                         <input type="number" name="neonews_platform_settings[captcha_v3_threshold]" value="<?php echo esc_attr( $settings['captcha_v3_threshold'] ); ?>" min="0.1" max="1" step="0.1" class="small-text" />
                         <p class="description"><?php esc_html_e( 'Minimum score (0.1–1.0). Default 0.5. Only used for reCAPTCHA v3.', 'neonews' ); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <h2><?php esc_html_e( 'Media uploads', 'neonews' ); ?></h2>
+            <p class="description"><?php esc_html_e( 'Keeps the Media Library lighter on disk: cap file size, save photos as WebP when your server supports it, and skip extra thumbnail sizes WordPress does not need for this theme.', 'neonews' ); ?></p>
+            <table class="form-table">
+                <tr>
+                    <th><?php esc_html_e( 'Enforce max file size', 'neonews' ); ?></th>
+                    <td>
+                        <label><input type="checkbox" name="neonews_platform_settings[media_limit_upload_size]" value="1" <?php checked( ! empty( $settings['media_limit_upload_size'] ) ); ?> /> <?php esc_html_e( 'Block uploads larger than the limit below (Media Library + theme uploads)', 'neonews' ); ?></label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Max upload size (MB)', 'neonews' ); ?></th>
+                    <td>
+                        <input type="number" name="neonews_platform_settings[media_max_upload_mb]" value="<?php echo esc_attr( (int) ( $settings['media_max_upload_mb'] ?? 4 ) ); ?>" min="1" max="32" step="1" class="small-text" />
+                        <p class="description"><?php esc_html_e( 'Also applies to profile photos and story featured images. Server PHP limit may still be lower.', 'neonews' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Save as WebP', 'neonews' ); ?></th>
+                    <td>
+                        <label><input type="checkbox" name="neonews_platform_settings[media_force_webp]" value="1" <?php checked( ! empty( $settings['media_force_webp'] ) ); ?> <?php disabled( ! function_exists( 'neonews_media_webp_supported' ) || ! neonews_media_webp_supported() ); ?> /> <?php esc_html_e( 'Convert new JPEG/PNG uploads to WebP (smaller files)', 'neonews' ); ?></label>
+                        <?php if ( function_exists( 'neonews_media_webp_supported' ) && ! neonews_media_webp_supported() ) : ?>
+                            <p class="description" style="color:#b32d2e;"><?php esc_html_e( 'WebP is not supported by your PHP image library on this environment. Leave unchecked.', 'neonews' ); ?></p>
+                        <?php else : ?>
+                            <p class="description"><?php esc_html_e( 'Requires WordPress 6.1+. Existing files are not converted.', 'neonews' ); ?></p>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Fewer image sizes', 'neonews' ); ?></th>
+                    <td>
+                        <label><input type="checkbox" name="neonews_platform_settings[media_strip_extra_sizes]" value="1" <?php checked( ! empty( $settings['media_strip_extra_sizes'] ) ); ?> /> <?php esc_html_e( 'Only generate theme sizes (featured, card, thumb) + thumbnail/medium/large', 'neonews' ); ?></label>
+                        <p class="description"><?php esc_html_e( 'Skips extra WordPress sizes (e.g. 1536×1536, medium_large) to save disk space.', 'neonews' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th><?php esc_html_e( 'Max scaled width (px)', 'neonews' ); ?></th>
+                    <td>
+                        <input type="number" name="neonews_platform_settings[media_big_image_max]" value="<?php echo esc_attr( (int) ( $settings['media_big_image_max'] ?? 1920 ) ); ?>" min="1200" max="2560" step="10" class="small-text" />
+                        <p class="description"><?php esc_html_e( 'Huge originals are scaled down to this width on upload (WordPress “big image” handling).', 'neonews' ); ?></p>
                     </td>
                 </tr>
             </table>

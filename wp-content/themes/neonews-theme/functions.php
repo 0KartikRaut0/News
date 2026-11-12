@@ -219,7 +219,7 @@ function neonews_scripts() {
         'neonews-main',
         NEONEWS_THEME_URI . '/js/main.js',
         $main_deps,
-        filemtime( get_template_directory() . '/js/main.js' ),
+        NEONEWS_THEME_VERSION,
         true
     );
 
@@ -242,11 +242,9 @@ function neonews_scripts() {
             'captcha'  => $captcha_config,
             'perf'     => array(
                 'lite'         => function_exists( 'neonews_perf_enabled' ) && neonews_perf_enabled(),
-                /* Only skips heavy JS (3D tilt); CSS hovers still run on homepage */
                 'reduceMotion' => function_exists( 'neonews_perf_option' ) && neonews_perf_option( 'perf_reduce_animations', true ),
                 'lazyCaptcha'  => function_exists( 'neonews_should_lazy_load_captcha' ) && neonews_should_lazy_load_captcha(),
             ),
-            'isHome'     => is_front_page(),
             'mobileAd' => array(
                 'collapsible'   => ! empty( neonews_get_setting( 'mobile_ad_collapsible', true ) ),
                 'collapsedText' => esc_html( neonews_get_setting( 'mobile_ad_collapsed_text', 'Ad' ) ?: 'Ad' ),
@@ -644,13 +642,14 @@ add_action( 'elementor/theme/register_locations', 'neonews_register_elementor_lo
  * Include required files
  */
 require_once NEONEWS_THEME_DIR . '/inc/settings-helpers.php';
+require_once NEONEWS_THEME_DIR . '/inc/media-optimizer.php';
 require_once NEONEWS_THEME_DIR . '/inc/performance.php';
 require_once NEONEWS_THEME_DIR . '/inc/customizer.php';
 require_once NEONEWS_THEME_DIR . '/inc/dynamic-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-tags.php';
 require_once NEONEWS_THEME_DIR . '/inc/template-functions.php';
-require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-custom-templates.php';
+require_once NEONEWS_THEME_DIR . '/inc/home-helpers.php';
 require_once NEONEWS_THEME_DIR . '/inc/home-layout-styles.php';
 require_once NEONEWS_THEME_DIR . '/inc/social-links.php';
 require_once NEONEWS_THEME_DIR . '/inc/auth-registration.php';

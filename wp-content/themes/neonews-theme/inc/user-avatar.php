@@ -112,8 +112,16 @@ function neonews_handle_profile_photo_upload( $user_id, $file ) {
         return new WP_Error( 'neonews_invalid_type', __( 'Please upload a JPG, PNG, GIF, or WebP image.', 'neonews' ) );
     }
 
-    if ( ! empty( $file['size'] ) && $file['size'] > 2 * MB_IN_BYTES ) {
-        return new WP_Error( 'neonews_file_large', __( 'Photo must be smaller than 2 MB.', 'neonews' ) );
+    $max_bytes = (int) apply_filters( 'neonews_max_upload_bytes', neonews_get_max_upload_bytes() );
+    if ( ! empty( $file['size'] ) && $file['size'] > $max_bytes ) {
+        return new WP_Error(
+            'neonews_file_large',
+            sprintf(
+                /* translators: %s: max megabytes */
+                __( 'Photo must be smaller than %s MB.', 'neonews' ),
+                round( $max_bytes / MB_IN_BYTES, 1 )
+            )
+        );
     }
 
     require_once ABSPATH . 'wp-admin/includes/file.php';
