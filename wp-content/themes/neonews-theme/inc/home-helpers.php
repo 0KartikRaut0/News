@@ -57,9 +57,10 @@ function neonews_the_post_meta_line( $post_id = null, $light = false ) {
         echo esc_html( neonews_format_views( neonews_get_post_views( $post_id ) ) ) . ' ' . esc_html__( 'views', 'neonews' );
         echo '</span>';
     }
-    if ( get_comments_number( $post_id ) ) {
+    $comment_count = neonews_get_comment_count( $post_id );
+    if ( $comment_count ) {
         echo '<span class="nn-meta-sep">·</span>';
-        echo '<span class="nn-meta-comments">' . esc_html( number_format_i18n( get_comments_number( $post_id ) ) ) . ' ' . esc_html__( 'comments', 'neonews' ) . '</span>';
+        echo '<span class="nn-meta-comments">' . esc_html( number_format_i18n( $comment_count ) ) . ' ' . esc_html__( 'comments', 'neonews' ) . '</span>';
     }
     echo '</div>';
 }

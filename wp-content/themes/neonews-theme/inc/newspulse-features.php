@@ -225,15 +225,8 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
     $show_views = neonews_is_feature_enabled( 'show_post_views' );
 
     $views    = function_exists( 'neonews_get_post_views' ) ? neonews_get_post_views( $post_id ) : 0;
-    // Count approved + pending (awaiting moderation) comments.
-    // Using get_comments with status='all' is the most reliable cross-version approach:
-    // it maps to comment_approved IN ('0','1') — includes guest/pending, excludes spam & trash.
-    $comments = (int) get_comments( array(
-        'post_id' => $post_id,
-        'status'  => 'all',
-        'count'   => true,
-        'type'    => 'comment',
-    ) );
+    // Includes approved + pending so guest comments update the count immediately.
+    $comments = function_exists( 'neonews_get_comment_count' ) ? neonews_get_comment_count( $post_id ) : get_comments_number( $post_id );
     $likes    = (int) get_post_meta( $post_id, '_neonews_likes', true );
     $liked    = is_user_logged_in() && neonews_user_liked_post( $post_id );
     ?>

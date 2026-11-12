@@ -10,6 +10,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Reliable comment count for a post — includes approved AND pending (awaiting moderation).
+ * Spam and trashed comments are always excluded.
+ * Replaces get_comments_number() which only counts approved comments, causing guest
+ * comments (held for moderation) to not update the visible count.
+ *
+ * @param int|null $post_id Post ID. Defaults to current post in the loop.
+ * @return int
+ */
+function neonews_get_comment_count( $post_id = null ) {
+    $post_id = $post_id ? (int) $post_id : get_the_ID();
+    if ( ! $post_id ) {
+        return 0;
+    }
+    return (int) get_comments( array(
+        'post_id' => $post_id,
+        'status'  => 'all',   // approved (1) + pending (0); excludes spam & trash
+        'count'   => true,
+        'type'    => 'comment',
+    ) );
+}
+
+/**
  * Get a single platform setting.
  *
  * @param string $key     Setting key.

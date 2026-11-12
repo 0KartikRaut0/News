@@ -18,7 +18,7 @@ if ( post_password_required() ) {
     <?php if ( have_comments() ) : ?>
         <h2 class="nn-comments-title">
             <?php
-            $comment_count = get_comments_number();
+            $comment_count = function_exists( 'neonews_get_comment_count' ) ? neonews_get_comment_count( get_the_ID() ) : get_comments_number();
             printf(
                 /* translators: 1: comment count, 2: post title */
                 esc_html( _nx(

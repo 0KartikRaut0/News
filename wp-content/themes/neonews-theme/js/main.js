@@ -1191,18 +1191,15 @@
             runSubmit();
         }
 
-        document.querySelectorAll('.nn-open-login').forEach(function(el) {
-            el.addEventListener('click', function(e) {
+        // Use event delegation so dynamically-added buttons (e.g. guest like toast) also work.
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.nn-open-login')) {
                 e.preventDefault();
                 openModal('login');
-            });
-        });
-
-        document.querySelectorAll('.nn-open-signup').forEach(function(el) {
-            el.addEventListener('click', function(e) {
+            } else if (e.target.closest('.nn-open-signup')) {
                 e.preventDefault();
                 openModal('register');
-            });
+            }
         });
 
         modal.querySelectorAll('.nn-auth-tab, [data-auth-tab]').forEach(function(btn) {
