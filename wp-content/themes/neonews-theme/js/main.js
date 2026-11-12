@@ -1407,27 +1407,27 @@
             // Also handle comment cards which use nn-comment-card class
             var allHidden = container.querySelectorAll('[class*="nn-activity-card-hidden"]');
 
+            var chevron = '<svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
             if (!expanded) {
-                // Show all
-                container.querySelectorAll('.nn-activity-card, .nn-comment-card').forEach(function(el) {
-                    el.style.display = '';
+                // Show all — remove hidden class AND inline style
+                container.querySelectorAll('.nn-activity-card-hidden').forEach(function(el) {
                     el.classList.remove('nn-activity-card-hidden');
+                    el.style.display = '';
                 });
                 btn.classList.add('is-expanded');
-                btn.innerHTML = btn.getAttribute('data-label-less') +
-                    ' <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                btn.innerHTML = btn.getAttribute('data-label-less') + ' ' + chevron;
             } else {
                 // Collapse — hide items beyond index 3
                 var items = container.querySelectorAll('.nn-activity-card, .nn-comment-card');
                 items.forEach(function(el, i) {
                     if (i >= 4) {
                         el.classList.add('nn-activity-card-hidden');
+                        el.style.display = 'none';
                     }
                 });
                 btn.classList.remove('is-expanded');
-                btn.innerHTML = btn.getAttribute('data-label-more') +
-                    ' <svg class="nn-act-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                // Scroll back up to section header
+                btn.innerHTML = btn.getAttribute('data-label-more') + ' ' + chevron;
+                // Scroll back to section header
                 var section = btn.closest('.nn-activity-block');
                 if (section) { section.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
             }

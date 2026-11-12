@@ -713,9 +713,11 @@ function neonews_account_visual_section( $title, $post_ids, $type ) {
                         continue;
                     }
                     $thumb   = get_the_post_thumbnail_url( $pid, 'neonews-card' );
-                    $hidden  = $i >= $visible ? ' nn-activity-card-hidden' : '';
+                    $is_hidden = $i >= $visible;
                     ?>
-                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>" class="nn-activity-card<?php echo esc_attr( $hidden ); ?>">
+                    <a href="<?php echo esc_url( get_permalink( $pid ) ); ?>"
+                       class="nn-activity-card<?php echo $is_hidden ? ' nn-activity-card-hidden' : ''; ?>"
+                       <?php echo $is_hidden ? 'style="display:none"' : ''; ?>>
                         <span class="nn-activity-card-thumb">
                             <?php if ( $thumb ) : ?>
                                 <img src="<?php echo esc_url( $thumb ); ?>" alt="" loading="lazy" />
@@ -772,9 +774,11 @@ function neonews_account_comments_section( $comments ) {
         <?php else : ?>
             <div class="nn-comment-cards" id="<?php echo esc_attr( $uid ); ?>">
                 <?php foreach ( $comments as $i => $c ) :
-                    $hidden = $i >= $visible ? ' nn-activity-card-hidden' : '';
+                    $is_hidden = $i >= $visible;
                     ?>
-                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>" class="nn-comment-card<?php echo esc_attr( $hidden ); ?>">
+                    <a href="<?php echo esc_url( get_comment_link( $c ) ); ?>"
+                       class="nn-comment-card<?php echo $is_hidden ? ' nn-activity-card-hidden' : ''; ?>"
+                       <?php echo $is_hidden ? 'style="display:none"' : ''; ?>>
                         <span class="nn-comment-quote">"</span>
                         <span class="nn-comment-text"><?php echo esc_html( wp_trim_words( $c->comment_content, 18 ) ); ?></span>
                         <span class="nn-comment-meta"><?php echo esc_html( get_the_title( $c->comment_post_ID ) ); ?></span>

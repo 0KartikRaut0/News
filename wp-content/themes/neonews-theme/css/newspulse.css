@@ -2913,9 +2913,11 @@ body.nn-mobile-menu-open {
     line-height: 1.5;
 }
 
-/* Hidden cards (shown after "View more") */
-.nn-activity-card-hidden {
-    display: none;
+/* Hidden cards — collapsed until "View more" is clicked */
+.nn-activity-card-hidden,
+.nn-activity-cards .nn-activity-card-hidden,
+.nn-comment-cards .nn-activity-card-hidden {
+    display: none !important;
 }
 
 /* View more / Show less button */
