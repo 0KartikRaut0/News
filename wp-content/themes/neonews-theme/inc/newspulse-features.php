@@ -129,14 +129,35 @@ add_action( 'widgets_init', 'neonews_register_ad_zones', 20 );
  * Enqueue NewsPulse styles.
  */
 function neonews_newspulse_assets() {
+    $np_css = get_template_directory() . '/css/newspulse.css';
     wp_enqueue_style(
         'neonews-newspulse',
         NEONEWS_THEME_URI . '/css/newspulse.css',
         array( 'neonews-main' ),
-        NEONEWS_THEME_VERSION
+        file_exists( $np_css ) ? (string) filemtime( $np_css ) : NEONEWS_THEME_VERSION
     );
 }
 add_action( 'wp_enqueue_scripts', 'neonews_newspulse_assets', 25 );
+
+/**
+ * Front page body class for homepage interaction styles.
+ *
+ * @param array $classes Classes.
+ * @return array
+ */
+function neonews_front_page_hover_body_class( $classes ) {
+    if ( ! is_front_page() ) {
+        return $classes;
+    }
+    $settings = function_exists( 'neonews_get_settings' ) ? neonews_get_settings() : array();
+    $hover    = function_exists( 'neonews_sanitize_home_hover' )
+        ? neonews_sanitize_home_hover( $settings['home_hover_effect'] ?? 'lift' )
+        : 'lift';
+    $classes[] = 'nn-front-page';
+    $classes[] = 'nn-body-hover-' . $hover;
+    return $classes;
+}
+add_filter( 'body_class', 'neonews_front_page_hover_body_class' );
 
 /**
  * Render ad zone or placeholder.

@@ -3399,6 +3399,10 @@ body.nn-mobile-menu-open {
     transition: none !important;
 }
 
+body.nn-reduce-motion .nn-home .nn-reveal.nn-visible {
+    transition: opacity 0.35s ease !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .nn-reveal,
     .nn-carousel-track {
@@ -4240,6 +4244,122 @@ body.nn-mobile-menu-open {
 
 .nn-tipline-how:hover {
     color: var(--nn-primary);
+}
+
+/* Homepage section wrapper styles (posts layout stays independent) */
+.nn-latest-compact {
+    margin: 1.5rem 0;
+}
+
+.nn-section-style-default {
+    /* inherited spacing only */
+}
+
+.nn-section-style-banner,
+.nn-section-style-edge {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: max(1.25rem, calc(50vw - var(--nn-home-pad, 0px) - 50%));
+    padding-right: max(1.25rem, calc(50vw - var(--nn-home-pad, 0px) - 50%));
+    box-sizing: border-box;
+}
+
+.nn-section-style-banner {
+    margin-top: 1.75rem;
+    margin-bottom: 1.75rem;
+    padding-top: 1.75rem;
+    padding-bottom: 1.75rem;
+    background: linear-gradient(135deg, var(--nn-gradient-soft), rgba(255, 122, 24, 0.12));
+    border-top: 1px solid rgba(255, 122, 24, 0.15);
+    border-bottom: 1px solid rgba(255, 122, 24, 0.15);
+}
+
+.nn-section-style-strip {
+    margin: 1rem 0;
+    padding: 0.65rem 0 0.85rem;
+    border-top: 2px solid var(--nn-primary);
+    border-bottom: 1px solid var(--nn-border-color);
+}
+
+.nn-section-style-strip .nn-section-header {
+    margin-bottom: 0.35rem;
+}
+
+.nn-section-style-strip .nn-section-title {
+    font-size: 1.1rem;
+}
+
+.nn-section-style-framed {
+    margin: 1.5rem 0;
+    padding: 1.25rem 1.35rem 1.35rem;
+    border: 1px solid var(--nn-border-color);
+    border-radius: var(--nn-radius-xl);
+    background: var(--nn-bg-primary);
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+}
+
+.nn-section-style-inset {
+    margin: 1.5rem 0;
+    padding: 1.35rem 1.25rem;
+    border-radius: var(--nn-radius-xl);
+    background: var(--nn-bg-secondary);
+    border: 1px solid var(--nn-border-color);
+}
+
+.nn-section-style-edge {
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+    background: var(--nn-bg-secondary);
+}
+
+.nn-section-style-dark {
+    margin: 1.75rem 0;
+    padding: 1.75rem 1.35rem;
+    border-radius: var(--nn-radius-xl);
+    background: linear-gradient(145deg, #0f172a 0%, #1e293b 55%, #0f172a 100%);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.nn-section-style-dark .nn-section-title,
+.nn-section-style-dark .nn-home-cat-title,
+.nn-section-style-dark .nn-section-sub {
+    color: #f8fafc;
+}
+
+.nn-section-style-dark .nn-section-link,
+.nn-section-style-dark .nn-home-cat-header .nn-section-link {
+    color: #fdba74;
+}
+
+.nn-section-style-dark .nn-section-link:hover,
+.nn-section-style-dark .nn-section-link:focus {
+    color: #fff;
+}
+
+.nn-section-style-dark .nn-post-title a,
+.nn-section-style-dark .nn-home-list-title a,
+.nn-section-style-dark .nn-home-featured-title a {
+    color: #f1f5f9;
+}
+
+.nn-section-style-dark .nn-meta-line,
+.nn-section-style-dark .nn-home-list-meta,
+.nn-section-style-dark .nn-home-featured-meta {
+    color: #94a3b8;
+}
+
+.nn-section-style-dark.nn-home-cat-block {
+    background: transparent;
+    border-color: rgba(148, 163, 184, 0.25);
+}
+
+.nn-section-style-dark.nn-watch-section {
+    background: transparent;
 }
 
 /* Custom homepage sections */
@@ -5921,12 +6041,50 @@ body.nn-newspulse {
     transform: none;
 }
 
+/* Keep homepage hovers working in lightweight / reduce-motion admin mode */
+body.nn-reduce-motion .nn-home:not(.nn-home-hover-none) .nn-post-card,
+body.nn-reduce-motion .nn-home:not(.nn-home-hover-none) .nn-watch-card,
+body.nn-reduce-motion .nn-home:not(.nn-home-hover-none) .nn-home-list-item {
+    transition: transform 0.35s ease, box-shadow 0.35s ease !important;
+}
+body.nn-reduce-motion .nn-home.nn-home-hover-lift .nn-post-card:hover,
+body.nn-reduce-motion .nn-home.nn-home-hover-lift .nn-watch-card:hover,
+body.nn-reduce-motion .nn-home.nn-home-hover-lift .nn-home-list-item:hover {
+    transform: translateY(-6px) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12) !important;
+}
+body.nn-reduce-motion .nn-home.nn-home-hover-glow .nn-post-card:hover,
+body.nn-reduce-motion .nn-home.nn-home-hover-glow .nn-watch-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 40px color-mix(in srgb, var(--nn-primary) 35%, transparent) !important;
+}
+body.nn-reduce-motion .nn-home.nn-home-hover-zoom .nn-card-rich-media img,
+body.nn-reduce-motion .nn-home.nn-home-hover-zoom .nn-watch-card .nn-watch-thumb img {
+    transition: transform 0.45s ease !important;
+}
+body.nn-reduce-motion .nn-home .nn-banner-style-shine .nn-home-banner-link::after,
+body.nn-reduce-motion .nn-home .nn-banner-style-shine .nn-home-banner-inner::after {
+    transition: transform 0.65s ease !important;
+}
+body.nn-reduce-motion .nn-home .nn-hs-chip,
+body.nn-reduce-motion .nn-home .nn-hs-quick-card,
+body.nn-reduce-motion .nn-home .nn-hs-promo,
+body.nn-reduce-motion .nn-home .nn-hs-stat {
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.25s ease !important;
+}
+
+.nn-home-tilt-active .nn-post-card,
+.nn-home-tilt-active .nn-watch-card {
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .nn-home.nn-home-hover-lift .nn-post-card:hover,
-    .nn-home.nn-home-hover-glow .nn-post-card:hover,
-    .nn-banner-style-kenburns .nn-home-banner-img,
-    .nn-featured-carousel.nn-carousel-style-hover-lift .nn-carousel-slide:hover {
-        transform: none;
+    .nn-home.nn-home-hover-tilt .nn-post-card,
+    .nn-home.nn-home-hover-tilt .nn-watch-card {
+        transform: none !important;
+    }
+    .nn-banner-style-kenburns .nn-home-banner-img {
         animation: none;
     }
 }

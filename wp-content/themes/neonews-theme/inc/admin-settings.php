@@ -34,6 +34,9 @@ function neonews_get_default_settings() {
         'home_carousel_style' => 'overlay',
         'home_category_layout'=> 'featured-list',
         'home_latest_layout'  => 'cards',
+        'home_latest_section_style'  => 'default',
+        'home_video_section_style'   => 'default',
+        'home_category_section_style' => 'default',
         'home_video_layout'   => 'grid',
         'home_hover_effect'   => 'lift',
         'ad_zones'            => array(
@@ -467,11 +470,12 @@ function neonews_sanitize_settings( $input ) {
                     }
 
                     $entry = array(
-                        'id'          => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
-                        'type'        => $raw_type,
-                        'title'       => sanitize_text_field( $cs['title'] ?? '' ),
-                        'show_title'  => ! isset( $cs['show_title'] ) || ! empty( $cs['show_title'] ),
-                        'see_all_url' => esc_url_raw( $cs['see_all_url'] ?? '' ),
+                        'id'            => preg_replace( '/[^a-z0-9_]/', '', (string) $cs['id'] ),
+                        'type'          => $raw_type,
+                        'title'         => sanitize_text_field( $cs['title'] ?? '' ),
+                        'show_title'    => ! isset( $cs['show_title'] ) || ! empty( $cs['show_title'] ),
+                        'see_all_url'   => esc_url_raw( $cs['see_all_url'] ?? '' ),
+                        'section_style' => ! empty( $cs['section_style'] ) ? neonews_sanitize_home_section_style( $cs['section_style'], '' ) : '',
                     );
 
                     if ( 'template' === $raw_type ) {
@@ -549,7 +553,8 @@ function neonews_sanitize_settings( $input ) {
                         'count'       => max( 1, min( 20, absint( $blk['count'] ?? 3 ) ) ),
                         'see_all_url' => esc_url_raw( $blk['see_all_url'] ?? '' ),
                         'enabled'     => ! empty( $blk['enabled'] ),
-                        'layout'      => $layout,
+                        'layout'        => $layout,
+                        'section_style' => ! empty( $blk['section_style'] ) ? neonews_sanitize_home_section_style( $blk['section_style'], '' ) : '',
                     );
                 }
             }
@@ -568,6 +573,9 @@ function neonews_sanitize_settings( $input ) {
         $output['home_latest_layout']     = neonews_sanitize_home_layout( 'latest', $input['home_latest_layout'] ?? '', 'cards' );
         $output['home_video_layout']      = neonews_sanitize_home_layout( 'video', $input['home_video_layout'] ?? '', 'grid' );
         $output['home_hover_effect']      = neonews_sanitize_home_hover( $input['home_hover_effect'] ?? '' );
+        $output['home_latest_section_style']   = neonews_sanitize_home_section_style( $input['home_latest_section_style'] ?? '' );
+        $output['home_video_section_style']    = neonews_sanitize_home_section_style( $input['home_video_section_style'] ?? '' );
+        $output['home_category_section_style'] = neonews_sanitize_home_section_style( $input['home_category_section_style'] ?? '' );
     }
 
     if ( 'header' === $active ) {

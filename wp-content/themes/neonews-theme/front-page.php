@@ -184,7 +184,10 @@ $home_hover = function_exists( 'neonews_sanitize_home_hover' )
                         <div class="nn-ad-row">
                             <?php neonews_ad_zone( 'ad-home-videos', __( 'Video section sponsor', 'neonews' ) ); ?>
                         </div>
-                        <section class="nn-watch-section nn-reveal">
+                        <?php
+                        $video_style_class = neonews_home_section_style_class( $settings['home_video_section_style'] ?? 'default' );
+                        ?>
+                        <section class="nn-watch-section nn-reveal <?php echo esc_attr( $video_style_class ); ?>">
                             <header class="nn-section-header">
                                 <h2 class="nn-section-title"><?php echo esc_html( $settings['home_video_title'] ); ?></h2>
                                 <?php if ( ! empty( $settings['home_video_subtitle'] ) ) : ?>
@@ -204,7 +207,8 @@ $home_hover = function_exists( 'neonews_sanitize_home_hover' )
 
                 elseif ( 'latest' === $section ) :
                     if ( neonews_is_feature_enabled( 'show_home_latest' ) ) : ?>
-                        <section class="nn-latest-compact nn-reveal">
+                        <?php $latest_style_class = neonews_home_section_style_class( $settings['home_latest_section_style'] ?? 'default' ); ?>
+                        <section class="nn-latest-compact nn-reveal <?php echo esc_attr( $latest_style_class ); ?>">
                             <header class="nn-section-header">
                                 <h2 class="nn-section-title"><?php esc_html_e( 'Latest', 'neonews' ); ?></h2>
                                 <?php $blog_id = get_option( 'page_for_posts' );

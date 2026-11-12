@@ -219,7 +219,7 @@ function neonews_scripts() {
         'neonews-main',
         NEONEWS_THEME_URI . '/js/main.js',
         $main_deps,
-        NEONEWS_THEME_VERSION,
+        filemtime( get_template_directory() . '/js/main.js' ),
         true
     );
 
@@ -242,9 +242,11 @@ function neonews_scripts() {
             'captcha'  => $captcha_config,
             'perf'     => array(
                 'lite'         => function_exists( 'neonews_perf_enabled' ) && neonews_perf_enabled(),
+                /* Only skips heavy JS (3D tilt); CSS hovers still run on homepage */
                 'reduceMotion' => function_exists( 'neonews_perf_option' ) && neonews_perf_option( 'perf_reduce_animations', true ),
                 'lazyCaptcha'  => function_exists( 'neonews_should_lazy_load_captcha' ) && neonews_should_lazy_load_captcha(),
             ),
+            'isHome'     => is_front_page(),
             'mobileAd' => array(
                 'collapsible'   => ! empty( neonews_get_setting( 'mobile_ad_collapsible', true ) ),
                 'collapsedText' => esc_html( neonews_get_setting( 'mobile_ad_collapsed_text', 'Ad' ) ?: 'Ad' ),

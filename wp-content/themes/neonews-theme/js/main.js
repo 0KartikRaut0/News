@@ -535,27 +535,28 @@
             return;
         }
 
-        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-        if (typeof neonewsData !== 'undefined' && neonewsData.perf && neonewsData.perf.reduceMotion) {
-            reduceMotion = true;
-        }
-        if (reduceMotion || coarsePointer) {
+        if (home.classList.contains('nn-home-hover-none')) {
             return;
         }
 
-        var banner = home.querySelector('.nn-home-banner');
-        var useSpotlight = home.classList.contains('nn-home-hover-spotlight')
-            || (banner && banner.classList.contains('nn-banner-style-interactive'));
+        var canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+        var reduceHeavy = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (typeof neonewsData !== 'undefined' && neonewsData.perf && neonewsData.perf.reduceMotion) {
+            reduceHeavy = true;
+        }
 
-        if (banner && useSpotlight) {
+        var banner = home.querySelector('.nn-home-banner');
+        var bannerSpotlight = banner && (
+            home.classList.contains('nn-home-hover-spotlight')
+            || banner.classList.contains('nn-banner-style-interactive')
+        );
+
+        if (canHover && bannerSpotlight) {
             banner.classList.add('nn-banner-cursor-ready');
             banner.addEventListener('mousemove', function(e) {
                 var rect = banner.getBoundingClientRect();
-                var x = ((e.clientX - rect.left) / rect.width) * 100;
-                var y = ((e.clientY - rect.top) / rect.height) * 100;
-                banner.style.setProperty('--nn-banner-x', x + '%');
-                banner.style.setProperty('--nn-banner-y', y + '%');
+                banner.style.setProperty('--nn-banner-x', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+                banner.style.setProperty('--nn-banner-y', ((e.clientY - rect.top) / rect.height) * 100 + '%');
             });
             banner.addEventListener('mouseleave', function() {
                 banner.style.setProperty('--nn-banner-x', '50%');
@@ -563,21 +564,36 @@
             });
         }
 
-        if (!home.classList.contains('nn-home-hover-tilt')) {
-            return;
+        if (canHover && home.classList.contains('nn-home-hover-spotlight')) {
+            home.querySelectorAll('.nn-post-card, .nn-watch-card').forEach(function(card) {
+                card.addEventListener('mousemove', function(e) {
+                    var rect = card.getBoundingClientRect();
+                    card.style.setProperty('--nn-card-x', ((e.clientX - rect.left) / rect.width) * 100 + '%');
+                    card.style.setProperty('--nn-card-y', ((e.clientY - rect.top) / rect.height) * 100 + '%');
+                });
+            });
         }
 
-        home.querySelectorAll('.nn-post-card, .nn-watch-card').forEach(function(card) {
-            card.addEventListener('mousemove', function(e) {
-                var rect = card.getBoundingClientRect();
-                var px = (e.clientX - rect.left) / rect.width - 0.5;
-                var py = (e.clientY - rect.top) / rect.height - 0.5;
-                card.style.transform = 'perspective(900px) rotateX(' + (-py * 7) + 'deg) rotateY(' + (px * 7) + 'deg) translateY(-4px)';
+        if (canHover && !reduceHeavy && home.classList.contains('nn-home-hover-tilt')) {
+            home.classList.add('nn-home-tilt-active');
+            home.querySelectorAll('.nn-post-card, .nn-watch-card').forEach(function(card) {
+                card.addEventListener('mousemove', function(e) {
+                    var rect = card.getBoundingClientRect();
+                    var px = (e.clientX - rect.left) / rect.width - 0.5;
+                    var py = (e.clientY - rect.top) / rect.height - 0.5;
+                    card.style.transform = 'perspective(900px) rotateX(' + (-py * 7) + 'deg) rotateY(' + (px * 7) + 'deg) translateY(-4px)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    card.style.transform = '';
+                });
             });
-            card.addEventListener('mouseleave', function() {
-                card.style.transform = '';
+        }
+
+        if (canHover) {
+            home.querySelectorAll('.nn-hs-chip, .nn-hs-quick-card, .nn-hs-promo, .nn-hs-newsletter-card').forEach(function(el) {
+                el.classList.add('nn-hs-motion-ready');
             });
-        });
+        }
     }
 
     /**
