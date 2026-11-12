@@ -4472,12 +4472,56 @@ body.nn-consent-all:not(.nn-consent-no-marketing) .nn-consent-marketing:not(.nn-
         font-size: 0.95rem;
     }
 
+    /* Full weather widget inside a post/page */
     .nn-weather-temp {
         font-size: 1.5rem;
     }
 
     .nn-weather-icon {
         font-size: 2rem;
+    }
+
+    /* ── Header datetime bar weather pill ── */
+    .nn-header-weather {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--nn-bg-primary, #fff);
+        border: 1px solid var(--nn-border-color, #e2e8f0);
+        border-radius: 999px;
+        padding: 0.3rem 0.85rem 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        white-space: nowrap;
+    }
+
+    .nn-header-weather-icon {
+        font-size: 1.25rem;
+        line-height: 1;
+    }
+
+    .nn-header-weather-temp {
+        font-size: 0.9rem;
+        font-weight: 700;
+    }
+
+    .nn-header-weather-city {
+        font-size: 0.78rem;
+        font-weight: 600;
+        opacity: 0.85;
+    }
+
+    /* Show weather label again on mobile (was hidden at 640px) */
+    .nn-header-weather-label {
+        display: none; /* keep hidden – description takes too much space */
+    }
+
+    /* Change button (pencil icon) inside header weather — keep small */
+    .nn-header-weather-btn {
+        width: 22px;
+        height: 22px;
+        font-size: 0.65rem;
+        margin-left: 0.25rem;
     }
 }
 
@@ -4720,14 +4764,39 @@ body.nn-newspulse {
         margin-right: 0;
     }
 
+    /* ── Mobile datetime/weather bar ── */
+    .nn-datetime-bar {
+        padding: 0.55rem 0;
+    }
+
     .nn-datetime-inner {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.45rem;
     }
 
     #nn-live-datetime {
-        flex: 1 1 100%;
-        min-width: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--nn-text-primary);
         word-break: break-word;
+        line-height: 1.4;
+        border-bottom: 1px solid var(--nn-border-color);
+        padding-bottom: 0.4rem;
+    }
+
+    .nn-datetime-end {
+        width: 100%;
+        justify-content: center;
+        gap: 0.6rem;
+        margin-left: 0;
+    }
+
+    .nn-datetime-spacer {
+        display: none;
     }
 
     .nn-header-mobile-search .nn-header-search {

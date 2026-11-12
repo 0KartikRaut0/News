@@ -379,17 +379,30 @@ function neonews_sanitize_settings( $input ) {
         $output['weather_timezone_guess']   = ! empty( $input['weather_timezone_guess'] );
 
         $output['auth_allow_registration'] = ! empty( $input['auth_allow_registration'] );
-        $output['auth_auto_username']      = ! empty( $input['auth_auto_username'] );
         $output['reg_custom_fields']       = isset( $input['reg_custom_fields'] ) ? sanitize_textarea_field( wp_unslash( $input['reg_custom_fields'] ) ) : ( $previous['reg_custom_fields'] ?? '' );
         $output['reg_fields'] = array();
         foreach ( neonews_get_builtin_registration_field_defs() as $field_key => $field_def ) {
-            $is_system = ! empty( $field_def['system'] );
-            $output['reg_fields'][ $field_key ] = array(
-                // System fields (email, password) are always enabled — they are
-                // essential for registration and must never be disabled.
-                'enabled'  => $is_system ? true : ! empty( $input['reg_fields'][ $field_key ]['enabled'] ),
-                'required' => ! empty( $input['reg_fields'][ $field_key ]['required'] ),
-            );
+            $is_email_or_pass = in_array( $field_key, array( 'email', 'password' ), true );
+            if ( $is_email_or_pass ) {
+                // Email & password: always enabled & required.
+                $output['reg_fields'][ $field_key ] = array( 'enabled' => true, 'required' => true );
+            } elseif ( 'username' === $field_key ) {
+                // Username "enabled" checkbox controls whether users see the field.
+                // auth_auto_username is the inverse: hidden field mirrors it via JS.
+                $username_enabled = ! empty( $input['reg_fields'][ $field_key ]['enabled'] );
+                $output['reg_fields'][ $field_key ] = array( 'enabled' => $username_enabled, 'required' => true );
+                // Keep auth_auto_username in sync: shown username = auto OFF; hidden = auto ON.
+                $output['auth_auto_username'] = ! $username_enabled;
+            } else {
+                $output['reg_fields'][ $field_key ] = array(
+                    'enabled'  => ! empty( $input['reg_fields'][ $field_key ]['enabled'] ),
+                    'required' => ! empty( $input['reg_fields'][ $field_key ]['required'] ),
+                );
+            }
+        }
+        // Fallback: if auth_auto_username wasn't set by username row (field missing from input), read directly.
+        if ( ! isset( $output['auth_auto_username'] ) ) {
+            $output['auth_auto_username'] = ! empty( $input['auth_auto_username'] );
         }
         update_option( 'users_can_register', $output['auth_allow_registration'] ? 1 : 0 );
 

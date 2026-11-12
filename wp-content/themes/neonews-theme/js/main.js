@@ -1305,14 +1305,19 @@
         }
         function tick() {
             var now = new Date();
-            var datePart = now.toLocaleDateString(undefined, {
+            var isMobile = window.innerWidth <= 640;
+            var datePart = now.toLocaleDateString(undefined, isMobile ? {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            } : {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
             });
             var timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
-            if (!document.body.classList.contains('nn-reduce-motion')) {
+            if (!isMobile && !document.body.classList.contains('nn-reduce-motion')) {
                 timeOpts.second = '2-digit';
             }
             var timePart = now.toLocaleTimeString(undefined, timeOpts);

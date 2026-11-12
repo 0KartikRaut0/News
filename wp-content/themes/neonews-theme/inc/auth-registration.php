@@ -89,21 +89,24 @@ function neonews_get_registration_fields() {
     $defs     = neonews_get_builtin_registration_field_defs();
 
     foreach ( $defs as $key => $def ) {
-        $cfg = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
-
-        // System fields (email, password, username) are always required — never skip them.
+        $cfg       = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
         $is_system = ! empty( $def['system'] );
 
-        // Username field: only show when auto-username is OFF.
-        if ( 'username' === $key && neonews_is_feature_enabled( 'auth_auto_username' ) ) {
-            continue;
-        }
-
-        if ( ! $is_system ) {
-            if ( isset( $cfg['enabled'] ) && ! $cfg['enabled'] ) {
+        // Username: controlled by its own "enabled" saved setting.
+        // If the admin has never saved a setting, fall back to whether auto-username is OFF.
+        if ( 'username' === $key ) {
+            $username_enabled = isset( $cfg['enabled'] )
+                ? (bool) $cfg['enabled']
+                : ! neonews_is_feature_enabled( 'auth_auto_username' );
+            if ( ! $username_enabled ) {
                 continue;
             }
-            if ( ! $def['enabled'] && ! isset( $cfg['enabled'] ) ) {
+        } elseif ( $is_system ) {
+            // email & password: always show, cannot be disabled.
+        } else {
+            // Non-system optional fields: respect the "enabled" checkbox.
+            $enabled = isset( $cfg['enabled'] ) ? (bool) $cfg['enabled'] : (bool) $def['enabled'];
+            if ( ! $enabled ) {
                 continue;
             }
         }
@@ -115,32 +118,6 @@ function neonews_get_registration_fields() {
                 'required' => isset( $cfg['required'] ) ? (bool) $cfg['required'] : $def['required'],
             )
         );
-    }
-
-    // Fallback: if no optional fields made it through (all disabled in settings),
-    // include every built-in field that has enabled=true in its definition so the
-    // form is never left completely empty.
-    $has_optional = false;
-    foreach ( $fields as $f ) {
-        if ( empty( $f['system'] ) ) {
-            $has_optional = true;
-            break;
-        }
-    }
-    if ( ! $has_optional ) {
-        foreach ( $defs as $key => $def ) {
-            if ( ! empty( $def['system'] ) || ! $def['enabled'] ) {
-                continue; // system fields already included; skip disabled defs.
-            }
-            $cfg      = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
-            $fields[] = array_merge(
-                $def,
-                array(
-                    'key'      => $key,
-                    'required' => isset( $cfg['required'] ) ? (bool) $cfg['required'] : $def['required'],
-                )
-            );
-        }
     }
 
     $custom_raw = isset( $settings['reg_custom_fields'] ) ? (string) $settings['reg_custom_fields'] : '';
@@ -559,37 +536,78 @@ function neonews_admin_render_registration_settings( $settings ) {
             </td>
         </tr>
         <tr>
-            <th><?php esc_html_e( 'Username', 'neonews' ); ?></th>
-            <td>
-                <label><input type="checkbox" name="neonews_platform_settings[auth_auto_username]" value="1" <?php checked( ! empty( $settings['auth_auto_username'] ) ); ?> /> <?php esc_html_e( 'Auto-generate username from email (recommended)', 'neonews' ); ?></label>
-            </td>
-        </tr>
-        <tr>
             <th><?php esc_html_e( 'Sign-up fields', 'neonews' ); ?></th>
             <td>
-                <table class="widefat striped" style="max-width:640px;">
+                <table class="widefat striped" style="max-width:680px;">
                     <thead>
                         <tr>
                             <th><?php esc_html_e( 'Field', 'neonews' ); ?></th>
-                            <th><?php esc_html_e( 'Show', 'neonews' ); ?></th>
+                            <th><?php esc_html_e( 'Show on sign-up', 'neonews' ); ?></th>
                             <th><?php esc_html_e( 'Required', 'neonews' ); ?></th>
+                            <th><?php esc_html_e( 'Notes', 'neonews' ); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ( $defs as $key => $def ) : ?>
                             <?php
-                            $cfg = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
-                            $enabled  = ! isset( $cfg['enabled'] ) || ! empty( $cfg['enabled'] );
+                            $cfg      = isset( $saved[ $key ] ) && is_array( $saved[ $key ] ) ? $saved[ $key ] : array();
                             $required = isset( $cfg['required'] ) ? ! empty( $cfg['required'] ) : ! empty( $def['required'] );
+
+                            // email & password are mandatory system fields — always shown.
+                            $is_core = in_array( $key, array( 'email', 'password' ), true );
+
+                            // username: enabled = Show checkbox; default = auto_username OFF.
+                            if ( 'username' === $key ) {
+                                $enabled = isset( $cfg['enabled'] )
+                                    ? ! empty( $cfg['enabled'] )
+                                    : ! neonews_is_feature_enabled( 'auth_auto_username' );
+                            } else {
+                                $enabled = ! isset( $cfg['enabled'] ) || ! empty( $cfg['enabled'] );
+                            }
                             ?>
                             <tr>
                                 <td><strong><?php echo esc_html( $def['label'] ); ?></strong><br /><code><?php echo esc_html( $key ); ?></code></td>
-                                <td><input type="checkbox" name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][enabled]" value="1" <?php checked( $enabled ); ?> /></td>
-                                <td><input type="checkbox" name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][required]" value="1" <?php checked( $required ); ?> /></td>
+                                <td>
+                                    <?php if ( $is_core ) : ?>
+                                        <em style="color:#888"><?php esc_html_e( 'Always shown', 'neonews' ); ?></em>
+                                        <input type="hidden" name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][enabled]" value="1" />
+                                    <?php else : ?>
+                                        <input type="checkbox"
+                                            name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][enabled]"
+                                            value="1"
+                                            <?php checked( $enabled ); ?>
+                                            <?php if ( 'username' === $key ) : ?>id="nn-admin-username-show"<?php endif; ?>
+                                        />
+                                        <?php if ( 'username' === $key ) : ?>
+                                            <span style="color:#555;font-size:12px;margin-left:4px;"><?php esc_html_e( '(uncheck to auto-generate username from email)', 'neonews' ); ?></span>
+                                            <?php // Mirror to auth_auto_username: checked Show = auto OFF, unchecked Show = auto ON. ?>
+                                            <input type="hidden" id="nn-admin-auto-username-mirror"
+                                                name="neonews_platform_settings[auth_auto_username]" value="<?php echo $enabled ? '0' : '1'; ?>" />
+                                        <?php endif; ?>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ( $is_core || 'username' === $key ) : ?>
+                                        <em style="color:#888"><?php esc_html_e( 'Always required', 'neonews' ); ?></em>
+                                        <input type="hidden" name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][required]" value="1" />
+                                    <?php else : ?>
+                                        <input type="checkbox" name="neonews_platform_settings[reg_fields][<?php echo esc_attr( $key ); ?>][required]" value="1" <?php checked( $required ); ?> />
+                                    <?php endif; ?>
+                                </td>
+                                <td style="font-size:12px;color:#888;">
+                                    <?php if ( $is_core ) : ?>
+                                        <?php esc_html_e( 'Core — cannot be hidden', 'neonews' ); ?>
+                                    <?php elseif ( 'username' === $key ) : ?>
+                                        <?php esc_html_e( 'User logs in with email or username', 'neonews' ); ?>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <p class="description" style="margin-top:8px;">
+                    <?php esc_html_e( 'Email and Password are always required. Username can be shown (user picks their own) or hidden (auto-generated from email).', 'neonews' ); ?>
+                </p>
             </td>
         </tr>
         <tr>
@@ -604,5 +622,17 @@ function neonews_admin_render_registration_settings( $settings ) {
             </td>
         </tr>
     </table>
+    <script>
+    (function(){
+        var showCb  = document.getElementById('nn-admin-username-show');
+        var mirror  = document.getElementById('nn-admin-auto-username-mirror');
+        if ( ! showCb || ! mirror ) return;
+        showCb.addEventListener('change', function(){
+            // Show checked  → user picks username → auto_username = 0 (OFF)
+            // Show unchecked → auto-generate     → auto_username = 1 (ON)
+            mirror.value = showCb.checked ? '0' : '1';
+        });
+    })();
+    </script>
     <?php
 }
