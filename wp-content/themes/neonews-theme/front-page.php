@@ -132,23 +132,26 @@ $home_hover = function_exists( 'neonews_sanitize_home_hover' )
                         <?php endif; ?>
                     </div>
                 </section>
-                <?php wp_reset_postdata();
+                <?php
+                wp_reset_postdata();
             endif;
-            if ( ! $smart_home_hook_fired ) {
+            if ( ! $smart_home_hook_fired ) :
                 do_action( 'neonews_home_after_hero' );
                 $smart_home_hook_fired = true;
-            }
+            endif;
 
-        elseif ( 'ad_hero' === $section ) : ?>
+        elseif ( 'ad_hero' === $section ) :
+            ?>
             <div class="nn-container nn-ad-row nn-reveal">
                 <?php neonews_ad_zone( 'ad-home-hero', __( '728×90 — Premium homepage placement', 'neonews' ) ); ?>
             </div>
-        <?php endif;
+            <?php
+        endif;
     endforeach;
 
-    if ( ! $smart_home_hook_fired ) {
+    if ( ! $smart_home_hook_fired ) :
         do_action( 'neonews_home_after_hero' );
-    }
+    endif;
     ?>
 
     <div class="nn-container nn-home-layout nn-reveal">
