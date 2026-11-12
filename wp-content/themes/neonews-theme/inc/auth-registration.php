@@ -358,7 +358,7 @@ function neonews_ajax_login() {
         wp_send_json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
     }
 
-    // Authenticate — does NOT touch cookies, just checks DB credentials.
+    // Authenticate — checks DB credentials only, no cookie involved.
     $user = wp_authenticate( $username, $password );
 
     if ( is_wp_error( $user ) ) {
@@ -373,14 +373,12 @@ function neonews_ajax_login() {
         wp_send_json_error( array( 'message' => $msg ) );
     }
 
-    // Credentials OK — set the session cookie.
-    // On http:// (Local WP) $secure MUST be false or the cookie is never sent.
-    $secure = in_array( wp_get_environment_type(), array( 'local', 'development' ), true )
-        ? false
-        : is_ssl();
-
+    // Credentials OK — set cookie.
+    // Always use $secure = false: on http:// (Local WP) a secure cookie is
+    // never sent back, which makes the browser appear logged-out even though
+    // authentication succeeded.
     wp_set_current_user( $user->ID );
-    wp_set_auth_cookie( $user->ID, $remember, $secure );
+    wp_set_auth_cookie( $user->ID, $remember, false );
     do_action( 'wp_login', $user->user_login, $user );
 
     wp_send_json_success( array(

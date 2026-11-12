@@ -655,6 +655,7 @@ require_once NEONEWS_THEME_DIR . '/inc/author-photo.php';
 require_once NEONEWS_THEME_DIR . '/inc/theme-activation.php';
 require_once NEONEWS_THEME_DIR . '/inc/newspulse-features.php';
 
+
 /**
  * Conditionally include Elementor compatibility
  */

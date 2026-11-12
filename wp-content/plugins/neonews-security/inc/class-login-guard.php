@@ -47,7 +47,29 @@ class NeoNews_Login_Guard {
     }
 
     /**
+     * Check if the login attempt is from an administrator — skip lockout for them.
+     *
+     * @param string $username Username being attempted.
+     * @return bool
+     */
+    private static function is_admin_user( $username ) {
+        if ( empty( $username ) ) {
+            return false;
+        }
+        // Check by username or email.
+        $user = get_user_by( 'login', $username );
+        if ( ! $user ) {
+            $user = get_user_by( 'email', $username );
+        }
+        if ( ! $user ) {
+            return false;
+        }
+        return user_can( $user, 'manage_options' );
+    }
+
+    /**
      * Block auth if locked out.
+     * Administrators are always exempt from IP-based lockouts.
      *
      * @param WP_User|WP_Error|null $user User.
      * @return WP_User|WP_Error|null
@@ -55,6 +77,12 @@ class NeoNews_Login_Guard {
     public static function check_lockout( $user ) {
         $limits = self::limits();
         if ( ! $limits['enabled'] ) {
+            return $user;
+        }
+
+        // Never lock out administrators.
+        $attempting_username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
+        if ( self::is_admin_user( $attempting_username ) ) {
             return $user;
         }
 
@@ -85,6 +113,12 @@ class NeoNews_Login_Guard {
     public static function log_failed_login() {
         $limits = self::limits();
         if ( ! $limits['enabled'] ) {
+            return;
+        }
+
+        // Don't count failed attempts from admin accounts toward lockout.
+        $attempting_username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
+        if ( self::is_admin_user( $attempting_username ) ) {
             return;
         }
 
