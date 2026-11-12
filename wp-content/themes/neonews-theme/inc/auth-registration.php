@@ -15,35 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array
  */
 function neonews_get_builtin_registration_field_defs() {
+    // ORDER MATTERS: email → username → password always appear first (top of form),
+    // then optional profile fields below the password field.
     return array(
-        'first_name' => array(
-            'label'    => __( 'First name', 'neonews' ),
-            'type'     => 'text',
-            'meta_key' => 'first_name',
-            'required' => true,
-            'enabled'  => true,
-        ),
-        'last_name'  => array(
-            'label'    => __( 'Last name', 'neonews' ),
-            'type'     => 'text',
-            'meta_key' => 'last_name',
-            'required' => true,
-            'enabled'  => true,
-        ),
-        'education'  => array(
-            'label'    => __( 'Education', 'neonews' ),
-            'type'     => 'text',
-            'meta_key' => 'nn_education',
-            'required' => false,
-            'enabled'  => true,
-        ),
-        'occupation' => array(
-            'label'    => __( 'Occupation', 'neonews' ),
-            'type'     => 'text',
-            'meta_key' => 'nn_occupation',
-            'required' => false,
-            'enabled'  => true,
-        ),
         'email'      => array(
             'label'    => __( 'Email', 'neonews' ),
             'type'     => 'email',
@@ -64,6 +38,34 @@ function neonews_get_builtin_registration_field_defs() {
             'system'   => 'password',
             'required' => true,
             'enabled'  => true,
+        ),
+        'first_name' => array(
+            'label'    => __( 'First name', 'neonews' ),
+            'type'     => 'text',
+            'meta_key' => 'first_name',
+            'required' => false,
+            'enabled'  => true,
+        ),
+        'last_name'  => array(
+            'label'    => __( 'Last name', 'neonews' ),
+            'type'     => 'text',
+            'meta_key' => 'last_name',
+            'required' => false,
+            'enabled'  => true,
+        ),
+        'education'  => array(
+            'label'    => __( 'Education', 'neonews' ),
+            'type'     => 'text',
+            'meta_key' => 'nn_education',
+            'required' => false,
+            'enabled'  => false, // hidden by default; admin can enable
+        ),
+        'occupation' => array(
+            'label'    => __( 'Occupation', 'neonews' ),
+            'type'     => 'text',
+            'meta_key' => 'nn_occupation',
+            'required' => false,
+            'enabled'  => false, // hidden by default; admin can enable
         ),
     );
 }
@@ -214,7 +216,7 @@ function neonews_render_registration_form_fields() {
             $extra = ' autocomplete="off"';
         }
 
-        printf(
+        $input_html = sprintf(
             '<input type="%1$s" id="%2$s" name="%3$s" class="nn-form-input"%4$s%5$s />',
             esc_attr( 'password' === $type ? 'password' : ( 'email' === $type ? 'email' : 'text' ) ),
             esc_attr( $id ),
@@ -222,6 +224,22 @@ function neonews_render_registration_form_fields() {
             $req ? ' required' : '',
             $extra
         );
+
+        if ( 'password' === $type ) {
+            // Wrap with show/hide toggle.
+            printf(
+                '<div class="nn-pass-wrap">%s<button type="button" class="nn-pass-toggle" aria-label="%s" data-target="%s"><span class="nn-pass-icon nn-pass-show">&#128065;</span><span class="nn-pass-icon nn-pass-hide" hidden>&#128584;</span></button></div>',
+                $input_html,
+                esc_attr__( 'Show password', 'neonews' ),
+                esc_attr( $id )
+            );
+        } elseif ( isset( $field['system'] ) && 'username' === $field['system'] ) {
+            // Wrap username with availability feedback.
+            echo $input_html;
+            echo '<span class="nn-username-feedback" id="nn-username-feedback" aria-live="polite"></span>';
+        } else {
+            echo $input_html;
+        }
     }
 }
 
@@ -254,7 +272,13 @@ function neonews_render_auth_modal() {
                     <label for="nn-login-user"><?php esc_html_e( 'Email or username', 'neonews' ); ?></label>
                     <input type="text" id="nn-login-user" name="log" class="nn-form-input" required autocomplete="username" />
                     <label for="nn-login-pass"><?php esc_html_e( 'Password', 'neonews' ); ?></label>
-                    <input type="password" id="nn-login-pass" name="pwd" class="nn-form-input" required autocomplete="current-password" />
+                    <div class="nn-pass-wrap">
+                        <input type="password" id="nn-login-pass" name="pwd" class="nn-form-input" required autocomplete="current-password" />
+                        <button type="button" class="nn-pass-toggle" aria-label="<?php esc_attr_e( 'Show password', 'neonews' ); ?>" data-target="nn-login-pass">
+                            <span class="nn-pass-icon nn-pass-show">👁</span>
+                            <span class="nn-pass-icon nn-pass-hide" hidden>🙈</span>
+                        </button>
+                    </div>
                     <label class="nn-checkbox-label"><input type="checkbox" name="rememberme" value="forever" /> <?php esc_html_e( 'Remember me', 'neonews' ); ?></label>
                     <?php
                     if ( class_exists( 'NeoNews_Captcha' ) ) {
@@ -375,6 +399,11 @@ function neonews_ajax_register() {
     $meta     = array();
 
     foreach ( neonews_get_registration_fields() as $field ) {
+        // Username uses name="user_login" — handled separately below; skip here.
+        if ( isset( $field['system'] ) && 'username' === $field['system'] ) {
+            continue;
+        }
+
         $post_key = 'reg_' . $field['key'];
         $raw      = isset( $_POST[ $post_key ] ) ? wp_unslash( $_POST[ $post_key ] ) : '';
         $value    = 'textarea' === $field['type'] ? sanitize_textarea_field( $raw ) : sanitize_text_field( $raw );
@@ -413,8 +442,17 @@ function neonews_ajax_register() {
         wp_send_json_error( array( 'message' => __( 'That email is already registered. Try signing in or reset your password.', 'neonews' ) ) );
     }
 
-    $username = neonews_generate_username_from_email( $email );
-    if ( ! neonews_is_feature_enabled( 'auth_auto_username' ) ) {
+    // Determine if the username field was shown on the form (user entered their own).
+    $username_field_shown = false;
+    foreach ( neonews_get_registration_fields() as $_f ) {
+        if ( isset( $_f['system'] ) && 'username' === $_f['system'] ) {
+            $username_field_shown = true;
+            break;
+        }
+    }
+
+    if ( $username_field_shown ) {
+        // User picked their own username.
         if ( empty( $_POST['user_login'] ) ) {
             wp_send_json_error( array( 'message' => __( 'Please choose a username.', 'neonews' ) ) );
         }
@@ -422,10 +460,13 @@ function neonews_ajax_register() {
         if ( strlen( $username ) < 3 ) {
             wp_send_json_error( array( 'message' => __( 'Username must be at least 3 characters.', 'neonews' ) ) );
         }
-    }
-
-    if ( username_exists( $username ) ) {
-        wp_send_json_error( array( 'message' => __( 'That username is already taken. Please choose another.', 'neonews' ) ) );
+        if ( username_exists( $username ) ) {
+            wp_send_json_error( array( 'message' => __( 'That username is already taken. Please choose another.', 'neonews' ) ) );
+        }
+    } else {
+        // Auto-generate a unique username from the email address.
+        $username = neonews_generate_username_from_email( $email );
+        // neonews_generate_username_from_email already guarantees uniqueness via while-loop.
     }
 
     $user_id = wp_create_user( $username, $password, $email );
@@ -466,6 +507,29 @@ function neonews_ajax_register() {
     );
 }
 add_action( 'wp_ajax_nopriv_neonews_ajax_register', 'neonews_ajax_register' );
+
+/**
+ * AJAX: real-time username availability check.
+ */
+function neonews_ajax_check_username() {
+    check_ajax_referer( 'neonews_nonce', 'nonce' );
+
+    $username = isset( $_POST['username'] ) ? sanitize_user( wp_unslash( $_POST['username'] ), true ) : '';
+
+    if ( strlen( $username ) < 3 ) {
+        wp_send_json_error( array( 'message' => __( 'Username must be at least 3 characters.', 'neonews' ) ) );
+    }
+    if ( ! validate_username( $username ) ) {
+        wp_send_json_error( array( 'message' => __( 'Username can only contain letters, numbers, spaces, _, -, and .', 'neonews' ) ) );
+    }
+    if ( username_exists( $username ) ) {
+        wp_send_json_error( array( 'message' => __( 'That username is already taken.', 'neonews' ) ) );
+    }
+
+    wp_send_json_success( array( 'message' => __( 'Username is available!', 'neonews' ) ) );
+}
+add_action( 'wp_ajax_nopriv_neonews_ajax_check_username', 'neonews_ajax_check_username' );
+add_action( 'wp_ajax_neonews_ajax_check_username',        'neonews_ajax_check_username' );
 
 /**
  * AJAX lost password handler.

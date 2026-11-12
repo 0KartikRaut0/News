@@ -1281,6 +1281,56 @@
             });
         }
 
+        /* ── Show / hide password toggle ── */
+        modal.addEventListener('click', function(e) {
+            var btn = e.target.closest('.nn-pass-toggle');
+            if (!btn) return;
+            var targetId = btn.getAttribute('data-target');
+            var input = targetId ? document.getElementById(targetId) : btn.closest('.nn-pass-wrap').querySelector('input');
+            if (!input) return;
+            var isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            var showIcon = btn.querySelector('.nn-pass-show');
+            var hideIcon = btn.querySelector('.nn-pass-hide');
+            if (showIcon) showIcon.hidden = isHidden;
+            if (hideIcon) hideIcon.hidden = !isHidden;
+            btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+        });
+
+        /* ── Real-time username availability check ── */
+        var usernameInput = modal.querySelector('#nn-register-username');
+        var usernameFeedback = modal.querySelector('#nn-username-feedback');
+        if (usernameInput && usernameFeedback && typeof neonewsData !== 'undefined') {
+            var usernameTimer = null;
+            usernameInput.addEventListener('input', function() {
+                clearTimeout(usernameTimer);
+                var val = usernameInput.value.trim();
+                usernameFeedback.textContent = '';
+                usernameFeedback.className = 'nn-username-feedback';
+                if (val.length < 3) return;
+                usernameFeedback.textContent = '…';
+                usernameTimer = setTimeout(function() {
+                    var fd = new FormData();
+                    fd.append('action', 'neonews_ajax_check_username');
+                    fd.append('nonce', neonewsData.nonce);
+                    fd.append('username', val);
+                    fetch(neonewsData.ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (usernameInput.value.trim() !== val) return; // stale response
+                            if (data.success) {
+                                usernameFeedback.textContent = '✓ ' + (data.data.message || 'Available');
+                                usernameFeedback.className = 'nn-username-feedback nn-uf-ok';
+                            } else {
+                                usernameFeedback.textContent = '✗ ' + (data.data && data.data.message ? data.data.message : 'Unavailable');
+                                usernameFeedback.className = 'nn-username-feedback nn-uf-err';
+                            }
+                        })
+                        .catch(function() {});
+                }, 500);
+            });
+        }
+
         mountCaptcha();
 
         if (window.location.search.indexOf('logged_out=1') !== -1) {
@@ -1305,22 +1355,33 @@
         }
         function tick() {
             var now = new Date();
-            var isMobile = window.innerWidth <= 640;
-            var datePart = now.toLocaleDateString(undefined, isMobile ? {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-            } : {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-            var timeOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
-            if (!isMobile && !document.body.classList.contains('nn-reduce-motion')) {
-                timeOpts.second = '2-digit';
+            var w = window.innerWidth;
+            var isXs = w <= 480;
+            var isMobile = w <= 640;
+            var datePart, timePart;
+
+            if (isXs) {
+                // Ultra-compact: "Thu, Nov 12"
+                datePart = now.toLocaleDateString(undefined, {
+                    weekday: 'short', month: 'short', day: 'numeric'
+                });
+                timePart = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+            } else if (isMobile) {
+                // Compact: "Thu, Nov 12, 2026"
+                datePart = now.toLocaleDateString(undefined, {
+                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                });
+                timePart = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+            } else {
+                // Full: "Thursday, November 12, 2026"
+                datePart = now.toLocaleDateString(undefined, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                var tOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
+                if (!document.body.classList.contains('nn-reduce-motion')) { tOpts.second = '2-digit'; }
+                timePart = now.toLocaleTimeString(undefined, tOpts);
             }
-            var timePart = now.toLocaleTimeString(undefined, timeOpts);
+
             el.textContent = datePart + ' · ' + timePart;
             el.setAttribute('datetime', now.toISOString());
         }
