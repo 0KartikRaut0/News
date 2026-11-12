@@ -1144,6 +1144,10 @@
                 var formData = new FormData(form);
                 formData.append('action', action);
                 formData.append('nonce', neonewsData.nonce);
+                // DEBUG: send nn_debug so PHP returns full diagnostics
+                if (action === 'neonews_ajax_login') {
+                    formData.append('nn_debug', '1');
+                }
 
                 fetch(neonewsData.ajaxUrl, {
                     method: 'POST',
@@ -1152,6 +1156,19 @@
                 })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
+                    // DEBUG block — show full response in error area for login
+                    if (action === 'neonews_ajax_login' && data.success && data.data && data.data.auth_ok === undefined) {
+                        // real success — proceed normally
+                    } else if (action === 'neonews_ajax_login' && data.success && data.data && (data.data.auth_ok || data.data.auth_error)) {
+                        // debug response — show it
+                        if (errorEl) {
+                            errorEl.style.whiteSpace = 'pre-wrap';
+                            errorEl.style.fontSize = '11px';
+                            errorEl.textContent = 'DEBUG:\n' + JSON.stringify(data.data, null, 2);
+                            errorEl.hidden = false;
+                        }
+                        return;
+                    }
                     if (data.success) {
                         window.location.href = data.data.redirect || neonewsData.homeUrl;
                         return;

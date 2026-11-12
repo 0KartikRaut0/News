@@ -341,6 +341,34 @@ function neonews_render_auth_modal() {
  * AJAX login handler.
  */
 function neonews_ajax_login() {
+    // DEBUG — remove after fixing login issue
+    $debug = array(
+        'post_keys'   => array_keys( $_POST ),
+        'log_raw'     => isset( $_POST['log'] ) ? substr( $_POST['log'], 0, 40 ) : '(missing)',
+        'pwd_len'     => isset( $_POST['pwd'] ) ? strlen( $_POST['pwd'] ) : 0,
+        'nonce_ok'    => (bool) check_ajax_referer( 'neonews_nonce', 'nonce', false ),
+        'env_type'    => wp_get_environment_type(),
+        'is_ssl'      => is_ssl(),
+        'site_url'    => site_url(),
+        'cookie_dom'  => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '(not set)',
+        'user_exists' => username_exists( isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '' ),
+    );
+
+    // Try wp_authenticate to check creds independently of cookie issues
+    $test_user = wp_authenticate(
+        isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '',
+        isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''
+    );
+    if ( is_wp_error( $test_user ) ) {
+        $debug['auth_error'] = $test_user->get_error_code() . ': ' . wp_strip_all_tags( $test_user->get_error_message() );
+    } else {
+        $debug['auth_ok'] = 'User ID ' . $test_user->ID . ' (' . $test_user->user_login . ')';
+    }
+
+    if ( isset( $_POST['nn_debug'] ) ) {
+        wp_send_json_success( $debug );
+    }
+
     check_ajax_referer( 'neonews_nonce', 'nonce' );
 
     if ( function_exists( 'neonews_verify_captcha' ) ) {
