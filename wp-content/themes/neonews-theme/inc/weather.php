@@ -10,6 +10,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Whether to verify SSL certs on outbound requests.
+ * Local WP / dev environments often lack a full CA bundle, so we disable
+ * verification when WP_LOCAL_DEV or WP_DEBUG is set; always on in production.
+ *
+ * @return bool
+ */
+function neonews_weather_ssl_verify() {
+    // Local WP and other local environments automatically set WP_ENVIRONMENT_TYPE to 'local'.
+    // Disable SSL cert verification locally — external APIs like Open-Meteo are public and
+    // the local PHP CA bundle often can't verify them, causing all requests to fail.
+    if ( defined( 'WP_LOCAL_DEV' ) && WP_LOCAL_DEV ) {
+        return false;
+    }
+    $env = defined( 'WP_ENVIRONMENT_TYPE' ) ? WP_ENVIRONMENT_TYPE : '';
+    if ( in_array( $env, array( 'local', 'development' ), true ) ) {
+        return false;
+    }
+    return true;
+}
+
+/**
  * Is weather enabled?
  *
  * @return bool
@@ -96,7 +117,9 @@ function neonews_render_weather_widget() {
  * AJAX weather data.
  */
 function neonews_ajax_weather() {
-    check_ajax_referer( 'neonews_nonce', 'nonce' );
+    if ( ! check_ajax_referer( 'neonews_nonce', 'nonce', false ) ) {
+        wp_send_json_error( array( 'message' => 'nonce_expired', 'reload' => true ) );
+    }
 
     $city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : 'New York';
     $city = mb_substr( $city, 0, 60 );
@@ -117,7 +140,10 @@ function neonews_ajax_weather() {
         $geo = wp_remote_get( add_query_arg( array(
             'name'  => $city,
             'count' => 1,
-        ), 'https://geocoding-api.open-meteo.com/v1/search' ), array( 'timeout' => 8 ) );
+        ), 'https://geocoding-api.open-meteo.com/v1/search' ), array(
+            'timeout'  => 8,
+            'sslverify' => neonews_weather_ssl_verify(),
+        ) );
 
         if ( is_wp_error( $geo ) ) {
             wp_send_json_error( array( 'message' => __( 'Could not find location.', 'neonews' ) ) );
@@ -143,7 +169,10 @@ function neonews_ajax_weather() {
         'daily'     => 'weather_code,temperature_2m_max,temperature_2m_min',
         'timezone'  => 'auto',
         'forecast_days' => 3,
-    ), 'https://api.open-meteo.com/v1/forecast' ), array( 'timeout' => 8 ) );
+    ), 'https://api.open-meteo.com/v1/forecast' ), array(
+        'timeout'  => 8,
+        'sslverify' => neonews_weather_ssl_verify(),
+    ) );
 
     if ( is_wp_error( $forecast ) ) {
         wp_send_json_error( array( 'message' => __( 'Weather service unavailable.', 'neonews' ) ) );
@@ -178,7 +207,9 @@ add_action( 'wp_ajax_nopriv_neonews_weather', 'neonews_ajax_weather' );
  * AJAX city search for visitor weather (proxied so the browser never contacts a third party).
  */
 function neonews_ajax_weather_search() {
-    check_ajax_referer( 'neonews_nonce', 'nonce' );
+    if ( ! check_ajax_referer( 'neonews_nonce', 'nonce', false ) ) {
+        wp_send_json_error( array( 'message' => 'nonce_expired', 'reload' => true ) );
+    }
 
     if ( ! neonews_is_feature_enabled( 'weather_visitor_location' ) ) {
         wp_send_json_error( array( 'message' => __( 'Location search is disabled.', 'neonews' ) ) );
@@ -200,7 +231,10 @@ function neonews_ajax_weather_search() {
         'name'     => $query,
         'count'    => 6,
         'language' => 'en',
-    ), 'https://geocoding-api.open-meteo.com/v1/search' ), array( 'timeout' => 8 ) );
+    ), 'https://geocoding-api.open-meteo.com/v1/search' ), array(
+        'timeout'  => 8,
+        'sslverify' => neonews_weather_ssl_verify(),
+    ) );
 
     if ( is_wp_error( $response ) ) {
         wp_send_json_error( array( 'message' => __( 'Search unavailable, try again.', 'neonews' ) ) );

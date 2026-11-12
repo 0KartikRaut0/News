@@ -780,15 +780,74 @@
             return;
         }
 
+        // ── Guest sign-in toast ──────────────────────────────────────────────
+        var _guestToastTimer = null;
+        function showGuestLikeToast(anchorEl) {
+            // Remove any existing toast.
+            var old = document.getElementById('nn-guest-like-toast');
+            if (old) { old.remove(); }
+            if (_guestToastTimer) { clearTimeout(_guestToastTimer); }
+
+            var loginUrl = (typeof neonewsData !== 'undefined' && neonewsData.loginUrl)
+                ? neonewsData.loginUrl
+                : (neonewsData.homeUrl ? neonewsData.homeUrl + '/login/' : '/login/');
+
+            var toast = document.createElement('div');
+            toast.id = 'nn-guest-like-toast';
+            toast.className = 'nn-guest-toast';
+            toast.setAttribute('role', 'status');
+            toast.innerHTML =
+                '<span class="nn-gt-icon">❤️</span>' +
+                '<span class="nn-gt-msg">Sign in to like this post</span>' +
+                '<a href="' + loginUrl + '" class="nn-gt-cta">Sign in</a>' +
+                '<button type="button" class="nn-gt-close" aria-label="Close">×</button>';
+
+            // Position near the button.
+            document.body.appendChild(toast);
+            var rect = anchorEl.getBoundingClientRect();
+            var scrollY = window.scrollY || window.pageYOffset;
+            toast.style.top  = (rect.bottom + scrollY + 8) + 'px';
+            toast.style.left = Math.max(8, rect.left - 40) + 'px';
+
+            // Animate in.
+            requestAnimationFrame(function() { toast.classList.add('nn-gt-visible'); });
+
+            toast.querySelector('.nn-gt-close').addEventListener('click', function() {
+                dismissGuestToast(toast);
+            });
+
+            _guestToastTimer = setTimeout(function() {
+                dismissGuestToast(toast);
+            }, 4000);
+        }
+
+        function dismissGuestToast(toast) {
+            if (!toast) { return; }
+            toast.classList.remove('nn-gt-visible');
+            toast.classList.add('nn-gt-hide');
+            setTimeout(function() { if (toast.parentNode) { toast.remove(); } }, 350);
+        }
+
         document.addEventListener('click', function(e) {
             var likeBtn = e.target.closest('.nn-like-btn');
             if (likeBtn) {
                 e.preventDefault();
                 var postId = likeBtn.getAttribute('data-post-id');
-                if (!postId) {
+                if (!postId) { return; }
+
+                // ── Guest user ───────────────────────────────────────────
+                if (likeBtn.classList.contains('nn-like-btn-guest')) {
+                    showGuestLikeToast(likeBtn);
+                    // Track interest silently.
+                    var gfd = new FormData();
+                    gfd.append('action', 'neonews_guest_like');
+                    gfd.append('nonce', neonewsData.nonce);
+                    gfd.append('post_id', postId);
+                    fetch(neonewsData.ajaxUrl, { method: 'POST', body: gfd, credentials: 'same-origin' }).catch(function(){});
                     return;
                 }
 
+                // ── Logged-in user ───────────────────────────────────────
                 var formData = new FormData();
                 formData.append('action', 'neonews_toggle_like');
                 formData.append('nonce', neonewsData.nonce);
@@ -1809,6 +1868,11 @@
         .then(function(r) { return r.json(); })
         .then(function(res) {
             if (!res.success) {
+                // Nonce expired (e.g. cached page) — reload once to get fresh nonce.
+                if (res.data && res.data.reload) {
+                    window.location.reload();
+                    return;
+                }
                 if (loc.mode === 'tz') {
                     loadWeatherTarget(el, getDefaultWeatherLoc(el));
                     return;

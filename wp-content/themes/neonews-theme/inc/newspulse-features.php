@@ -252,10 +252,10 @@ function neonews_post_engagement_bar( $post_id = null, $show_share = true ) {
                 <span class="nn-like-count"><?php echo esc_html( number_format_i18n( $likes ) ); ?></span>
             </button>
         <?php else : ?>
-            <span class="nn-engage-item">
+            <button type="button" class="nn-engage-item nn-like-btn nn-like-btn-guest" data-post-id="<?php echo esc_attr( $post_id ); ?>" aria-label="<?php esc_attr_e( 'Sign in to like', 'neonews' ); ?>">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                <?php echo esc_html( number_format_i18n( $likes ) ); ?>
-            </span>
+                <span class="nn-like-count"><?php echo esc_html( number_format_i18n( $likes ) ); ?></span>
+            </button>
         <?php endif; ?>
         <?php endif; ?>
         <?php if ( $show_share ) : ?>
@@ -453,6 +453,58 @@ function neonews_ajax_toggle_like() {
 add_action( 'wp_ajax_neonews_toggle_like', 'neonews_ajax_toggle_like' );
 
 /**
+ * AJAX: guest (non-logged-in) liked a post — record interest for admin review.
+ */
+function neonews_ajax_guest_like() {
+    if ( ! check_ajax_referer( 'neonews_nonce', 'nonce', false ) ) {
+        wp_send_json_error();
+    }
+
+    $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+    if ( ! $post_id || 'post' !== get_post_type( $post_id ) ) {
+        wp_send_json_error();
+    }
+
+    // Build a privacy-safe fingerprint: hashed IP so we can spot duplicates
+    // without storing raw IPs.
+    $ip_raw  = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+    $ip_hash = substr( hash( 'sha256', $ip_raw . wp_salt( 'auth' ) ), 0, 12 );
+
+    $log  = get_option( 'neonews_guest_activity', array() );
+    if ( ! is_array( $log ) ) {
+        $log = array();
+    }
+
+    // Deduplicate: same ip_hash + same post within last 24 h.
+    $now = time();
+    foreach ( $log as $entry ) {
+        if (
+            isset( $entry['type'], $entry['post_id'], $entry['ip'], $entry['time'] )
+            && 'like' === $entry['type']
+            && (int) $entry['post_id'] === $post_id
+            && $entry['ip'] === $ip_hash
+            && ( $now - (int) $entry['time'] ) < DAY_IN_SECONDS
+        ) {
+            wp_send_json_success( array( 'dup' => true ) );
+        }
+    }
+
+    // Prepend newest entry (max 1000 rows to avoid option bloat).
+    array_unshift( $log, array(
+        'type'    => 'like',
+        'post_id' => $post_id,
+        'title'   => get_the_title( $post_id ),
+        'ip'      => $ip_hash,
+        'time'    => $now,
+    ) );
+    $log = array_slice( $log, 0, 1000 );
+    update_option( 'neonews_guest_activity', $log, false );
+
+    wp_send_json_success();
+}
+add_action( 'wp_ajax_nopriv_neonews_guest_like', 'neonews_ajax_guest_like' );
+
+/**
  * Track share click.
  */
 function neonews_ajax_track_share() {
@@ -509,8 +561,13 @@ add_action( 'wp_ajax_nopriv_neonews_track_share', 'neonews_ajax_track_share' );
  * @return string  Safe HTML badge(s), or empty string.
  */
 function neonews_get_comment_badge_html( $comment ) {
-    if ( ! $comment || ! $comment->user_id ) {
+    if ( ! $comment ) {
         return '';
+    }
+
+    // Guest commenter (not linked to any WordPress user account).
+    if ( empty( $comment->user_id ) ) {
+        return '<span class="nn-member-badge nn-badge-guest">' . esc_html__( 'Guest', 'neonews' ) . '</span>';
     }
 
     $badges = array();

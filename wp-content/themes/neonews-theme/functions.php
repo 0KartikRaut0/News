@@ -238,6 +238,7 @@ function neonews_scripts() {
             'nonce'    => wp_create_nonce( 'neonews_nonce' ),
             'homeUrl'  => home_url(),
             'themeUrl' => NEONEWS_THEME_URI,
+            'loginUrl' => wp_login_url( get_permalink() ?: home_url() ),
             'captcha'  => $captcha_config,
             'perf'     => array(
                 'lite'         => function_exists( 'neonews_perf_enabled' ) && neonews_perf_enabled(),

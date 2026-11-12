@@ -708,6 +708,11 @@
     color: var(--nn-primary-dark);
 }
 
+.nn-badge-guest {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
 /* Ad zones */
 .nn-ad-header-wrap {
     padding: 1rem 0;
@@ -2752,6 +2757,70 @@ body.nn-mobile-menu-open {
 .nn-like-btn {
     position: relative;
 }
+
+/* Guest like button — looks interactive, slight dashed hint */
+.nn-like-btn-guest {
+    cursor: pointer;
+    opacity: 0.75;
+}
+.nn-like-btn-guest:hover {
+    opacity: 1;
+    color: var(--nn-primary);
+}
+
+/* Guest sign-in toast */
+.nn-guest-toast {
+    position: absolute;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    white-space: nowrap;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    max-width: calc(100vw - 24px);
+}
+.nn-guest-toast.nn-gt-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.nn-guest-toast.nn-gt-hide {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+.nn-gt-icon { font-size: 1rem; flex-shrink: 0; }
+.nn-gt-msg  { flex: 1; }
+.nn-gt-cta  {
+    background: var(--nn-primary, #e63946);
+    color: #fff;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+.nn-gt-cta:hover { opacity: 0.85; color: #fff; }
+.nn-gt-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.nn-gt-close:hover { color: #fff; }
 
 .nn-heart-particle {
     position: absolute;

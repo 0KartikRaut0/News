@@ -232,8 +232,84 @@ function neonews_register_admin_settings_page() {
         'neonews-settings',
         'neonews_render_settings_page'
     );
+
+    add_submenu_page(
+        'neonews-settings',
+        __( 'Guest Activity', 'neonews' ),
+        __( 'Guest Activity', 'neonews' ),
+        'manage_options',
+        'neonews-guest-activity',
+        'neonews_render_guest_activity_page'
+    );
 }
 add_action( 'admin_menu', 'neonews_register_admin_settings_page', 9 );
+
+/**
+ * Render Guest Activity admin page.
+ */
+function neonews_render_guest_activity_page() {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        return;
+    }
+
+    // Handle clear action.
+    if (
+        isset( $_POST['neonews_clear_guest_activity'] )
+        && check_admin_referer( 'neonews_clear_guest_activity' )
+    ) {
+        delete_option( 'neonews_guest_activity' );
+        echo '<div class="notice notice-success"><p>' . esc_html__( 'Guest activity log cleared.', 'neonews' ) . '</p></div>';
+    }
+
+    $log = get_option( 'neonews_guest_activity', array() );
+    if ( ! is_array( $log ) ) {
+        $log = array();
+    }
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e( 'Guest Activity', 'neonews' ); ?></h1>
+        <p class="description"><?php esc_html_e( 'Logged when a non-logged-in visitor clicks Like on a post. IP addresses are stored as a short hash — no raw IPs are kept.', 'neonews' ); ?></p>
+
+        <?php if ( empty( $log ) ) : ?>
+            <p><?php esc_html_e( 'No guest activity recorded yet.', 'neonews' ); ?></p>
+        <?php else : ?>
+            <form method="post" style="margin-bottom:16px;">
+                <?php wp_nonce_field( 'neonews_clear_guest_activity' ); ?>
+                <input type="hidden" name="neonews_clear_guest_activity" value="1" />
+                <button type="submit" class="button button-secondary" onclick="return confirm('<?php echo esc_js( __( 'Clear all guest activity? This cannot be undone.', 'neonews' ) ); ?>')"><?php esc_html_e( 'Clear log', 'neonews' ); ?></button>
+                <span class="description" style="margin-left:10px;"><?php echo esc_html( sprintf( __( '%d entries', 'neonews' ), count( $log ) ) ); ?></span>
+            </form>
+
+            <table class="widefat striped" style="max-width:860px;">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e( 'Type', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Post', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'IP (hashed)', 'neonews' ); ?></th>
+                        <th><?php esc_html_e( 'Time', 'neonews' ); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $log as $entry ) :
+                        $post_id = isset( $entry['post_id'] ) ? (int) $entry['post_id'] : 0;
+                        $title   = ! empty( $entry['title'] ) ? $entry['title'] : ( $post_id ? get_the_title( $post_id ) : '—' );
+                        $post_link = $post_id ? get_edit_post_link( $post_id ) : '';
+                        $time    = isset( $entry['time'] ) ? (int) $entry['time'] : 0;
+                        $icon    = 'like' === ( $entry['type'] ?? '' ) ? '❤️' : '👁';
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $icon . ' ' . ucfirst( $entry['type'] ?? '' ) ); ?></td>
+                        <td><?php if ( $post_link ) : ?><a href="<?php echo esc_url( $post_link ); ?>"><?php echo esc_html( $title ); ?></a><?php else : echo esc_html( $title ); endif; ?></td>
+                        <td><code><?php echo esc_html( $entry['ip'] ?? '—' ); ?></code></td>
+                        <td><?php echo $time ? esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $time ) ) : '—'; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+    </div>
+    <?php
+}
 
 /**
  * Register settings.
