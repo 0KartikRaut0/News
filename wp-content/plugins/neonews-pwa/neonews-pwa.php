@@ -528,7 +528,12 @@ self.addEventListener('fetch', (event) => {
 
         if ( isset( $_POST['neonews_pwa_settings'] ) && check_admin_referer( 'neonews_pwa_save', 'neonews_pwa_nonce' ) ) {
             $settings = $this->sanitize_settings( $_POST['neonews_pwa_settings'] );
-            update_option( 'neonews_pwa_settings', $settings );
+            update_option( 'neonews_pwa_settings', $settings, false );
+            if ( class_exists( 'NeoNews_FC_Feature_Overrides' ) ) {
+                NeoNews_FC_Feature_Overrides::sync_bucket_from_saved_settings( 'pwa', $settings );
+            } elseif ( class_exists( 'NeoNews_FC_Feature_Store' ) ) {
+                NeoNews_FC_Feature_Store::bust_option_cache( 'neonews_pwa_settings' );
+            }
             echo '<div class="notice notice-success"><p>' . esc_html__( 'Settings saved.', 'neonews-pwa' ) . '</p></div>';
         }
 

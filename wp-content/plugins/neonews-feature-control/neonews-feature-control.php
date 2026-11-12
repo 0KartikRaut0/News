@@ -2,7 +2,7 @@
 /**
  * Plugin Name: NeoNews Feature Control
  * Description: One simple dashboard to turn site features on or off — weather, search, accounts, dark mode, homepage blocks, ads, and more.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: NeoNews Team
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'NEONEWS_FC_VERSION', '1.0.3' );
+define( 'NEONEWS_FC_VERSION', '1.0.4' );
 define( 'NEONEWS_FC_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NEONEWS_FC_URL', plugin_dir_url( __FILE__ ) );
 

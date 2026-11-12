@@ -148,6 +148,85 @@ class NeoNews_FC_Feature_Overrides {
 	 * @param array $feature Feature.
 	 * @param bool  $enabled State.
 	 */
+	/**
+	 * When settings are saved from a plugin/theme screen (not Feature Control), keep overrides in sync.
+	 */
+	public static function register_native_save_hooks() {
+		$map = array(
+			'neonews_platform_settings'   => 'platform',
+			'neonews_core_settings'       => 'core',
+			'neonews_smart_settings'      => 'smart',
+			'neonews_membership_settings' => 'membership',
+			'neonews_pwa_settings'        => 'pwa',
+		);
+
+		foreach ( $map as $option => $bucket ) {
+			add_action(
+				"update_option_{$option}",
+				static function ( $old_value, $new_value ) use ( $bucket ) {
+					unset( $old_value );
+					self::sync_bucket_from_saved_settings( $bucket, $new_value );
+				},
+				10,
+				2
+			);
+		}
+	}
+
+	/**
+	 * Mirror saved option values into the override map for registry keys in this bucket.
+	 *
+	 * @param string $bucket   platform|core|smart|membership|pwa.
+	 * @param mixed  $settings New option value.
+	 */
+	public static function sync_bucket_from_saved_settings( $bucket, $settings ) {
+		if ( ! is_array( $settings ) || ! class_exists( 'NeoNews_FC_Feature_Registry' ) || ! class_exists( 'NeoNews_FC_Feature_Store' ) ) {
+			return;
+		}
+
+		foreach ( NeoNews_FC_Feature_Registry::get_features() as $feature ) {
+			if ( ( $feature['source'] ?? '' ) !== $bucket ) {
+				continue;
+			}
+			$key = $feature['key'] ?? '';
+			if ( ! $key || ! array_key_exists( $key, $settings ) ) {
+				continue;
+			}
+			self::set( $bucket, $key, NeoNews_FC_Feature_Store::public_to_bool( $settings[ $key ] ) );
+		}
+
+		if ( 'platform' === $bucket ) {
+			if ( array_key_exists( 'show_breaking_news', $settings ) ) {
+				self::set(
+					'theme_mod',
+					'neonews_show_breaking_news',
+					NeoNews_FC_Feature_Store::public_to_bool( $settings['show_breaking_news'] )
+				);
+			}
+			if ( array_key_exists( 'show_home_carousel', $settings ) ) {
+				self::set(
+					'theme_mod',
+					'neonews_show_featured_carousel',
+					NeoNews_FC_Feature_Store::public_to_bool( $settings['show_home_carousel'] )
+				);
+			}
+		}
+
+		$option_by_bucket = array(
+			'platform'   => 'neonews_platform_settings',
+			'core'       => 'neonews_core_settings',
+			'smart'      => 'neonews_smart_settings',
+			'membership' => 'neonews_membership_settings',
+			'pwa'        => 'neonews_pwa_settings',
+		);
+		if ( isset( $option_by_bucket[ $bucket ] ) ) {
+			NeoNews_FC_Feature_Store::bust_option_cache( $option_by_bucket[ $bucket ] );
+		}
+		if ( 'smart' === $bucket && class_exists( 'NeoNews_Smart' ) && method_exists( 'NeoNews_Smart', 'flush_settings_cache' ) ) {
+			NeoNews_Smart::flush_settings_cache();
+		}
+	}
+
 	public static function sync_feature( array $feature, $enabled ) {
 		$source = $feature['source'] ?? 'platform';
 		$id     = $feature['id'] ?? '';
@@ -173,3 +252,4 @@ class NeoNews_FC_Feature_Overrides {
 }
 
 add_action( 'plugins_loaded', array( 'NeoNews_FC_Feature_Overrides', 'register_filters' ), 5 );
+add_action( 'plugins_loaded', array( 'NeoNews_FC_Feature_Overrides', 'register_native_save_hooks' ), 6 );
