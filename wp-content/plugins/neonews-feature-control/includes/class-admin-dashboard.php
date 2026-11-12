@@ -60,6 +60,12 @@ class NeoNews_FC_Admin_Dashboard {
 			return;
 		}
 
+		if ( function_exists( 'neonews_ensure_admin_native_emoji' ) ) {
+			neonews_ensure_admin_native_emoji();
+		} else {
+			$this->disable_twemoji_fallback();
+		}
+
 		wp_enqueue_style(
 			'neonews-fc-dashboard',
 			NEONEWS_FC_URL . 'assets/css/dashboard.css',
@@ -273,5 +279,15 @@ class NeoNews_FC_Admin_Dashboard {
 		}
 
 		wp_send_json_success( array( 'items' => $updated ) );
+	}
+
+	/**
+	 * Theme-less fallback when Feature Control runs without NeoNews theme helpers.
+	 */
+	private function disable_twemoji_fallback() {
+		remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
+		remove_action( 'admin_print_styles', 'print_emoji_styles' );
+		add_filter( 'emoji_svg_url', '__return_false' );
+		add_filter( 'wp_staticize_emoji', '__return_false' );
 	}
 }

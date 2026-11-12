@@ -1,0 +1,27 @@
+/**
+ * Native emoji rendering on NeoNews admin dashboards (no broken Twemoji CDN imgs).
+ */
+
+body.nn-neonews-admin img.emoji,
+body.nn-neonews-admin img.wp-smiley {
+	display: none !important;
+}
+
+body.nn-neonews-admin .nn-fc-card-icon,
+body.nn-neonews-admin .nn-fc-badge,
+body.nn-neonews-admin .nn-settings-dash-logo,
+body.nn-neonews-admin .nn-settings-stat-icon,
+body.nn-neonews-admin .nn-settings-tab-icon,
+body.nn-neonews-admin .nn-settings-search-icon,
+body.nn-neonews-admin .nn-fc-search-wrap > span,
+body.nn-neonews-admin .nn-dash-logo,
+body.nn-neonews-admin .nn-stat-icon,
+body.nn-neonews-admin .nn-top-thumb-placeholder,
+body.nn-neonews-admin .nn-activity-icon,
+body.nn-neonews-admin .nn-perf-panel .nn-perf-stat-icon {
+	font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+}

@@ -275,6 +275,12 @@
 .nn-fc-card-icon {
 	font-size: 26px;
 	line-height: 1;
+	font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+body.nn-neonews-admin .nn-fc-search-wrap > span,
+body .nn-fc-wrap .nn-fc-badge {
+	font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
 }
 
 .nn-fc-card-title {
