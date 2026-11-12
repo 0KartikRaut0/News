@@ -2,7 +2,7 @@
 /**
  * Plugin Name: NeoNews Role Manager
  * Description: Control which WordPress roles can access each NeoNews admin page and core WP capabilities. No third-party dependency.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: NeoNews Team
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NN_ROLES_VERSION', '1.0.0' );
+define( 'NN_ROLES_VERSION', '1.0.1' );
 define( 'NN_ROLES_FILE',    __FILE__ );
 define( 'NN_ROLES_DIR',     plugin_dir_path( __FILE__ ) );
 

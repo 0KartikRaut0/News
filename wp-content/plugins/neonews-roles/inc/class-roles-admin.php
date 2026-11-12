@@ -39,6 +39,14 @@ class NeoNews_Roles_Admin {
             return;
         }
 
+        wp_enqueue_script(
+            'neonews-roles-admin',
+            plugins_url( 'assets/admin-roles.js', NN_ROLES_FILE ),
+            array(),
+            NN_ROLES_VERSION,
+            true
+        );
+
         wp_add_inline_style( 'wp-admin', '
             /* ── Role Manager layout ── */
             #nn-roles-wrap { max-width: 1100px; }
@@ -101,8 +109,17 @@ class NeoNews_Roles_Admin {
             }
 
             /* Toggle switch */
-            .nn-toggle { position: relative; display: inline-block; width: 38px; height: 22px; }
-            .nn-toggle input { opacity: 0; width: 0; height: 0; }
+            .nn-toggle { position: relative; display: inline-block; width: 38px; height: 22px; cursor: pointer; vertical-align: middle; }
+            .nn-toggle input {
+                position: absolute;
+                opacity: 0;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                cursor: pointer;
+                z-index: 2;
+            }
             .nn-toggle-slider {
                 position: absolute; cursor: pointer;
                 inset: 0;
@@ -120,8 +137,10 @@ class NeoNews_Roles_Admin {
                 transition: transform .2s;
                 box-shadow: 0 1px 3px rgba(0,0,0,.2);
             }
-            .nn-toggle input:checked + .nn-toggle-slider { background: #2d6a4f; }
-            .nn-toggle input:checked + .nn-toggle-slider:before { transform: translateX(16px); }
+            .nn-toggle input:checked + .nn-toggle-slider,
+            .nn-toggle.nn-toggle-on .nn-toggle-slider { background: #2d6a4f; }
+            .nn-toggle input:checked + .nn-toggle-slider:before,
+            .nn-toggle.nn-toggle-on .nn-toggle-slider:before { transform: translateX(16px); }
             .nn-toggle input:disabled + .nn-toggle-slider { opacity: .5; cursor: not-allowed; }
 
             /* Admin badge */
@@ -171,31 +190,6 @@ class NeoNews_Roles_Admin {
                 margin-bottom: 20px;
                 font-size: 14px;
             }
-        ' );
-
-        // Tiny JS for bulk toggle + unsaved-changes warning.
-        wp_add_inline_script( 'jquery', '
-        jQuery(function($){
-            // Bulk toggles per role column.
-            $(document).on("click", ".nn-bulk-btn", function(){
-                var col   = $(this).data("col");   // 1-based column index
-                var state = $(this).data("state") === "on";
-                $(".nn-roles-table tbody tr:not(.nn-roles-group-row):not(.nn-roles-bulk-row)")
-                    .find("td:eq(" + col + ") .nn-toggle input:not(:disabled)")
-                    .prop("checked", state);
-            });
-
-            // Unsaved changes warning.
-            var changed = false;
-            $("#nn-roles-form input[type=checkbox]").on("change", function(){ changed = true; });
-            window.addEventListener("beforeunload", function(e){
-                if(changed){
-                    e.preventDefault();
-                    e.returnValue = "";
-                }
-            });
-            $("#nn-roles-form").on("submit", function(){ changed = false; });
-        });
         ' );
     }
 
@@ -289,8 +283,8 @@ class NeoNews_Roles_Admin {
                     foreach ( $role_slugs as $role ) :
                     ?>
                     <td>
-                        <button type="button" class="nn-bulk-btn" data-col="<?php echo esc_attr( $col_idx ); ?>" data-state="on" title="Grant all">✓ All</button>
-                        <button type="button" class="nn-bulk-btn" data-col="<?php echo esc_attr( $col_idx ); ?>" data-state="off" title="Revoke all">✗ None</button>
+                        <button type="button" class="nn-bulk-btn" data-col="<?php echo esc_attr( $col_idx ); ?>" data-action="all" title="<?php esc_attr_e( 'Grant all', 'neonews-roles' ); ?>">✓ <?php esc_html_e( 'All', 'neonews-roles' ); ?></button>
+                        <button type="button" class="nn-bulk-btn" data-col="<?php echo esc_attr( $col_idx ); ?>" data-action="none" title="<?php esc_attr_e( 'Revoke all', 'neonews-roles' ); ?>">✗ <?php esc_html_e( 'None', 'neonews-roles' ); ?></button>
                     </td>
                     <?php
                         $col_idx++;
@@ -314,7 +308,7 @@ class NeoNews_Roles_Admin {
                     </tr>
                     <?php endif; ?>
 
-                    <tr>
+                    <tr class="nn-roles-data-row">
                         <td class="nn-col-page"><?php echo esc_html( $page_info['label'] ); ?></td>
 
                         <!-- Administrator always ON, disabled -->

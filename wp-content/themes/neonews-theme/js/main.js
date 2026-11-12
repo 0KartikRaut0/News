@@ -2164,19 +2164,13 @@
             document.body.classList.add('nn-standalone');
         }
 
-        // Show Close when opened as a new tab from this site.
         var openedTab = false;
         try {
             openedTab = window.opener && !window.opener.closed;
         } catch (err) {
             openedTab = false;
         }
-        if (window.name === 'nn_article_tab' || openedTab || (window.history.length <= 1 && document.referrer)) {
-            var exitBtn = nav.querySelector('[data-nn-nav="exit"]');
-            if (exitBtn) {
-                exitBtn.hidden = false;
-            }
-        }
+        var openedNewTab = window.name === 'nn_article_tab' || openedTab;
 
         nav.addEventListener('click', function(e) {
             var btn = e.target.closest('[data-nn-nav]');
@@ -2187,7 +2181,7 @@
 
             if (action === 'back') {
                 e.preventDefault();
-                if (window.history.length > 1) {
+                if (window.history.length > 1 && document.referrer) {
                     window.history.back();
                 } else {
                     window.location.href = homeUrl;
@@ -2197,7 +2191,7 @@
 
             if (action === 'exit') {
                 e.preventDefault();
-                if (openedTab) {
+                if (openedNewTab) {
                     window.close();
                     window.setTimeout(function() {
                         window.location.href = homeUrl;

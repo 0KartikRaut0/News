@@ -271,16 +271,41 @@ class NeoNews_View_Counter {
      */
     public static function get_views_for_period( $post_id, $days = 7 ) {
         $daily_views = get_post_meta( $post_id, '_neonews_daily_views', true );
-        
+
+        if ( ! is_array( $daily_views ) ) {
+            return 0;
+        }
+
+        $total       = 0;
+        $cutoff_date = gmdate( 'Y-m-d', strtotime( "-{$days} days" ) );
+
+        foreach ( $daily_views as $date => $count ) {
+            if ( $date >= $cutoff_date ) {
+                $total += (int) $count;
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Views between two Y-m-d dates (inclusive), from daily breakdown meta.
+     *
+     * @param int    $post_id Post ID.
+     * @param string $from    Start date Y-m-d.
+     * @param string $to      End date Y-m-d.
+     * @return int
+     */
+    public static function get_views_for_date_range( $post_id, $from, $to ) {
+        $daily_views = get_post_meta( $post_id, '_neonews_daily_views', true );
+
         if ( ! is_array( $daily_views ) ) {
             return 0;
         }
 
         $total = 0;
-        $cutoff_date = gmdate( 'Y-m-d', strtotime( "-{$days} days" ) );
-
         foreach ( $daily_views as $date => $count ) {
-            if ( $date >= $cutoff_date ) {
+            if ( $date >= $from && $date <= $to ) {
                 $total += (int) $count;
             }
         }
