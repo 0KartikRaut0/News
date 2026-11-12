@@ -36,6 +36,7 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                     <?php endif; ?>
                 </div>
 
+                <?php if ( neonews_is_feature_enabled( 'show_footer_sections' ) ) : ?>
                 <div class="nn-footer-col">
                     <h4 class="nn-footer-label"><?php esc_html_e( 'Sections', 'neonews' ); ?></h4>
                     <ul class="nn-footer-menu">
@@ -49,7 +50,9 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                         ?>
                     </ul>
                 </div>
+                <?php endif; ?>
 
+                <?php if ( neonews_is_feature_enabled( 'show_footer_company_pages' ) ) : ?>
                 <div class="nn-footer-col">
                     <h4 class="nn-footer-label"><?php esc_html_e( 'Company', 'neonews' ); ?></h4>
                     <ul class="nn-footer-menu">
@@ -63,6 +66,7 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                         ?>
                     </ul>
                 </div>
+                <?php endif; ?>
 
                 <?php if ( neonews_is_feature_enabled( 'show_footer_newsletter' ) ) : ?>
                 <div class="nn-footer-col nn-footer-newsletter">
@@ -100,17 +104,22 @@ if ( empty( $copyright ) && ! empty( $settings['footer_copyright'] ) ) {
                 }
                 ?>
             </p>
+            <?php if ( neonews_is_feature_enabled( 'show_footer_legal' ) || neonews_cookie_banner_enabled() ) : ?>
             <nav class="nn-footer-legal" aria-label="<?php esc_attr_e( 'Legal', 'neonews' ); ?>">
+                <?php if ( neonews_is_feature_enabled( 'show_footer_legal' ) ) : ?>
                 <?php
                 foreach ( neonews_get_legal_links() as $slug => $label ) {
                     $url = neonews_get_legal_page_url( $slug );
                     echo '<a href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
                 }
-                if ( neonews_cookie_banner_enabled() ) :
+                ?>
+                <?php endif; ?>
+                <?php if ( neonews_cookie_banner_enabled() ) : ?>
                 ?>
                 <button type="button" class="nn-cookie-reopen nn-footer-cookie-btn" aria-label="<?php esc_attr_e( 'Manage cookie preferences', 'neonews' ); ?>"><?php esc_html_e( 'Cookie Preferences', 'neonews' ); ?></button>
                 <?php endif; ?>
             </nav>
+            <?php endif; ?>
         </div>
     </div>
 </footer>

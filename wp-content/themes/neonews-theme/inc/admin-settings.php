@@ -103,6 +103,7 @@ function neonews_get_default_settings() {
         'logo_mark'               => '✦',
         'show_header_search'      => true,
         'show_header_auth'        => true,
+        'show_theme_toggle'       => true,
         'search_placeholder_desktop' => __( 'Search stories, topics, authors…', 'neonews' ),
         'search_placeholder_mobile'  => __( 'Search stories…', 'neonews' ),
         'fallback_nav_categories' => 'politics,business,technology,sports,entertainment',
@@ -144,6 +145,9 @@ function neonews_get_default_settings() {
         'social_instagram'        => '',
         'footer_section_categories' => 'politics,business,technology,sports,entertainment',
         'footer_company_pages'    => 'about,careers,advertise,contact',
+        'show_footer_sections'    => true,
+        'show_footer_company_pages' => true,
+        'show_footer_legal'       => true,
         'show_footer_newsletter'  => true,
         'footer_newsletter_title' => __( 'Stay in the loop', 'neonews' ),
         'footer_newsletter_text'  => __( "The day's most important stories, in your inbox by 7am.", 'neonews' ),
@@ -166,6 +170,7 @@ function neonews_get_default_settings() {
         'category_colors'         => '',
         'article_back_color'      => '#ff7a18',
         'article_back_opacity'    => 52,
+        'show_article_nav'        => true,
         // CAPTCHA.
         'auth_allow_registration' => true,
         'auth_auto_username'      => true,
@@ -577,6 +582,7 @@ function neonews_sanitize_settings( $input ) {
         $output['show_breaking_news']   = ! empty( $input['show_breaking_news'] );
         $output['show_header_search']   = ! empty( $input['show_header_search'] );
         $output['show_header_auth']     = ! empty( $input['show_header_auth'] );
+        $output['show_theme_toggle']    = ! empty( $input['show_theme_toggle'] );
         $output['breaking_label_live']  = sanitize_text_field( wp_unslash( $input['breaking_label_live'] ?? $previous['breaking_label_live'] ) );
         $output['breaking_label_tag']   = sanitize_text_field( wp_unslash( $input['breaking_label_tag'] ?? $previous['breaking_label_tag'] ) );
         $output['logo_mark']            = sanitize_text_field( wp_unslash( $input['logo_mark'] ?? $previous['logo_mark'] ) );
@@ -592,6 +598,9 @@ function neonews_sanitize_settings( $input ) {
         $output['show_header_social']     = ! empty( $input['show_header_social'] );
         $output['show_contact_social']    = ! empty( $input['show_contact_social'] );
         $output['show_footer_newsletter'] = ! empty( $input['show_footer_newsletter'] );
+        $output['show_footer_sections']   = ! empty( $input['show_footer_sections'] );
+        $output['show_footer_company_pages'] = ! empty( $input['show_footer_company_pages'] );
+        $output['show_footer_legal']      = ! empty( $input['show_footer_legal'] );
         $output['footer_tagline']         = sanitize_text_field( wp_unslash( $input['footer_tagline'] ?? $previous['footer_tagline'] ) );
         $output['footer_copyright']       = isset( $input['footer_copyright'] ) ? wp_kses_post( wp_unslash( $input['footer_copyright'] ) ) : $previous['footer_copyright'];
         $output['footer_section_categories'] = sanitize_text_field( wp_unslash( $input['footer_section_categories'] ?? $previous['footer_section_categories'] ) );
@@ -645,6 +654,7 @@ function neonews_sanitize_settings( $input ) {
         $back_color                   = sanitize_hex_color( $input['article_back_color'] ?? '' );
         $output['article_back_color'] = $back_color ? $back_color : $defaults['article_back_color'];
         $output['article_back_opacity'] = max( 5, min( 100, absint( $input['article_back_opacity'] ?? $previous['article_back_opacity'] ) ) );
+        $output['show_article_nav']     = ! empty( $input['show_article_nav'] );
     }
 
     return wp_parse_args( $output, $defaults );

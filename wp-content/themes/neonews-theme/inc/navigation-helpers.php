@@ -114,7 +114,10 @@ add_filter( 'the_content', 'neonews_content_external_links_new_tab', 15 );
  * @return bool
  */
 function neonews_show_article_nav() {
-    return is_singular( 'post' );
+    if ( ! is_singular( 'post' ) ) {
+        return false;
+    }
+    return function_exists( 'neonews_is_feature_enabled' ) ? neonews_is_feature_enabled( 'show_article_nav' ) : true;
 }
 
 /**

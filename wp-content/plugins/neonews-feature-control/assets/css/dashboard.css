@@ -1,0 +1,366 @@
+/**
+ * NeoNews Feature Control — dashboard UI
+ */
+
+.nn-fc-wrap {
+	max-width: 1320px;
+	margin: 12px 20px 48px 0;
+	padding: 16px 22px 40px;
+	background: linear-gradient(160deg, #e8edf4 0%, #f4f6f9 50%, #fafbfc 100%);
+	border-radius: 14px;
+	box-sizing: border-box;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.nn-fc-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+	padding: 26px 28px;
+	border-radius: 16px;
+	background: linear-gradient(125deg, #1d3557 0%, #2a4a6e 40%, #e63946 130%);
+	color: #fff;
+	box-shadow: 0 14px 48px rgba(29, 53, 87, 0.25);
+	margin-bottom: 22px;
+}
+
+.nn-fc-header-text {
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+}
+
+.nn-fc-badge {
+	font-size: 36px;
+	line-height: 1;
+	background: rgba(255, 255, 255, 0.12);
+	border-radius: 14px;
+	padding: 10px 12px;
+}
+
+.nn-fc-header h1 {
+	margin: 0;
+	color: #fff !important;
+	font-size: 1.75rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+
+.nn-fc-header p {
+	margin: 6px 0 0;
+	opacity: 0.9;
+	font-size: 14px;
+	max-width: 520px;
+}
+
+.nn-fc-header-meta {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 10px;
+}
+
+.nn-fc-ring {
+	text-align: center;
+	background: rgba(255, 255, 255, 0.1);
+	border: 2px solid rgba(255, 255, 255, 0.25);
+	border-radius: 16px;
+	padding: 12px 20px;
+	min-width: 120px;
+}
+
+.nn-fc-ring strong {
+	font-size: 1.8rem;
+	font-weight: 800;
+	display: block;
+	line-height: 1.1;
+}
+
+.nn-fc-ring span {
+	font-size: 1rem;
+	opacity: 0.85;
+}
+
+.nn-fc-ring small {
+	display: block;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	opacity: 0.75;
+	margin-top: 4px;
+}
+
+.nn-fc-link {
+	color: #fff !important;
+	text-decoration: none;
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.92;
+}
+
+.nn-fc-link:hover {
+	opacity: 1;
+	text-decoration: underline;
+}
+
+.nn-fc-toolbar {
+	margin-bottom: 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.nn-fc-search-wrap {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #fff;
+	border-radius: 999px;
+	padding: 10px 16px;
+	border: 1px solid rgba(29, 53, 87, 0.08);
+	box-shadow: 0 6px 20px rgba(29, 53, 87, 0.06);
+	max-width: 440px;
+}
+
+.nn-fc-search-wrap input {
+	border: none;
+	flex: 1;
+	font-size: 14px;
+	box-shadow: none !important;
+	background: transparent !important;
+}
+
+.nn-fc-search-wrap:focus-within {
+	border-color: #e63946;
+	box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+}
+
+.nn-fc-filter-pills {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.nn-fc-pill {
+	border: 1px solid rgba(29, 53, 87, 0.12);
+	background: #fff;
+	border-radius: 999px;
+	padding: 7px 14px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #334155;
+	cursor: pointer;
+	transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.nn-fc-pill:hover {
+	border-color: #e63946;
+	transform: translateY(-1px);
+}
+
+.nn-fc-pill.is-active {
+	background: #1d3557;
+	border-color: #1d3557;
+	color: #fff;
+}
+
+.nn-fc-section {
+	margin-bottom: 28px;
+}
+
+.nn-fc-section-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.nn-fc-section-head h2 {
+	margin: 0;
+	font-size: 1.05rem;
+	color: #1d3557;
+	font-weight: 800;
+}
+
+.nn-fc-section-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.nn-fc-bulk {
+	border: none;
+	background: rgba(29, 53, 87, 0.08);
+	color: #1d3557;
+	font-size: 11px;
+	font-weight: 700;
+	padding: 6px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.nn-fc-bulk:hover {
+	background: #e63946;
+	color: #fff;
+}
+
+.nn-fc-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 14px;
+}
+
+.nn-fc-card {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid rgba(29, 53, 87, 0.07);
+	padding: 16px 16px 14px;
+	box-shadow: 0 8px 28px rgba(29, 53, 87, 0.06);
+	transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.nn-fc-card::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	background: #cbd5e1;
+	transition: background 0.2s ease;
+}
+
+.nn-fc-card.is-on::before {
+	background: linear-gradient(180deg, #e63946, #ff7a18);
+}
+
+.nn-fc-card.is-on {
+	border-color: rgba(230, 57, 70, 0.2);
+}
+
+.nn-fc-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 16px 40px rgba(29, 53, 87, 0.12);
+}
+
+.nn-fc-card.is-hidden {
+	display: none !important;
+}
+
+.nn-fc-card.is-unavailable {
+	opacity: 0.55;
+}
+
+.nn-fc-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.nn-fc-card-icon {
+	font-size: 26px;
+	line-height: 1;
+}
+
+.nn-fc-card-title {
+	margin: 0 0 6px;
+	font-size: 14px;
+	font-weight: 800;
+	color: #1d3557;
+}
+
+.nn-fc-card-desc {
+	margin: 0;
+	font-size: 12px;
+	color: #64748b;
+	line-height: 1.45;
+	min-height: 2.9em;
+}
+
+.nn-fc-card-status {
+	margin: 10px 0 0;
+	font-size: 11px;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #94a3b8;
+}
+
+.nn-fc-card.is-on .nn-fc-card-status {
+	color: #e63946;
+}
+
+.nn-fc-unavail {
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	color: #94a3b8;
+}
+
+/* Switch */
+.nn-fc-switch {
+	border: none;
+	background: transparent;
+	padding: 0;
+	cursor: pointer;
+	line-height: 0;
+}
+
+.nn-fc-switch:disabled {
+	opacity: 0.5;
+	cursor: wait;
+}
+
+.nn-fc-switch-track {
+	display: inline-flex;
+	width: 48px;
+	height: 28px;
+	border-radius: 999px;
+	background: #cbd5e1;
+	align-items: center;
+	padding: 3px;
+	box-sizing: border-box;
+	transition: background 0.2s ease;
+}
+
+.nn-fc-switch[aria-checked="true"] .nn-fc-switch-track {
+	background: linear-gradient(90deg, #e63946, #ff7a18);
+}
+
+.nn-fc-switch-thumb {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+	transform: translateX(0);
+	transition: transform 0.2s ease;
+}
+
+.nn-fc-switch[aria-checked="true"] .nn-fc-switch-thumb {
+	transform: translateX(20px);
+}
+
+.nn-fc-section.is-hidden {
+	display: none;
+}
+
+.nn-fc-empty {
+	text-align: center;
+	color: #64748b;
+	padding: 2rem;
+	font-size: 15px;
+}
+
+@media (max-width: 782px) {
+	.nn-fc-header-meta {
+		align-items: flex-start;
+		width: 100%;
+	}
+}
