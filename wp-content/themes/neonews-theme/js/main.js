@@ -17,6 +17,7 @@
         initThemeToggle();
         initStickyHeader();
         initCarousel();
+        initHomeHscroll();
         initLazyLoading();
         initBackToTop();
         initUserMenu();
@@ -463,6 +464,64 @@
         }
 
         startAutoplay();
+    }
+
+    /**
+     * Homepage horizontal scroll rows (categories, latest, videos).
+     */
+    function initHomeHscroll() {
+        var wraps = document.querySelectorAll('.nn-hscroll-enhanced');
+        if (!wraps.length) {
+            return;
+        }
+
+        wraps.forEach(function(wrap) {
+            var track = wrap.querySelector('.nn-hscroll-track');
+            var prev = wrap.querySelector('.nn-hscroll-prev');
+            var next = wrap.querySelector('.nn-hscroll-next');
+            if (!track) {
+                return;
+            }
+
+            function scrollStep(dir) {
+                var sample = track.querySelector('.nn-hscroll-item');
+                var gap = 16;
+                try {
+                    gap = parseFloat(getComputedStyle(track).gap) || gap;
+                } catch (e) {
+                    gap = 16;
+                }
+                var width = sample ? sample.getBoundingClientRect().width + gap : Math.min(320, window.innerWidth * 0.82);
+                track.scrollBy({ left: dir * width, behavior: 'smooth' });
+            }
+
+            function updateNav() {
+                var maxScroll = track.scrollWidth - track.clientWidth - 2;
+                if (prev) {
+                    prev.disabled = track.scrollLeft <= 2;
+                }
+                if (next) {
+                    next.disabled = track.scrollLeft >= maxScroll;
+                }
+                wrap.classList.toggle('nn-hscroll-at-start', track.scrollLeft <= 2);
+                wrap.classList.toggle('nn-hscroll-at-end', track.scrollLeft >= maxScroll);
+            }
+
+            if (prev) {
+                prev.addEventListener('click', function() {
+                    scrollStep(-1);
+                });
+            }
+            if (next) {
+                next.addEventListener('click', function() {
+                    scrollStep(1);
+                });
+            }
+
+            track.addEventListener('scroll', updateNav, { passive: true });
+            window.addEventListener('resize', updateNav, { passive: true });
+            updateNav();
+        });
     }
 
     /**
@@ -2149,7 +2208,7 @@
         targets.forEach(loadWeatherTarget);
     }
 
-    // ── Article navigation bar (Back / Home / Close) — PWA + mobile + desktop ─
+    // ── Article navigation: centered back button (mobile + desktop + PWA) ─────
     function initArticleNav() {
         var nav = document.getElementById('nn-article-nav');
         if (!nav) {
@@ -2157,48 +2216,17 @@
         }
 
         var homeUrl = (typeof neonewsData !== 'undefined' && neonewsData.homeUrl) ? neonewsData.homeUrl : '/';
-        var isStandalone = window.matchMedia('(display-mode: standalone)').matches
-            || window.navigator.standalone === true;
-
-        if (isStandalone) {
-            document.body.classList.add('nn-standalone');
-        }
-
-        var openedTab = false;
-        try {
-            openedTab = window.opener && !window.opener.closed;
-        } catch (err) {
-            openedTab = false;
-        }
-        var openedNewTab = window.name === 'nn_article_tab' || openedTab;
 
         nav.addEventListener('click', function(e) {
-            var btn = e.target.closest('[data-nn-nav]');
+            var btn = e.target.closest('[data-nn-nav="back"]');
             if (!btn) {
                 return;
             }
-            var action = btn.getAttribute('data-nn-nav');
-
-            if (action === 'back') {
-                e.preventDefault();
-                if (window.history.length > 1 && document.referrer) {
-                    window.history.back();
-                } else {
-                    window.location.href = homeUrl;
-                }
-                return;
-            }
-
-            if (action === 'exit') {
-                e.preventDefault();
-                if (openedNewTab) {
-                    window.close();
-                    window.setTimeout(function() {
-                        window.location.href = homeUrl;
-                    }, 200);
-                } else {
-                    window.location.href = homeUrl;
-                }
+            e.preventDefault();
+            if (window.history.length > 1 && document.referrer) {
+                window.history.back();
+            } else {
+                window.location.href = homeUrl;
             }
         });
     }

@@ -88,9 +88,19 @@ class NeoNews_Analytics_Dashboard {
         $range     = sanitize_key( $_POST['range'] ?? '7' );
         $date_from = sanitize_text_field( $_POST['date_from'] ?? '' );
         $date_to   = sanitize_text_field( $_POST['date_to'] ?? '' );
+        $today     = current_time( 'Y-m-d' );
 
         // Resolve date range.
         if ( $date_from && $date_to ) {
+            if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) {
+                wp_send_json_error( array( 'message' => __( 'Invalid date format.', 'neonews-core' ) ) );
+            }
+            if ( $date_from > $date_to ) {
+                wp_send_json_error( array( 'message' => __( 'End date must be on or after the start date.', 'neonews-core' ) ) );
+            }
+            if ( $date_from > $today || $date_to > $today ) {
+                wp_send_json_error( array( 'message' => __( 'Dates cannot be in the future.', 'neonews-core' ) ) );
+            }
             $from = $date_from;
             $to   = $date_to;
             $days = max( 1, (int) ( ( strtotime( $to ) - strtotime( $from ) ) / DAY_IN_SECONDS ) + 1 );
@@ -699,9 +709,10 @@ class NeoNews_Analytics_Dashboard {
             return;
         }
 
-        $from = gmdate( 'Y-m-d', strtotime( '-7 days' ) );
-        $to   = gmdate( 'Y-m-d' );
+        $to   = current_time( 'Y-m-d' );
+        $from = gmdate( 'Y-m-d', strtotime( $to . ' -7 days' ) );
         $boot = self::build_dashboard_payload( $from, $to, 7 );
+        $today_max = $to;
         ?>
         <div class="wrap nn-dash-wrap" id="nn-analytics-dashboard">
 
@@ -738,11 +749,12 @@ class NeoNews_Analytics_Dashboard {
                         <button class="nn-pill" data-range="custom"><?php esc_html_e( 'Custom', 'neonews-core' ); ?></button>
                     </div>
                     <div class="nn-custom-range" id="nn-custom-range" style="display:none;">
-                        <input type="date" id="nn-date-from" placeholder="From">
+                        <input type="date" id="nn-date-from" aria-label="<?php esc_attr_e( 'Start date', 'neonews-core' ); ?>" max="<?php echo esc_attr( $today_max ); ?>" value="<?php echo esc_attr( $from ); ?>">
                         <span>–</span>
-                        <input type="date" id="nn-date-to" placeholder="To">
-                        <button class="nn-pill nn-apply-range"><?php esc_html_e( 'Apply', 'neonews-core' ); ?></button>
+                        <input type="date" id="nn-date-to" aria-label="<?php esc_attr_e( 'End date', 'neonews-core' ); ?>" max="<?php echo esc_attr( $today_max ); ?>" min="<?php echo esc_attr( $from ); ?>" value="<?php echo esc_attr( $to ); ?>">
+                        <button type="button" class="nn-pill nn-apply-range"><?php esc_html_e( 'Apply', 'neonews-core' ); ?></button>
                     </div>
+                    <p id="nn-date-range-error" class="nn-date-range-error" style="display:none;" role="alert"></p>
                     <button class="nn-refresh-btn" id="nn-refresh" title="Refresh">↺</button>
                 </div>
             </div>
@@ -921,6 +933,19 @@ class NeoNews_Analytics_Dashboard {
             padding:5px 10px; border-radius:6px; border:1px solid rgba(255,255,255,.4);
             background:rgba(255,255,255,.1); color:#fff; font-size:12px;
             color-scheme:dark;
+        }
+        .nn-custom-range input[type=date]:invalid,
+        .nn-custom-range input.nn-date-invalid {
+            border-color: #ffb4b4;
+            background: rgba(255, 80, 80, 0.15);
+        }
+        .nn-date-range-error {
+            width: 100%;
+            flex-basis: 100%;
+            margin: 6px 0 0;
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffd5d5;
         }
         .nn-refresh-btn {
             background:rgba(255,255,255,.15); border:1.5px solid rgba(255,255,255,.3);
@@ -1372,8 +1397,94 @@ class NeoNews_Analytics_Dashboard {
         }
     }
 
+    function todayYmd(){
+        var d = new Date();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    function showDateRangeError(msg){
+        var box = el('nn-date-range-error');
+        if(!box) return;
+        if(msg){
+            box.textContent = msg;
+            box.style.display = 'block';
+        } else {
+            box.textContent = '';
+            box.style.display = 'none';
+        }
+    }
+
+    function bindCustomDateValidation(){
+        var fromEl = el('nn-date-from');
+        var toEl   = el('nn-date-to');
+        if(!fromEl || !toEl) return;
+
+        var today = todayYmd();
+        fromEl.setAttribute('max', today);
+        toEl.setAttribute('max', today);
+
+        function syncEndConstraints(){
+            var fromVal = fromEl.value;
+            if(fromVal){
+                toEl.min = fromVal;
+                if(toEl.value && toEl.value < fromVal){
+                    toEl.value = fromVal;
+                }
+            } else {
+                toEl.removeAttribute('min');
+            }
+            if(toEl.value && toEl.value > today){
+                toEl.value = today;
+            }
+            if(fromEl.value && fromEl.value > today){
+                fromEl.value = today;
+            }
+        }
+
+        function validateCustomRange(){
+            var fromVal = fromEl.value;
+            var toVal   = toEl.value;
+            if(!fromVal || !toVal){
+                showDateRangeError('Please choose both start and end dates.');
+                return false;
+            }
+            if(fromVal > toVal){
+                showDateRangeError('End date cannot be before the start date.');
+                fromEl.classList.add('nn-date-invalid');
+                toEl.classList.add('nn-date-invalid');
+                return false;
+            }
+            if(fromVal > today || toVal > today){
+                showDateRangeError('Dates cannot be in the future.');
+                return false;
+            }
+            fromEl.classList.remove('nn-date-invalid');
+            toEl.classList.remove('nn-date-invalid');
+            showDateRangeError('');
+            return true;
+        }
+
+        fromEl.addEventListener('change', function(){
+            syncEndConstraints();
+            if(fromEl.value && toEl.value){
+                validateCustomRange();
+            }
+        });
+        toEl.addEventListener('change', function(){
+            syncEndConstraints();
+            validateCustomRange();
+        });
+
+        syncEndConstraints();
+        return validateCustomRange;
+    }
+
     /* Controls */
     document.addEventListener('DOMContentLoaded', function(){
+
+        var validateCustomRange = bindCustomDateValidation();
 
         // Range pills.
         document.querySelectorAll('#nn-range-pills .nn-pill').forEach(function(btn){
@@ -1381,10 +1492,12 @@ class NeoNews_Analytics_Dashboard {
                 var range = this.dataset.range;
                 if(range === 'custom'){
                     el('nn-custom-range').style.display = 'flex';
+                    showDateRangeError('');
                     document.querySelectorAll('#nn-range-pills .nn-pill').forEach(function(b){ b.classList.remove('active'); });
                     this.classList.add('active');
                     return;
                 }
+                showDateRangeError('');
                 el('nn-custom-range').style.display = 'none';
                 document.querySelectorAll('#nn-range-pills .nn-pill').forEach(function(b){ b.classList.remove('active'); });
                 this.classList.add('active');
@@ -1398,6 +1511,7 @@ class NeoNews_Analytics_Dashboard {
         var applyBtn = document.querySelector('.nn-apply-range');
         if(applyBtn){
             applyBtn.addEventListener('click', function(){
+                if(validateCustomRange && !validateCustomRange()){ return; }
                 customFrom = el('nn-date-from').value;
                 customTo   = el('nn-date-to').value;
                 if(!customFrom || !customTo){ return; }

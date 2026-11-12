@@ -23,19 +23,29 @@ function neonews_home_layout_choices( $group ) {
             'minimal'   => __( 'Minimal — slim strip', 'neonews' ),
             'cinematic' => __( 'Cinematic — tall + vignette', 'neonews' ),
             'framed'    => __( 'Framed — thick border & shadow', 'neonews' ),
+            'glass'     => __( 'Glass — frosted frame & depth', 'neonews' ),
+            'kenburns'  => __( 'Ken Burns — slow zoom on image', 'neonews' ),
+            'spotlight' => __( 'Spotlight — soft radial vignette', 'neonews' ),
+            'elevated'  => __( 'Elevated — shadow & hover lift', 'neonews' ),
         ),
         'carousel' => array(
             'overlay'   => __( 'Overlay — text on image (default)', 'neonews' ),
             'split'     => __( 'Split — image + text side by side', 'neonews' ),
             'filmstrip' => __( 'Filmstrip — peek next slide', 'neonews' ),
             'compact'   => __( 'Compact — shorter hero', 'neonews' ),
+            'magazine'  => __( 'Magazine — tall hero, bold titles', 'neonews' ),
+            'cards'     => __( 'Cards — spaced slides with shadow', 'neonews' ),
+            'edge'      => __( 'Edge — wide cinematic slides', 'neonews' ),
         ),
         'posts'    => array(
             'featured-list' => __( 'Featured + list (default)', 'neonews' ),
             'cards'         => __( 'Card grid', 'neonews' ),
             'horizontal'    => __( 'Horizontal scroll cards', 'neonews' ),
-            'grid-compact'  => __( 'Compact 2-column grid', 'neonews' ),
+            'grid-compact'  => __( 'Compact grid', 'neonews' ),
             'list-only'     => __( 'List rows only', 'neonews' ),
+            'magazine'      => __( 'Magazine — lead story + grid', 'neonews' ),
+            'bento'         => __( 'Bento — mixed-size tiles', 'neonews' ),
+            'editorial'     => __( 'Editorial — dense headline stack', 'neonews' ),
         ),
         'video'    => array(
             'grid'       => __( 'Grid', 'neonews' ),
@@ -43,10 +53,14 @@ function neonews_home_layout_choices( $group ) {
             'theater'    => __( 'Theater — large lead + row', 'neonews' ),
         ),
         'latest'   => array(
-            'cards'        => __( 'Cards', 'neonews' ),
-            'horizontal'   => __( 'Horizontal scroll', 'neonews' ),
-            'grid-compact' => __( 'Compact grid', 'neonews' ),
-            'list-only'    => __( 'List only', 'neonews' ),
+            'featured-list' => __( 'Featured + list', 'neonews' ),
+            'cards'         => __( 'Card grid', 'neonews' ),
+            'horizontal'    => __( 'Horizontal scroll cards', 'neonews' ),
+            'grid-compact'  => __( 'Compact grid', 'neonews' ),
+            'list-only'     => __( 'List rows only', 'neonews' ),
+            'magazine'      => __( 'Magazine — lead story + grid', 'neonews' ),
+            'bento'         => __( 'Bento — mixed-size tiles', 'neonews' ),
+            'editorial'     => __( 'Editorial — dense headline stack', 'neonews' ),
         ),
     );
 
@@ -71,6 +85,28 @@ function neonews_sanitize_home_layout( $group, $value, $fallback = '' ) {
         return $fallback;
     }
     return (string) array_key_first( $choices );
+}
+
+/**
+ * Open enhanced horizontal scroll wrapper (nav buttons + track).
+ *
+ * @param string $wrapper_class Outer classes.
+ */
+function neonews_home_hscroll_open( $wrapper_class ) {
+    echo '<div class="' . esc_attr( $wrapper_class . ' nn-hscroll-wrap nn-hscroll-enhanced' ) . '">';
+    echo '<button type="button" class="nn-hscroll-nav nn-hscroll-prev" disabled aria-label="' . esc_attr__( 'Scroll left', 'neonews' ) . '">';
+    echo '<span aria-hidden="true">‹</span></button>';
+    echo '<div class="nn-hscroll-track" tabindex="0" role="region" aria-label="' . esc_attr__( 'Scrollable content', 'neonews' ) . '">';
+}
+
+/**
+ * Close horizontal scroll wrapper.
+ */
+function neonews_home_hscroll_close() {
+    echo '</div>';
+    echo '<button type="button" class="nn-hscroll-nav nn-hscroll-next" aria-label="' . esc_attr__( 'Scroll right', 'neonews' ) . '">';
+    echo '<span aria-hidden="true">›</span></button>';
+    echo '</div>';
 }
 
 /**
@@ -100,18 +136,76 @@ function neonews_render_home_posts_layout( $query, $layout, $args = array() ) {
         return;
     }
 
-    $layout = neonews_sanitize_home_layout( 'posts', $layout, 'featured-list' );
+    $layout        = neonews_sanitize_home_layout( 'posts', $layout, 'featured-list' );
     $wrapper_class = 'nn-home-posts nn-home-layout-' . esc_attr( $layout );
 
     if ( 'horizontal' === $layout ) {
-        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-hscroll-wrap"><div class="nn-hscroll-track">';
+        neonews_home_hscroll_open( $wrapper_class );
         while ( $query->have_posts() ) {
             $query->the_post();
             echo '<div class="nn-hscroll-item">';
             get_template_part( 'template-parts/content', 'card' );
             echo '</div>';
         }
-        echo '</div></div>';
+        neonews_home_hscroll_close();
+        wp_reset_postdata();
+        return;
+    }
+
+    if ( 'magazine' === $layout ) {
+        $posts = array();
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            $posts[] = get_post();
+        }
+        wp_reset_postdata();
+
+        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-magazine-layout">';
+        if ( ! empty( $posts ) ) {
+            $lead = array_shift( $posts );
+            $GLOBALS['post'] = $lead; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+            setup_postdata( $lead );
+            echo '<div class="nn-magazine-lead">';
+            get_template_part( 'template-parts/home', 'featured' );
+            echo '</div>';
+            if ( ! empty( $posts ) ) {
+                echo '<div class="nn-magazine-grid">';
+                foreach ( $posts as $post_obj ) {
+                    $GLOBALS['post'] = $post_obj; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+                    setup_postdata( $post_obj );
+                    get_template_part( 'template-parts/content', 'card' );
+                }
+                echo '</div>';
+            }
+            wp_reset_postdata();
+        }
+        echo '</div>';
+        return;
+    }
+
+    if ( 'bento' === $layout ) {
+        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-bento-layout">';
+        $i = 0;
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            $i++;
+            $mod = $i <= 5 ? ' nn-bento-item-' . $i : ' nn-bento-item-rest';
+            echo '<div class="nn-bento-item' . esc_attr( $mod ) . '">';
+            get_template_part( 'template-parts/content', 'card' );
+            echo '</div>';
+        }
+        echo '</div>';
+        wp_reset_postdata();
+        return;
+    }
+
+    if ( 'editorial' === $layout ) {
+        echo '<div class="' . esc_attr( $wrapper_class ) . ' nn-editorial-stack">';
+        while ( $query->have_posts() ) {
+            $query->the_post();
+            get_template_part( 'template-parts/home', 'list-item' );
+        }
+        echo '</div>';
         wp_reset_postdata();
         return;
     }
@@ -180,16 +274,14 @@ function neonews_render_home_video_layout( $query, $layout ) {
     $class  = 'nn-watch-grid nn-watch-layout-' . esc_attr( $layout );
 
     if ( 'horizontal' === $layout ) {
-        echo '<div class="' . esc_attr( $class ) . ' nn-hscroll-wrap"><div class="nn-hscroll-track">';
-        $v = 0;
+        neonews_home_hscroll_open( $class . ' nn-watch-hscroll' );
         while ( $query->have_posts() ) {
             $query->the_post();
             echo '<div class="nn-hscroll-item nn-hscroll-item-video">';
             get_template_part( 'template-parts/home', 'video-card', array( 'featured' => false ) );
             echo '</div>';
-            $v++;
         }
-        echo '</div></div>';
+        neonews_home_hscroll_close();
         wp_reset_postdata();
         return;
     }

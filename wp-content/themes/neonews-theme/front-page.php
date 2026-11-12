@@ -201,6 +201,7 @@ $video_query    = neonews_is_feature_enabled( 'show_home_videos' ) ? neonews_get
                                 'no_found_rows'  => true,
                             ) );
                             $latest_layout = neonews_sanitize_home_layout( 'latest', $settings['home_latest_layout'] ?? '', 'cards' );
+                            $latest_layout = neonews_sanitize_home_layout( 'posts', $latest_layout, 'cards' );
                             neonews_render_home_posts_layout( $latest, $latest_layout );
                             ?>
                         </section>
