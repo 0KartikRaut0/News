@@ -341,34 +341,6 @@ function neonews_render_auth_modal() {
  * AJAX login handler.
  */
 function neonews_ajax_login() {
-    // DEBUG — remove after fixing login issue
-    $debug = array(
-        'post_keys'   => array_keys( $_POST ),
-        'log_raw'     => isset( $_POST['log'] ) ? substr( $_POST['log'], 0, 40 ) : '(missing)',
-        'pwd_len'     => isset( $_POST['pwd'] ) ? strlen( $_POST['pwd'] ) : 0,
-        'nonce_ok'    => (bool) check_ajax_referer( 'neonews_nonce', 'nonce', false ),
-        'env_type'    => wp_get_environment_type(),
-        'is_ssl'      => is_ssl(),
-        'site_url'    => site_url(),
-        'cookie_dom'  => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '(not set)',
-        'user_exists' => username_exists( isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '' ),
-    );
-
-    // Try wp_authenticate to check creds independently of cookie issues
-    $test_user = wp_authenticate(
-        isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '',
-        isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''
-    );
-    if ( is_wp_error( $test_user ) ) {
-        $debug['auth_error'] = $test_user->get_error_code() . ': ' . wp_strip_all_tags( $test_user->get_error_message() );
-    } else {
-        $debug['auth_ok'] = 'User ID ' . $test_user->ID . ' (' . $test_user->user_login . ')';
-    }
-
-    if ( isset( $_POST['nn_debug'] ) ) {
-        wp_send_json_success( $debug );
-    }
-
     check_ajax_referer( 'neonews_nonce', 'nonce' );
 
     if ( function_exists( 'neonews_verify_captcha' ) ) {
@@ -379,40 +351,36 @@ function neonews_ajax_login() {
     }
 
     $username = isset( $_POST['log'] ) ? sanitize_text_field( wp_unslash( $_POST['log'] ) ) : '';
-    $password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : ''; // phpcs:ignore
+    $password = isset( $_POST['pwd'] ) ? wp_unslash( $_POST['pwd'] ) : '';
     $remember = ! empty( $_POST['rememberme'] );
 
-    // On local/dev environments wp_signon must NOT force secure cookies
-    // (the site runs on http://), otherwise the auth cookie is never set.
-    $secure = is_ssl() && ! in_array(
-        wp_get_environment_type(),
-        array( 'local', 'development' ),
-        true
-    );
+    if ( '' === $username || '' === $password ) {
+        wp_send_json_error( array( 'message' => __( 'Please enter your username and password.', 'neonews' ) ) );
+    }
 
-    $user = wp_signon(
-        array(
-            'user_login'    => $username,
-            'user_password' => $password,
-            'remember'      => $remember,
-        ),
-        $secure
-    );
+    // Step 1: verify credentials independently of cookies.
+    $user = wp_authenticate( $username, $password );
 
     if ( is_wp_error( $user ) ) {
-        // wp_signon failed — try a manual authenticate + set_auth_cookie approach
-        // which avoids the cookie-domain pitfalls on local dev environments.
-        $auth_user = wp_authenticate( $username, $password );
-
-        if ( is_wp_error( $auth_user ) ) {
-            $msg = wp_strip_all_tags( $auth_user->get_error_message() );
-            wp_send_json_error( array( 'message' => $msg ?: __( 'Invalid username or password.', 'neonews' ) ) );
+        $code = $user->get_error_code();
+        if ( in_array( $code, array( 'invalid_username', 'invalid_email' ), true ) ) {
+            $msg = __( 'No account found with that username or email.', 'neonews' );
+        } elseif ( 'incorrect_password' === $code ) {
+            $msg = __( 'Incorrect password. Please try again.', 'neonews' );
+        } else {
+            $msg = wp_strip_all_tags( $user->get_error_message() );
         }
-
-        wp_set_current_user( $auth_user->ID );
-        wp_set_auth_cookie( $auth_user->ID, $remember, $secure );
-        do_action( 'wp_login', $auth_user->user_login, $auth_user );
+        wp_send_json_error( array( 'message' => $msg ) );
     }
+
+    // Step 2: credentials are correct — set the auth cookie manually.
+    // Never force secure cookies on local/dev (http:// only).
+    $is_local = in_array( wp_get_environment_type(), array( 'local', 'development' ), true );
+    $secure   = $is_local ? false : is_ssl();
+
+    wp_set_current_user( $user->ID );
+    wp_set_auth_cookie( $user->ID, $remember, $secure );
+    do_action( 'wp_login', $user->user_login, $user );
 
     wp_send_json_success(
         array(
